@@ -93,3 +93,22 @@
     });
   }
 })();
+
+/* Live filters for long shelf and cookbook lists. */
+(function () {
+  "use strict";
+  var inputs = document.querySelectorAll("[data-list-filter]");
+  for (var i = 0; i < inputs.length; i++) {
+    (function (input) {
+      var key = input.getAttribute("data-list-filter");
+      var rows = document.querySelectorAll('[data-list="' + key + '"] [data-filter-text]');
+      input.addEventListener("input", function () {
+        var term = input.value.trim().toLowerCase();
+        for (var j = 0; j < rows.length; j++) {
+          var text = rows[j].getAttribute("data-filter-text") || "";
+          rows[j].hidden = term.length > 0 && text.indexOf(term) === -1;
+        }
+      });
+    })(inputs[i]);
+  }
+})();

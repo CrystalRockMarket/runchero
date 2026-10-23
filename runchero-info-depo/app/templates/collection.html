@@ -27,6 +27,11 @@
     government reports and manuals. Each record keeps its author, licence and
     original source link. Read the local copy or open the publication itself.
   </div>
+  {% if books|length > 24 %}
+  <input class="mt" type="search" data-list-filter="depot-shelf"
+         aria-label="Filter this depot's books"
+         placeholder="Filter this shelf by title or author...">
+  {% endif %}
   <div class="chips mt">
     <a class="chip green" href="{{ back }}">ALL {{ back_label|upper }}</a>
     {% for child in children[:8] %}
@@ -45,9 +50,10 @@
     {{ role_labels.get(role, role|replace('-', ' ')|title)|upper }}
     <span class="count">{{ items|length }} sources</span>
   </div>
-  <div class="cards">
+  <div class="cards" data-list="depot-shelf">
     {% for book in items %}
-    <article class="card bookcard source-book">
+    <article class="card bookcard source-book" data-list="depot-shelf"
+             data-filter-text="{{ (book.title ~ ' ' ~ book.author ~ ' ' ~ (book.year or '') ~ ' ' ~ (book.summary or ''))|lower }}">
       <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
       <div class="info">
         <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>

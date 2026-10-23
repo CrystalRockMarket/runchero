@@ -1,6 +1,10 @@
-# Never back up this folder
+# Never back these up
 earth.love/
 **/earth.love/
+games.earth/
+**/games.earth/
+games-earth/
+**/games-earth/
 
 # temporary key export, not backed up
 ssh-key.pub

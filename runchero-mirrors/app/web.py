@@ -1,13 +1,16 @@
-"""Jinja environment and request helpers."""
+"""Jinja environment, signed sessions, and small request/response helpers."""
 from __future__ import annotations
 
 import base64
+import datetime as _dt
 import hashlib
 import hmac
 import json
 import os
 import secrets
+from dataclasses import dataclass, field
 from http.cookies import SimpleCookie
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -18,7 +21,12 @@ from . import config
 _env: Environment | None = None
 
 
+# --------------------------------------------------------------------------
+# secret handling
+# --------------------------------------------------------------------------
+
 def secret() -> bytes:
+    """A secret that survives restarts, so open forms keep working."""
     global _SECRET
     try:
         return _SECRET
@@ -26,7 +34,23 @@ def secret() -> bytes:
         pass
     if config.SECRET_KEY:
         _SECRET = config.SECRET_KEY.encode("utf-8")
-    else:
+        return _SECRET
+    path = config.DATA_DIR / ".mirrors-session-secret"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            raw = path.read_text(encoding="ascii").strip()
+            if len(raw) >= 32:
+                _SECRET = raw.encode("ascii")
+                return _SECRET
+        raw = secrets.token_hex(32)
+        path.write_text(raw, encoding="ascii")
+        try:
+            path.chmod(0o600)
+        except OSError:
+            pass
+        _SECRET = raw.encode("ascii")
+    except OSError:
         _SECRET = secrets.token_bytes(32)
     return _SECRET
 
@@ -51,17 +75,35 @@ def unsign_value(token: str) -> Any:
     padding = "=" * (-len(blob) % 4)
     try:
         raw = base64.urlsafe_b64decode(blob + padding)
-    except Exception:
+    except (ValueError, TypeError):
         return None
     if not hmac.compare_digest(_sign(raw), signature):
         return None
     try:
         return json.loads(raw.decode("utf-8"))
-    except Exception:
+    except (ValueError, UnicodeDecodeError):
         return None
 
 
+# --------------------------------------------------------------------------
+# response helpers
+# --------------------------------------------------------------------------
+
+@dataclass
+class FilePayload:
+    """A file streamed by the server instead of being read into memory."""
+    path: Path
+    content_type: str
+    extra: dict[str, str] = field(default_factory=dict)
+
+
+# --------------------------------------------------------------------------
+# request
+# --------------------------------------------------------------------------
+
 class Request:
+    """Everything a page needs to know about the incoming call."""
+
     def __init__(self, method: str, path: str, query: dict[str, str],
                  headers, body: bytes, params: dict[str, str] | None = None):
         self.method = method
@@ -71,6 +113,8 @@ class Request:
         self.body = body
         self.params = params or {}
         self._form: dict[str, str] | None = None
+        self._json: Any = None
+        self._json_parsed = False
         self.session: dict[str, Any] = {}
         self.set_cookies: list[str] = []
 
@@ -88,8 +132,19 @@ class Request:
                     return self._form
                 for key, values in parse_qs(text, keep_blank_values=True).items():
                     self._form[key] = values[-1]
-            return self._form
         return self._form
+
+    @property
+    def json_body(self) -> Any:
+        if not self._json_parsed:
+            self._json_parsed = True
+            self._json = None
+            if self.body:
+                try:
+                    self._json = json.loads(self.body.decode("utf-8"))
+                except (ValueError, UnicodeDecodeError):
+                    self._json = None
+        return self._json
 
     @property
     def cookies(self) -> dict[str, str]:
@@ -103,11 +158,13 @@ class Request:
     def get_cookie(self, name: str) -> str | None:
         return self.cookies.get(name)
 
-    def set_cookie(self, name: str, value: str, max_age: int = 60 * 60 * 24 * 7,
+    def set_cookie(self, name: str, value: str, max_age: int = 60 * 60 * 24 * 14,
                    http_only: bool = True) -> None:
-        parts = [f"{name}={value}", f"Path=/", f"Max-Age={max_age}", "SameSite=Lax"]
+        parts = [f"{name}={value}", "Path=/", f"Max-Age={max_age}", "SameSite=Lax"]
         if http_only:
             parts.append("HttpOnly")
+        if os.environ.get("RMM_SECURE_COOKIES", "0") in ("1", "true", "yes"):
+            parts.append("Secure")
         cookie = "; ".join(parts)
         for index, existing in enumerate(self.set_cookies):
             if existing.startswith(f"{name}="):
@@ -130,19 +187,22 @@ class Request:
             if isinstance(data, dict):
                 self.session = data
 
-    def session_set(self, key: str, value: Any) -> None:
-        self.session[key] = value
-        if not self.session:
-            self.clear_cookie("rmm_session")
-            return
-        self.set_cookie("rmm_session", sign_value(self.session))
-
-    def session_pop(self, key: str, default: Any = None) -> Any:
-        value = self.session.pop(key, default)
+    def _flush_session(self) -> None:
         if not self.session:
             self.clear_cookie("rmm_session")
         else:
             self.set_cookie("rmm_session", sign_value(self.session))
+
+    def session_get(self, key: str, default: Any = None) -> Any:
+        return self.session.get(key, default)
+
+    def session_set(self, key: str, value: Any) -> None:
+        self.session[key] = value
+        self._flush_session()
+
+    def session_pop(self, key: str, default: Any = None) -> Any:
+        value = self.session.pop(key, default)
+        self._flush_session()
         return value
 
     def csrf_token(self) -> str:
@@ -150,13 +210,72 @@ class Request:
         if not token:
             token = secrets.token_urlsafe(24)
             self.session["_csrf"] = token
-            self.set_cookie("rmm_session", sign_value(self.session))
+            self._flush_session()
         return token
 
     def csrf_ok(self) -> bool:
         sent = self.form.get("_csrf") or self.headers.get("X-CSRF-Token") or ""
         expected = self.session.get("_csrf") or ""
         return bool(expected) and hmac.compare_digest(expected, sent)
+
+    def host(self) -> str:
+        return (self.headers.get("Host") or "localhost").split(":")[0]
+
+
+# --------------------------------------------------------------------------
+# jinja
+# --------------------------------------------------------------------------
+
+def _parse_ts(value: str | None) -> _dt.datetime | None:
+    if not value:
+        return None
+    try:
+        return _dt.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+    except (TypeError, ValueError):
+        return None
+
+
+def filesize(value: int | float | None) -> str:
+    try:
+        value = float(value or 0)
+    except (TypeError, ValueError):
+        return "0 B"
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1024 or unit == "TB":
+            if unit == "B":
+                return f"{int(value)} {unit}"
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TB"
+
+
+def prettydatetime(value: str | None) -> str:
+    parsed = _parse_ts(value)
+    if not parsed:
+        return "—"
+    return parsed.strftime("%b %-d, %Y · %-I:%M %p")
+
+
+def prettydate(value: str | None) -> str:
+    parsed = _parse_ts(value)
+    if not parsed:
+        return "—"
+    return parsed.strftime("%b %-d, %Y")
+
+
+def duration_between(started_at: str | None, finished_at: str | None = None) -> str:
+    start = _parse_ts(started_at)
+    if not start:
+        return "—"
+    end = _parse_ts(finished_at) or _dt.datetime.utcnow()
+    seconds = max(0, int((end - start).total_seconds()))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes}m"
+    if minutes:
+        return f"{minutes}m {secs}s"
+    return f"{secs}s"
 
 
 def env() -> Environment:
@@ -168,12 +287,18 @@ def env() -> Environment:
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        _env.filters["filesize"] = filesize
+        _env.filters["prettydatetime"] = prettydatetime
+        _env.filters["prettydate"] = prettydate
+        _env.filters["duration"] = duration_between
         _env.globals.update(
             site_name=config.SITE_NAME,
             site_short=config.SITE_SHORT,
             site_tagline=config.SITE_TAGLINE,
             site_badge=config.SITE_BADGE,
             site_version=config.SITE_VERSION,
+            default_speed=config.DEFAULT_SPEED,
+            speed_profiles=config.CRAWL_PROFILES,
             static_url=lambda p: f"/static/{p.lstrip('/')}",
         )
     return _env

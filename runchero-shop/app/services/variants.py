@@ -130,7 +130,7 @@ def seed_standard_variants(
         )
         conn.execute(
             "UPDATE product_variants SET unit = 'each', unit_lbs = ?, "
-            "sort_order = ?, active = 1 "
+            "price = ?, sort_order = ?, active = 1 "
             "WHERE product_id = ? AND size_label = ?",
-            (lbs, size_index, product_id, label),
+            (lbs, price, size_index, product_id, label),
         )

@@ -1087,3 +1087,40 @@ select:focus-visible, textarea:focus-visible, summary:focus-visible {
 .index-group[open] .index-arrow { background: var(--sun); transform: rotate(45deg); }
 .index-body { padding: 14px 16px 18px; }
 .index-body .depot-subhead:first-child { margin-top: 2px; }
+
+/* ---- kitchen index & chapter search ----------------------------------- */
+.home-search select {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 3px solid var(--ink);
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 750;
+}
+.kitchen-book-list { display: flex; flex-direction: column; gap: 2px; max-height: 62vh; overflow: auto; }
+.kitchen-book-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, .45fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 9px;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--paper2);
+}
+.kitchen-book-row:hover { background: var(--sun); }
+.kitchen-book-title { font-weight: 650; }
+.kitchen-book-meta { color: var(--grey2); font-size: 13px; }
+.chapter-hit { border: 2px solid var(--paper2); border-left: 6px solid var(--sun2); padding: 10px 12px; background: var(--white); }
+.chapter-head { display: flex; align-items: center; gap: 12px; }
+.chapter-head > img { width: 46px; height: 64px; object-fit: cover; border: 2px solid var(--ink); image-rendering: pixelated; flex: none; }
+.chapter-head > div { flex: 1; min-width: 0; }
+.chapter-snip { margin: 8px 0 0; color: var(--ink2); }
+.chapter-snip mark { background: var(--sun); color: var(--ink); padding: 0 2px; }
+.source-book[hidden], .kitchen-book-row[hidden] { display: none; }
+@media (max-width: 620px) {
+  .kitchen-book-row { grid-template-columns: 1fr auto; }
+  .kitchen-book-meta { grid-column: 1 / -1; }
+  .chapter-head { flex-wrap: wrap; }
+}

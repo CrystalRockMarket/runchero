@@ -619,7 +619,25 @@ def search(conn: sqlite3.Connection, **kwargs) -> str:
     query = (kwargs.get("q", "") or "").strip()
     kind = (kwargs.get("kind", "") or "").strip()
     source = (kwargs.get("source", "") or "").strip()
-    hits = db.search(conn, query, kind or None) if query else []
+    kinds = [k.strip() for k in kind.split(",") if k.strip()]
+    metadata_kinds = [k for k in kinds if k != "section"]
+    if kinds and not metadata_kinds:
+        hits = []
+    else:
+        hits = (db.search(conn, query, ",".join(metadata_kinds) or None)
+                if query else [])
+    sections = []
+    if query and (not kinds or "section" in kinds):
+        if source == "manual":
+            sections = db.search_sections(conn, query, kind="manual")
+        elif source == "book":
+            sections = db.search_sections(conn, query, kind="book")
+        elif source in ("", "all"):
+            sections = db.search_sections(conn, query)
+    sections = [dict(row) for row in sections]
+    for row in sections:
+        row["snip_html"] = (html.escape(row["snip"] or "")
+                            .replace("\x01", "<mark>").replace("\x02", "</mark>"))
     collections = []
     books = []
     formulas = []
@@ -669,8 +687,8 @@ def search(conn: sqlite3.Connection, **kwargs) -> str:
 
     return web.render("search.html", **base_context(
         conn, active="", query=query, kind=kind, source=source,
-        kinds=[k.strip() for k in kind.split(",") if k.strip()],
-        collections=collections, books=books, formulas=formulas,
+        kinds=kinds, collections=collections, books=books, formulas=formulas,
+        sections=sections,
         page_sources=db.sources_for(conn, "page", "search")))
 
 

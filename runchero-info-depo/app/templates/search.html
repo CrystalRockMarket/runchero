@@ -6,7 +6,7 @@
   <h1 class="panel-title">
     <img src="{{ static_url('img/icons/magnifier.png') }}" alt="">
     SEARCH RESULTS
-    <span class="count">{{ collections|length + books|length + formulas|length }} hits</span>
+    <span class="count">{{ collections|length + books|length + formulas|length + sections|length }} hits</span>
   </h1>
   {% if query %}
   <p class="small muted">Results for <b>{{ query }}</b> across depots, public-domain books and formula indexes.</p>
@@ -19,6 +19,7 @@
     <a href="/search?q={{ query|urlencode }}{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if not kinds or kinds|length > 1 else '' }}">EVERYTHING</a>
     <a href="/search?q={{ query|urlencode }}&kind=collection{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['collection'] else '' }}">DEPOTS</a>
     <a href="/search?q={{ query|urlencode }}&kind=book{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['book'] else '' }}">BOOKS</a>
+    <a href="/search?q={{ query|urlencode }}&kind=section{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['section'] else '' }}">CHAPTERS</a>
     <a href="/search?q={{ query|urlencode }}&kind=formula{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['formula'] else '' }}">FORMULAS</a>
   </div>
   <div class="chips mt">
@@ -85,6 +86,34 @@
 </div>
 {% endif %}
 
+{% if sections %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    CHAPTERS &amp; PASSAGES
+    <span class="count">{{ sections|length }}</span>
+  </div>
+  <div class="stack" style="gap:10px">
+    {% for sec in sections %}
+    <article class="chapter-hit">
+      <div class="chapter-head">
+        <img src="{{ static_url('img/covers/' ~ sec.slug ~ '.png') }}" alt="">
+        <div>
+          <div class="card-title"><a href="/read/{{ sec.slug }}?q={{ query|urlencode }}">{{ sec.title }}</a></div>
+          <div class="small muted">
+            {% if sec.heading %}<b>{{ sec.heading }}</b> &middot; {% endif %}
+            {{ sec.author or 'Unknown author' }}{% if sec.year %} &middot; {{ sec.year }}{% endif %}
+          </div>
+        </div>
+        <a class="btn ghost" href="/read/{{ sec.slug }}?q={{ query|urlencode }}">OPEN CHAPTER</a>
+      </div>
+      <p class="small chapter-snip">{{ sec.snip_html|safe }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% if formulas %}
 <div class="panel mb">
   <div class="panel-title">
@@ -113,7 +142,7 @@
 </div>
 {% endif %}
 
-{% if query and not collections and not books and not formulas %}
+{% if query and not collections and not books and not formulas and not sections %}
 <div class="empty">
   No records match "<b>{{ query }}</b>"{% if source %} with the <b>{{ source_labels.get(source, source) }}</b> source filter{% endif %}.<br>
   Try a plainer word, or clear the source filter.

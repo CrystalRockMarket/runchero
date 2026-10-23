@@ -21,6 +21,7 @@ from .. import config, db
 from . import books as book_data
 from . import books_deep
 from . import books_extra
+from . import books_from_download
 from . import collections as collection_data
 from . import content
 from . import formulas as formula_data
@@ -148,13 +149,14 @@ def seed_books(conn, category_ids, fetch: bool = True,
     fetched = 0
     cached = 0
     deep_slugs = {b[1] for b in books_deep.BOOKS}
-    catalogue = [*book_data.BOOKS, *books_deep.BOOKS, *books_extra.BOOKS]
+    catalogue = [*book_data.BOOKS, *books_deep.BOOKS, *books_extra.BOOKS, *books_from_download.BOOKS]
     if not everything:
         # The curated shelves, the demo deep-dives, plus any extra book already
         # on disk. That way a bigger archive is never thrown away by a reseed.
         catalogue = [b for b in catalogue
                      if b[1] in book_data.CURATED
                      or b[1] in deep_slugs
+                     or b in books_from_download.BOOKS
                      or (archive / f"{b[1]}.txt").exists()]
     for (gid, slug, title, author, category, summary, motif, base, accent,
          year) in catalogue:
