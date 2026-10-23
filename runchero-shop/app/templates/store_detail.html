@@ -68,6 +68,7 @@
   </div>
   {% endif %}
 </div>
+{% endif %}
 {% if product.compare_at %}
 <p style="font-size:13px;color:var(--grey);margin-top:6px">
   {% if product.compare_brand %}Comparable listing: {{ product.compare_brand }}{% endif %}
@@ -78,7 +79,6 @@
   package size and bulk discounts vary.{% else %}Prices are compared per package;
   declared serving counts and recipes vary by brand.{% endif %}
 </p>
-{% endif %}
 {% endif %}
 
 {% if others %}
