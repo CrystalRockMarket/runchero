@@ -582,6 +582,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all-books", action="store_true",
                         help="publish the whole Gutenberg catalogue instead of "
                              "the books already on disk")
+    parser.add_argument("--skip-sections", action="store_true",
+                        help="do not build the chapter search index")
+    parser.add_argument("--force-sections", action="store_true",
+                        help="rebuild every chapter section from scratch")
     args = parser.parse_args(argv)
 
     config.ensure_dirs()
@@ -613,6 +617,14 @@ def main(argv: list[str] | None = None) -> int:
 
     depot_count = seed_collections(conn, category_ids)
     print(f"  {depot_count} organised depots linked to archive sources")
+
+    if not args.skip_sections:
+        print("indexing book chapters...")
+        from .sections import index_all
+        section_books, section_count = index_all(
+            conn, force=args.force_sections,
+            progress=lambda book, n: None)
+        print(f"  {section_count} chapter passages from {section_books} new books")
 
     if not args.skip_assets:
         print("drawing pixel art...")

@@ -13,7 +13,7 @@ from typing import Any, Iterable, Iterator
 
 from . import config
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -228,6 +228,28 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search_fts USING fts5(
     title,
     body,
     tags,
+    tokenize = 'porter unicode61'
+);
+
+CREATE TABLE IF NOT EXISTS book_sections (
+    id         INTEGER PRIMARY KEY,
+    book_id    INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    book_slug  TEXT NOT NULL,
+    ordinal    INTEGER NOT NULL,
+    heading    TEXT NOT NULL DEFAULT '',
+    body       TEXT NOT NULL,
+    char_count INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(book_id, ordinal)
+);
+CREATE INDEX IF NOT EXISTS idx_book_sections_book ON book_sections(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_sections_slug ON book_sections(book_slug);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS section_fts USING fts5(
+    book_slug UNINDEXED,
+    heading,
+    body,
+    content = 'book_sections',
+    content_rowid = 'id',
     tokenize = 'porter unicode61'
 );
 """
@@ -560,6 +582,33 @@ def search(conn: sqlite3.Connection, query: str, kind: str | None = None,
     if kinds:
         sql += " AND kind IN (%s)" % ",".join("?" * len(kinds))
         params.extend(kinds)
+    sql += " ORDER BY score LIMIT ?"
+    params.append(limit)
+    return rows(conn, sql, params)
+
+
+def search_sections(conn: sqlite3.Connection, query: str, kind: str | None = None,
+                    limit: int = 24) -> list[sqlite3.Row]:
+    """Search chapter text and return book metadata plus a snippet."""
+    terms = [t for t in query.replace('"', " ").split() if t]
+    if not terms:
+        return []
+    match = " ".join(f'"{t}"*' for t in terms)
+    sql = (
+        "SELECT b.slug, b.title, b.author, b.year, b.format, b.category_id, "
+        "       s.heading, s.ordinal, "
+        "       snippet(section_fts, 2, char(1), char(2), ' ... ', 34) AS snip, "
+        "       bm25(section_fts) AS score "
+        "FROM section_fts "
+        "JOIN book_sections s ON s.id = section_fts.rowid "
+        "JOIN books b ON b.id = s.book_id "
+        "WHERE section_fts MATCH ?"
+    )
+    params: list[Any] = [match]
+    if kind == "manual":
+        sql += " AND b.format = 'MANUAL'"
+    elif kind == "book":
+        sql += " AND b.format != 'MANUAL'"
     sql += " ORDER BY score LIMIT ?"
     params.append(limit)
     return rows(conn, sql, params)
