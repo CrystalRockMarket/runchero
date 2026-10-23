@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>Products</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products" aria-current="page">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<form method="get" action="/admin/products" style="margin:12px 0">
+  <label for="store">Store</label>
+  <select id="store" name="store" onchange="this.form.submit()">
+    {% for st in stores %}
+    <option value="{{ st.slug }}" {% if st.slug == store_slug %}selected{% endif %}>{{ st.name }}</option>
+    {% endfor %}
+  </select>
+  <a class="btn small grass" href="/admin/products/new?store={{ store_slug }}">New product</a>
+</form>
+
+{% if products %}
+<table class="data-table">
+  <thead><tr><th>Name</th><th>Unit</th><th>Price</th><th>Stock</th><th>Active</th><th></th></tr></thead>
+  <tbody>
+  {% for p in products %}
+  <tr>
+    <td>{{ p.name }} <span class="muted">({{ p.slug }})</span></td>
+    <td>{{ p.unit }}</td>
+    <td>{{ p.price|money }}</td>
+    <td>{{ p.stock|round(0)|int }}</td>
+    <td>{% if p.active %}yes{% else %}no{% endif %}</td>
+    <td>
+      <a class="btn small" href="/admin/products/{{ p.id }}/edit">Edit</a>
+      <form method="post" action="/admin/products/{{ p.id }}/delete" class="inline-form" style="display:inline">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <button class="btn small tomato" type="submit">Deactivate</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="panel">No products for this store yet.</p>
+{% endif %}
+{% endblock %}

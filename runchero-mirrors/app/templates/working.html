@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Currently working{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/truck.png" alt=""> Currently working</div>
+  <p class="muted">Sites that are actively downloading right now. Shows running time and saved pages/files as they progress.</p>
+  <div class="actions">
+    <a class="btn" href="/"><img src="/static/img/icons/list.png" alt="" width="16" height="16"> Back to dashboard</a>
+    <a class="btn" href="/add"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Add another site</a>
+  </div>
+</section>
+
+<section class="panel">
+  {% if running %}
+  <table class="table">
+    <thead><tr><th>Site</th><th>URL</th><th>Status/Time</th><th>Progress</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for m in running %}
+    <tr>
+      <td><strong>{{ m.name }}</strong><br><span class="muted small">{{ m.slug }}</span>{% if m.description %}<br><span class="small">{{ m.description }}</span>{% endif %}</td>
+      <td class="small break">{{ m.url }}</td>
+      <td>{{ m.status }}{% if m.duration %} · {{ m.duration }}{% endif %}</td>
+      <td>{{ m.pages_saved }} pages / {{ m.files_saved }} files</td>
+      <td>
+        {% if m.status == 'queued' %}
+        <form method="post" action="/start/{{ m.id }}" style="display:inline">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small primary"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Start</button>
+        </form>
+        {% endif %}
+        {% if m.status == 'running' %}
+        <form method="post" action="/stop/{{ m.id }}" style="display:inline">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Stop/Pause</button>
+        </form>
+        {% endif %}
+        <a class="btn small" href="/api/mirror/{{ m.id }}/logs" target="_blank"><img src="/static/img/icons/list.png" alt="" width="14" height="14"> View logs</a>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Nothing is downloading right now.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+setTimeout(function(){ location.reload(); }, 8000);
+</script>
+{% endblock %}

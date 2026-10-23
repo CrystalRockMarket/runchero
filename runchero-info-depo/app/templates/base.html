@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ static_url('css/pixel.css') }}">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#6cc24a">
+<meta name="description" content="{{ site_tagline }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="wrap">
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="{{ static_url('img/logo.png') }}" alt="Runchero home">
+      <span class="name">{{ site_name }}<small>{{ site_tagline }}</small></span>
+    </a>
+    <span class="badge red">{{ site_badge }}</span>
+    <div class="spacer"></div>
+    <form class="searchbox" action="/search" method="get" autocomplete="off" role="search">
+      <img class="glyph" src="{{ static_url('img/icons/magnifier.png') }}" alt="">
+      <input type="text" name="q" placeholder="Search crops, animals, books, manuals..."
+             value="{{ query|default('', true) }}" aria-label="Search the collection"
+             autocomplete="off" data-search>
+      <div class="suggestions" id="suggestions" role="listbox"></div>
+    </form>
+    <span class="badge green" title="Everything is stored on this machine">OFFLINE READY</span>
+  </header>
+
+  <nav class="tabs" aria-label="Main">
+    {% for item in nav %}
+      <a href="{{ item.href }}" class="{{ 'active' if active == item.slug else '' }}" {% if active == item.slug %}aria-current="page"{% endif %}>
+        <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+        {{ item.label|upper }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  <div class="layout">
+    <main id="main-content" tabindex="-1">
+      {% block content %}{% endblock %}
+      {% include "_sources.html" %}
+    </main>
+  </div>
+
+  <footer class="statusbar">
+    <span><span class="dot"></span> <b>LOCAL ARCHIVE</b> - all content stored on this machine</span>
+    <span class="spacer"></span>
+    <span>{{ stats.collections }} depots</span>
+    <span>{{ stats.books }} books</span>
+    <span>{{ stats.formulas }} formulas</span>
+    <span>{{ stats.vehicles }} machines</span>
+    <span>read-only build</span>
+    <span>v{{ site_version }}</span>
+  </footer>
+
+</div>
+<script src="{{ static_url('js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

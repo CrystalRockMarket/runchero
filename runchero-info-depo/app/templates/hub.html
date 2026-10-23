@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ term }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  {% if parent %}<a href="/section/{{ parent }}">{% if parent == 'vehicles' %}Equipment{% else %}{{ parent|replace('-', ' ')|title }}{% endif %}</a>{% else %}<a href="/">Home</a>{% endif %}
+  <span class="separator">/</span><span class="current">{{ term }}</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/star.png') }}" alt="">
+    {{ term|upper }}
+    <span class="count">{{ articles|length + books|length + formulas|length + vehicles|length }} items</span>
+  </h1>
+  <p class="small muted">
+    Browse the notes, books, formulas and equipment records related to {{ term }}.
+  </p>
+  {% if parent %}
+  <div class="chips mt"><a class="chip green" href="/section/{{ parent }}">BACK TO {% if parent == 'vehicles' %}EQUIPMENT{% else %}{{ parent|upper }}{% endif %}</a></div>
+  {% endif %}
+</div>
+
+{% if articles %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+    NOTES
+    <span class="count">{{ articles|length }}</span>
+  </h2>
+  <div class="cards">
+    {% for item in articles %}
+    <div class="card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ (item.category_icon or 'notes') ~ '.png') }}" alt="">
+        <span class="chip blue">{{ item.category_name }}</span>
+      </div>
+      <div class="card-title"><a href="/a/{{ item.slug }}">{{ item.title }}</a></div>
+      <p>{{ item.summary }}</p>
+      <div class="meta"><span>{{ item.read_minutes }} min read</span><span>{{ item.difficulty }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if books %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    BOOKS
+    <span class="count">{{ books|length }}</span>
+  </h2>
+  <div class="cards">
+    {% for book in books %}
+    <div class="card bookcard">
+      <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+      <div class="info">
+        <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+        <div class="small muted">{{ book.author }}{% if book.year %} &middot; {{ book.year }}{% endif %}</div>
+        <div class="chips"><span class="chip sun">{{ book.format }}</span>{% if book.pages %}<span class="chip">{{ book.pages }} pages</span>{% endif %}</div>
+        <div class="row">
+          <a class="btn ghost" href="/library/archive/{{ book.slug }}">DETAILS</a>
+          <a class="btn blue" href="/download/{{ book.slug }}">DOWNLOAD</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if formulas %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/gearbox.png') }}" alt="">
+    FORMULAS
+    <span class="count">{{ formulas|length }}</span>
+  </h2>
+  <div class="formulas">
+    {% for item in formulas %}
+    <div class="formula" id="formula-{{ item.slug }}">
+      <div class="fname">{{ item.name }}</div>
+      <div class="expr">{{ item.expression }}</div>
+      {% if item.symbols %}<div class="sym"><b>SYMBOLS</b> &middot; {{ item.symbols }}</div>{% endif %}
+      {% if item.units %}<div class="units">UNITS &middot; {{ item.units }}</div>{% endif %}
+      <div class="how">{{ item.how_html|safe }}</div>
+      {% if item.example_html %}<div class="ex"><b>EXAMPLE</b><br>{{ item.example_html|safe }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if vehicles %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    MACHINES
+    <span class="count">{{ vehicles|length }}</span>
+  </h2>
+  <div class="cards">
+    {% for m in vehicles %}
+    <div class="card">
+      <div class="card-title"><a href="/vehicles/{{ m.slug }}">{{ m.make }} {{ m.model }}</a></div>
+      <div class="meta">
+        {% if m.year_from %}<span>{{ m.year_from }}{% if m.year_to %}-{{ m.year_to }}{% endif %}</span>{% endif %}
+        {% if m.power %}<span>{{ m.power }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not articles and not books and not formulas and not vehicles %}
+<div class="empty">No records are linked to "{{ term }}" yet.</div>
+{% endif %}
+{% endblock %}

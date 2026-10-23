@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/list.png" alt=""> Mirror status - all sites</div>
+  <p class="muted">Shows queued, currently downloading, and finished mirrors. Progress updates as HTTrack works.</p>
+  <div class="actions">
+    <a class="btn primary" href="/add"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Add a new site (guided walkthough)</a>
+    <a class="btn" href="/browse"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Browse finished sites</a>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="panel">
+    <div class="panel-title"><img src="/static/img/icons/truck.png" alt=""> Currently downloading (running)</div>
+    {% if running %}
+    <table class="table">
+      <thead><tr><th>Site</th><th>URL</th><th>Running for</th><th>Pages/Files</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for m in running %}
+      <tr>
+        <td><strong>{{ m.name }}</strong><br><span class="muted small">{{ m.slug }}</span></td>
+        <td class="small break">{{ m.url }}</td>
+        <td>{{ m.duration }}</td>
+        <td>{{ m.pages_saved }} pages / {{ m.files_saved }} files</td>
+        <td>
+          <form method="post" action="/stop/{{ m.id }}" style="display:inline">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="btn small"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Stop</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Nothing downloading right now. Add a site to start.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><img src="/static/img/icons/wrench.png" alt=""> Queued</div>
+    {% if queued %}
+    <table class="table">
+      <thead><tr><th>Site</th><th>URL</th><th>Added</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for m in queued %}
+      <tr>
+        <td><strong>{{ m.name }}</strong></td>
+        <td class="small break">{{ m.url }}</td>
+        <td class="small">{{ m.created_at }}</td>
+        <td>
+          <form method="post" action="/start/{{ m.id }}" style="display:inline">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="btn small primary"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Start</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Queue is empty.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><img src="/static/img/icons/check.png" alt=""> Finished (completed)</div>
+    {% if completed %}
+    <table class="table">
+      <thead><tr><th>Site</th><th>URL</th><th>Took</th><th>Saved</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for m in completed %}
+      <tr>
+        <td><strong>{{ m.name }}</strong><br><span class="muted small">Finished: {{ m.finished_at }}</span></td>
+        <td class="small break">{{ m.url }}</td>
+        <td>{{ m.duration }}</td>
+        <td>{{ m.pages_saved }} pages / {{ m.files_saved }} files</td>
+        <td><a class="btn small primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="14" height="14"> View / Browse</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No completed sites yet. Once a download finishes, it will appear here and be viewable.</p>
+    {% endif %}
+  </div>
+
+  {% if failed %}
+  <div class="panel">
+    <div class="panel-title"><img src="/static/img/icons/x.png" alt=""> Stopped / Failed</div>
+    <table class="table">
+      <thead><tr><th>Site</th><th>Status</th><th>Last update</th></tr></thead>
+      <tbody>
+      {% for m in failed %}
+      <tr>
+        <td><strong>{{ m.name }}</strong></td>
+        <td>{{ m.status }}</td>
+        <td class="small">{{ m.updated_at }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+// gentle auto-refresh every 10s to update running stats
+setTimeout(function(){ location.reload(); }, 10000);
+</script>
+{% endblock %}

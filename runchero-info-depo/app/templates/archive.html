@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Archive - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+    BOOK ARCHIVE
+    <span class="count">{{ total }} books</span>
+  </h1>
+  <p class="small muted">
+    Real books, stored on this machine. Nothing here needs a network connection -
+    read them in the browser or take the file with you.
+  </p>
+
+  <form action="/library/archive" method="get" class="grid-2 mt">
+    <div class="field" style="margin:0">
+      <label for="q">FILTER BY TITLE OR AUTHOR</label>
+      <input type="text" id="q" name="q" value="{{ query }}" placeholder="e.g. poultry, mechanics">
+    </div>
+    <div class="field" style="margin:0">
+      <label for="format">FORMAT</label>
+      <select id="format" name="format">
+        <option value="">All formats</option>
+        {% for row in formats %}
+        <option value="{{ row.format }}" {{ 'selected' if fmt == row.format else '' }}>{{ row.format }} ({{ row.n }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <label for="cat">SHELF</label>
+      <select id="cat" name="cat">
+        <option value="">All shelves</option>
+        {% for shelf in library_categories %}
+        <option value="{{ shelf.slug }}" {{ 'selected' if shelf.slug == cat else '' }}>{{ shelf.name }} ({{ shelf.n }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" style="margin:0">
+      <label for="theme">THEME</label>
+      <select id="theme" name="theme">
+        <option value="">All themes</option>
+        {% for row in themes %}
+        <option value="{{ row.theme }}" {{ 'selected' if theme == row.theme else '' }}>{{ row.theme }} ({{ row.n }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <button class="btn sun" type="submit">APPLY</button>
+      <a class="btn ghost" href="/library/archive">RESET</a>
+    </div>
+  </form>
+</div>
+
+{% set q = (query ~ '&' if query else '') ~ ('format=' ~ fmt ~ '&' if fmt else '') ~ ('cat=' ~ cat ~ '&' if cat else '') ~ ('theme=' ~ theme ~ '&' if theme else '') %}
+
+<div class="cards">
+  {% for book in archive %}
+  <div class="card bookcard">
+    <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+    <div class="info">
+      <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+      <div class="small muted">{{ book.author }}{% if book.year %} &middot; {{ book.year }}{% endif %}</div>
+      {% if book.summary %}<p>{{ book.summary|truncate(130) }}</p>{% endif %}
+      <div class="chips">
+        <span class="chip sun">{{ book.format }}</span>
+        {% if book.pages %}<span class="chip">{{ book.pages }} pages</span>{% endif %}
+        <span class="chip">{{ book.bytes|filesize }}</span>
+        {% if book.category_name %}<span class="chip blue">{{ book.category_name }}</span>{% endif %}
+      </div>
+      <div class="row">
+        <a class="btn ghost" href="/library/archive/{{ book.slug }}">DETAILS</a>
+        <a class="btn blue" href="/download/{{ book.slug }}">DOWNLOAD</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty">No books match that filter.</div>
+  {% endfor %}
+</div>
+
+{% if pages > 1 %}
+<div class="panel mt">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/list.png') }}" alt="">
+    PAGE {{ page }} OF {{ pages }}
+  </div>
+  <div class="chips">
+    {% if page > 1 %}
+    <a class="chip" href="/library/archive?{{ q }}page={{ page - 1 }}">PREVIOUS</a>
+    {% endif %}
+    {% for p in range(1, pages + 1) %}
+    {% if p == page %}
+    <span class="chip green">{{ p }}</span>
+    {% elif p <= 3 or p > pages - 3 or (p >= page - 2 and p <= page + 2) %}
+    <a class="chip" href="/library/archive?{{ q }}page={{ p }}">{{ p }}</a>
+    {% elif p == 4 or p == pages - 3 %}
+    <span class="chip">...</span>
+    {% endif %}
+    {% endfor %}
+    {% if page < pages %}
+    <a class="chip" href="/library/archive?{{ q }}page={{ page + 1 }}">NEXT</a>
+    {% endif %}
+  </div>
+  <p class="small muted mt">
+    {{ per_page }} books a page, {{ total }} in all. Narrow the filter above to
+    find a particular shelf.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

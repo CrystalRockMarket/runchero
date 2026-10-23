@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Locally grown beef, cut for your table{% endblock %}
+{% block description %}Beef raised in Shelby County, Kentucky, cut to order and priced about 20% under the published grocery average. Pickup or delivery.{% endblock %}
+{% block body %}
+
+<div class="hero">
+  <div>
+    <p class="eyebrow">Shelby County, Kentucky &middot; USDA-inspected</p>
+    <h1>Fill the freezer. Beat the shelf.</h1>
+    <p class="lede">Raised in Shelby County, cut how you ask for it, and
+      priced about 20% under the published grocery average. Every price on
+      this site sits next to the market number it beats.</p>
+    <p class="hero-cta">
+      <a class="btn grass" href="#freezer">Fill the freezer</a>
+      <a class="btn ghost" href="/shop">Shop cuts by the pound</a>
+    </p>
+    <ul class="hero-facts">
+      <li>Pickup {{ content.pickup_hours|replace(', ', ' · ') }}</li>
+      <li>Delivery Wed &amp; Sat</li>
+      <li>Free delivery over {{ content.free_delivery_over|money }}</li>
+      <li>Min order {{ content.min_order|money }}</li>
+    </ul>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="hero-board">
+      <img class="hb-main" src="/static/img/icons/salami.png" alt="">
+      <img src="/static/img/icons/burger.png" alt="">
+      <img src="/static/img/icons/box.png" alt="">
+      <img src="/static/img/icons/calendar.png" alt="">
+      <img src="/static/img/icons/hotdog.png" alt="">
+      <img src="/static/img/icons/egg-fried.png" alt="">
+    </div>
+  </div>
+</div>
+
+{% if choice or ground %}
+<section class="market-band" aria-label="Market check">
+  <div class="mb-head">
+    <span class="mb-kicker">Market check</span>
+    <span class="mb-note">USDA published averages, with their own dates.
+      Not our numbers.</span>
+  </div>
+  <div class="mb-stats">
+    {% if choice %}
+    <div class="mb-stat">
+      <span class="mb-label">Choice beef</span>
+      <span class="mb-val">{{ choice.value|money }}<small>/lb</small></span>
+      <span class="mb-src">{{ choice.source }} &middot; {{ choice.observed_at|prettydate }}</span>
+    </div>
+    {% endif %}
+    {% if ground %}
+    <div class="mb-stat">
+      <span class="mb-label">Ground beef</span>
+      <span class="mb-val">{{ ground.value|money }}<small>/lb</small></span>
+      <span class="mb-src">{{ ground.source }} &middot; {{ ground.observed_at|prettydate }}</span>
+    </div>
+    {% endif %}
+    <div class="mb-stat mb-ours">
+      <span class="mb-label">Our ground beef</span>
+      <span class="mb-val">{% if ground_cut %}{{ ground_cut.runchero_price|money }}<small>/lb</small>{% else %}Under the shelf{% endif %}</span>
+      <span class="mb-src">Same cuts, our price</span>
+    </div>
+  </div>
+  <a class="mb-link" href="/market-prices">See every cut &rarr;</a>
+</section>
+{% endif %}
+
+<section id="freezer" aria-labelledby="freezer-h">
+  <div class="section-head spread">
+    <div>
+      <p class="eyebrow">Featured</p>
+      <h2 id="freezer-h">Fill the freezer</h2>
+      <p>Buy the animal, not the package: a share or a box, priced by the
+        pound.</p>
+    </div>
+    <a class="btn ghost" href="/shares">Compare all shares</a>
+  </div>
+
+  <div class="product-grid six">
+    {% for share in shares %}
+    <article class="card share-card">
+      <div class="thumb">
+        <img src="/static/img/icons/{{ share.icon }}@4x.png" alt=""
+             width="64" height="64">
+      </div>
+      <div class="body">
+        <span class="badge ghost">Cow share</span>
+        <h3><a class="card-link" href="/share/{{ share.slug }}">{{ share.name }}</a></h3>
+        <p class="desc">{{ share.takehome_lbs|round(0)|int }} lb take-home
+          &middot; {{ share.household_limit }}
+          household{{ '' if share.household_limit == 1 else 's' }}</p>
+        <div class="foot">
+          <span class="price">{{ share.price|money }}
+            <small>{{ share.price_per_lb|money }}/lb</small></span>
+          <a class="btn small" href="/share/{{ share.slug }}">Details</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+    {% for package in boxes[:2] %}
+    <article class="card">
+      <div class="thumb"><img src="/static/img/icons/{{ package.icon }}@4x.png"
+        alt="" width="64" height="64"></div>
+      <div class="body">
+        <span class="badge tomato">Freezer box</span>
+        <h3><a class="card-link" href="/package/{{ package.slug }}">{{ package.name }}</a></h3>
+        <p class="desc">{{ package.blurb }}</p>
+        <div class="foot">
+          <span class="price">{{ package.price|money }}
+            <small>{{ package.total_lbs|round(1) }} lb box</small></span>
+          <span class="saving">Save {{ (package.compare_at - package.price)|money }}</span>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% if deals %}
+<section aria-labelledby="deals-h">
+  <div class="section-head spread">
+    <div>
+      <p class="eyebrow">Deals of the week</p>
+      <h2 id="deals-h">Deepest cuts under the shelf</h2>
+      <p>Ranked by how far our base price sits under this week's published
+        benchmark. Base cut price only, before packing options.</p>
+    </div>
+    <a class="btn ghost" href="/shop?sort=deal">All deals</a>
+  </div>
+  <div class="product-grid six">
+    {% for cut in deals %}
+    {% set cmp = comparisons[cut.slug] %}
+    <article class="card deal-card">
+      <div class="thumb">
+        <img src="/static/img/icons/{{ cut.icon }}@4x.png" alt=""
+             width="64" height="64">
+        <span class="deal-pct">&minus;{{ '%.0f'|format(cmp.pct) }}%</span>
+      </div>
+      <div class="body">
+        <h3><a class="card-link" href="/cut/{{ cut.slug }}">{{ cut.name }}</a></h3>
+        <p class="desc">{{ cut.serving }}</p>
+        <div class="market">
+          <div class="mp-row"><span>Shelf avg</span>
+            <strong>{{ cmp.value|money }}/lb</strong></div>
+          <div class="mp-row"><span>Ours</span>
+            <strong>{{ cmp.our_per_lb|money }}/lb</strong></div>
+          <div class="mp-src">{{ cmp.source }} &middot;
+            {{ cmp.observed_at|prettydate }}</div>
+        </div>
+        <div class="foot">
+          <span class="price">{{ cut.runchero_price|money }}
+            <small>{{ 'each' if cut.unit == 'each' else 'per lb' }}</small></span>
+          <a class="btn small grass" href="/cut/{{ cut.slug }}">View</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if favorites %}
+<section aria-labelledby="favorites-h">
+  <div class="section-head spread">
+    <div>
+      <p class="eyebrow">Family favorites</p>
+      <h2 id="favorites-h">What the neighborhood buys</h2>
+      <p>The cuts that keep coming back, priced against this week's market.</p>
+    </div>
+    <a class="btn ghost" href="/shop">Shop all cuts</a>
+  </div>
+  <div class="product-grid six">
+    {% for cut in favorites %}
+    <article class="card">
+      <div class="thumb"><img src="/static/img/icons/{{ cut.icon }}@4x.png"
+        alt="" width="64" height="64"></div>
+      <div class="body">
+        <h3><a class="card-link" href="/cut/{{ cut.slug }}">{{ cut.name }}</a></h3>
+        <p class="desc">{{ cut.serving }}</p>
+        <div class="foot">
+          <span class="price">{{ cut.runchero_price|money }}
+            <small>{{ 'each' if cut.unit == 'each' else 'per lb' }}</small></span>
+          <a class="btn small" href="/cut/{{ cut.slug }}">View</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section aria-labelledby="shopby">
+  <div class="section-head">
+    <h2 id="shopby">What are you cooking?</h2>
+    <p>Six ways in. The full cut list is one click deeper.</p>
+  </div>
+  <div class="entry-grid">
+    {% for href, label, sub, icon in entries %}
+    <a class="entry" href="/{{ href }}">
+      <img src="/static/img/icons/{{ icon }}@4x.png" alt="" width="40" height="40" loading="lazy" decoding="async">
+      <span class="label">{{ label }}</span>
+      <span class="sub">{{ sub }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

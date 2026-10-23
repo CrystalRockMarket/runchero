@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Property Map{% endblock %}
+{% block head %}
+<style>
+  .map-wrap { display:grid; grid-template-columns: 1fr 320px; gap:12px; }
+  @media (max-width:900px){ .map-wrap { grid-template-columns:1fr; } .side { order:2; } }
+  #mapcanvas { width:100%; height:70vh; border:2px solid #1b1b23; background:#f3e7c8; image-rendering:pixelated; cursor:crosshair; }
+  .side { background:#fdf6e3; border:2px solid #1b1b23; padding:10px; max-height:70vh; overflow:auto; }
+  .place-item { padding:6px; border-bottom:1px solid #c3ccd8; cursor:pointer; }
+  .place-item:hover { background:#ffe9b0; }
+  .place-item.active { background:#ffd24a; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+  .legend span { display:inline-flex; align-items:center; gap:4px; font-size:12px; }
+  .swatch { width:14px; height:14px; border:1px solid #1b1b23; display:inline-block; }
+  .layers { margin:8px 0; }
+  .layers label { display:block; font-size:13px; }
+  .detail h2 { margin:0 0 6px; }
+  .detail .meta { font-size:13px; color:#2f3140; }
+  .detail .record { border-left:3px solid #6cc24a; padding:4px 8px; margin:6px 0; background:#f3e7c8; }
+  .detail .photo { width:100%; margin:6px 0; border:1px solid #1b1b23; }
+  .search { width:100%; padding:6px; margin:6px 0; }
+</style>
+{% endblock %}
+{% block body %}
+<h1>{{ content.site_title }}</h1>
+<p>{{ content.site_subtitle }}</p>
+<div class="map-wrap">
+  <div>
+    <canvas id="mapcanvas" width="{{ content.map_width }}" height="{{ content.map_height }}"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="layers" id="layers"></div>
+  </div>
+  <aside class="side">
+    <input class="search" id="search" placeholder="Search places..." />
+    <div id="placelist"></div>
+    <div id="detail" class="detail"></div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const places = {{ places|tojson }};
+const layers = {{ layers|tojson }};
+const ring = {{ ring|tojson }};
+const bbox = {{ bbox|tojson }};
+const canvas = document.getElementById('mapcanvas');
+const ctx = canvas.getContext('2d');
+let selected = null;
+let layerVisible = {};
+layers.forEach(l => { layerVisible[l.slug] = !!l.visible; });
+
+function colorFor(p){
+  const m = {barn:'#b9834f', shop:'#f0902e', house:'#9b4dab', storage:'#8a94a6', field:'#6cc24a', pond:'#6ab0f3', road:'#c3ccd8', fence:'#a8763f', utility:'#3fc4b0', other:'#57c7d4'};
+  return (p.category_colour ? cssVar(p.category_colour) : (m[p.kind]||'#8a94a6'));
+}
+function cssVar(name){ const map={wood:'#b9834f',orange:'#f0902e',plum:'#9b4dab',grey:'#8a94a6',grass:'#6cc24a',sky:'#6ab0f3',grey2:'#5b6474',brown:'#a8763f',teal:'#3fc4b0',silver:'#c3ccd8'}; return map[name]||'#8a94a6'; }
+
+function draw(){
+  ctx.fillStyle = '#f3e7c8';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // grid
+  if ({{ 'true' if content.show_grid else 'false' }}){
+    ctx.strokeStyle='#e0d6b8'; ctx.lineWidth=1;
+    for(let x=0;x<canvas.width;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+    for(let y=0;y<canvas.height;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  }
+  // boundary
+  if (ring && ring.length){
+    ctx.strokeStyle='#1b1b23'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(ring[0][0],ring[0][1]);
+    for(let i=1;i<ring.length;i++) ctx.lineTo(ring[i][0],ring[i][1]);
+    ctx.closePath(); ctx.stroke();
+  }
+  // layers
+  layers.forEach(l=>{
+    if(!layerVisible[l.slug]) return;
+    (l.features||[]).forEach(f=>{
+      const col = f.colour || '#8a5a34';
+      ctx.strokeStyle = col; ctx.fillStyle = col+'55'; ctx.lineWidth=2;
+      const c = JSON.parse(f.coords);
+      if (f.feature_type==='polygon'){
+        ctx.beginPath(); ctx.moveTo(c[0][0],c[0][1]);
+        for(let i=1;i<c.length;i++) ctx.lineTo(c[i][0],c[i][1]);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.moveTo(c[0][0],c[0][1]);
+        for(let i=1;i<c.length;i++) ctx.lineTo(c[i][0],c[i][1]);
+        ctx.stroke();
+      }
+    });
+  });
+  // places
+  places.forEach(p=>{
+    if (p.hidden) return;
+    const col = colorFor(p);
+    (p.shapes||[]).forEach(sh=>{
+      const c = JSON.parse(sh.coords);
+      ctx.fillStyle = (selected===p.id) ? col : col+'99';
+      ctx.strokeStyle = '#1b1b23'; ctx.lineWidth = (selected===p.id)?3:1.5;
+      ctx.beginPath(); ctx.moveTo(c[0][0],c[0][1]);
+      for(let i=1;i<c.length;i++) ctx.lineTo(c[i][0],c[i][1]);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // label
+      const cx = c.reduce((a,v)=>a+v[0],0)/c.length;
+      const cy = c.reduce((a,v)=>a+v[1],0)/c.length;
+      ctx.fillStyle='#1b1b23'; ctx.font='bold 11px monospace';
+      ctx.textAlign='center'; ctx.fillText(p.name, cx, cy);
+    });
+  });
+}
+
+function hitTest(x,y){
+  for(let i=places.length-1;i>=0;i--){
+    const p=places[i];
+    if(p.hidden) continue;
+    for(const sh of (p.shapes||[])){
+      const c=JSON.parse(sh.coords);
+      if(pointInPoly(x,y,c)) return p;
+    }
+  }
+  return null;
+}
+function pointInPoly(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1], xj=poly[j][0],yj=poly[j][1];
+    const intersect = ((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+
+canvas.addEventListener('click', e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=(e.clientX-r.left)*(canvas.width/r.width);
+  const y=(e.clientY-r.top)*(canvas.height/r.height);
+  const p=hitTest(x,y);
+  if(p){ selected=p.id; draw(); showDetail(p); highlightList(p.id); }
+  else { selected=null; draw(); document.getElementById('detail').innerHTML=''; }
+});
+canvas.addEventListener('mousemove', e=>{
+  const r=canvas.getBoundingClientRect();
+  const x=(e.clientX-r.left)*(canvas.width/r.width);
+  const y=(e.clientY-r.top)*(canvas.height/r.height);
+  canvas.style.cursor = hitTest(x,y)?'pointer':'crosshair';
+});
+
+function showDetail(p){
+  const d=document.getElementById('detail');
+  let html = `<h2>${p.name}</h2>`;
+  html += `<div class="meta">${p.category_name||p.kind} · ${p.status}</div>`;
+  if (p.short_desc) html += `<p>${p.short_desc}</p>`;
+  if (p.year_built) html += `<p><b>Built:</b> ${p.year_built}</p>`;
+  if (p.construction) html += `<p><b>Construction:</b> ${p.construction}</p>`;
+  if (p.dimensions) html += `<p><b>Dimensions:</b> ${p.dimensions}</p>`;
+  if (p.area_acres) html += `<p><b>Area:</b> ${p.area_acres} ac</p>`;
+  if (p.notes) html += `<p>${p.notes}</p>`;
+  if (p.specs && p.specs.length){
+    html += `<h3>Specs</h3><ul>`+p.specs.map(s=>`<li><b>${s.key}:</b> ${s.value}</li>`).join('')+`</ul>`;
+  }
+  if (p.photos && p.photos.length){
+    html += `<h3>Photos</h3>`+p.photos.map(ph=>`<img class="photo" src="${ph.path}" alt="${ph.caption||''}"><div class="meta">${ph.caption||''}</div>`).join('');
+  }
+  if (p.records && p.records.length){
+    html += `<h3>Records</h3>`+p.records.map(r=>`<div class="record"><b>${r.kind}</b> ${r.occurred_on||''} — ${r.title}<br>${r.body}</div>`).join('');
+  }
+  html += `<p><a href="/place/${p.slug}">Open full page →</a></p>`;
+  d.innerHTML = html;
+}
+
+function renderList(filter=''){
+  const el=document.getElementById('placelist');
+  const q=filter.toLowerCase();
+  const items=places.filter(p=>!p.hidden && (p.name.toLowerCase().includes(q)|| (p.short_desc||'').toLowerCase().includes(q)));
+  el.innerHTML = items.map(p=>`<div class="place-item" data-id="${p.id}">${p.name}<br><span class="meta">${p.category_name||p.kind}</span></div>`).join('');
+  el.querySelectorAll('.place-item').forEach(e=>{
+    e.addEventListener('click',()=>{ const p=places.find(x=>x.id==+e.dataset.id); selected=p.id; draw(); showDetail(p); highlightList(p.id); });
+  });
+}
+function highlightList(id){
+  document.querySelectorAll('.place-item').forEach(e=>e.classList.toggle('active', +e.dataset.id===id));
+}
+document.getElementById('search').addEventListener('input', e=>renderList(e.target.value));
+renderList();
+
+// layers toggle UI
+const layerBox=document.getElementById('layers');
+layers.forEach(l=>{
+  const lab=document.createElement('label');
+  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!l.visible;
+  cb.addEventListener('change',()=>{ layerVisible[l.slug]=cb.checked; draw(); });
+  lab.appendChild(cb); lab.append(' '+l.name); layerBox.appendChild(lab);
+});
+// legend
+const legend=document.getElementById('legend');
+const cats={};
+places.forEach(p=>{ if(!cats[p.category_name]) cats[p.category_name]=p.category_colour; });
+Object.keys(cats).forEach(k=>{
+  const s=document.createElement('span');
+  const sw=document.createElement('span'); sw.className='swatch'; sw.style.background=cssVar(cats[k]);
+  s.appendChild(sw); s.append(' '+k); legend.appendChild(s);
+});
+
+draw();
+</script>
+{% endblock %}

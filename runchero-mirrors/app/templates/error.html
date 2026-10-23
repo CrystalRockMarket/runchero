@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/x.png" alt=""> {{ code }} - Something went wrong</div>
+  <p>{{ message }}</p>
+  <p><a class="btn" href="/"><img src="/static/img/icons/home.png" alt="" width="16" height="16"> Back to dashboard</a></p>
+</section>
+{% endblock %}

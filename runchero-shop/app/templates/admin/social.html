@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Store social links{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>Store social links</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/events">Events</a>
+  <a href="/admin/social" aria-current="page">Social links</a>
+  {% if admin_name %}<span class="muted">{{ admin_name }}</span>{% endif %}
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<form method="get" action="/admin/social" style="margin:12px 0">
+  <label for="store">Store</label>
+  <select id="store" name="store" onchange="this.form.submit()">
+    {% for st in stores %}
+    <option value="{{ st.slug }}" {% if st.slug == store_slug %}selected{% endif %}>{{ st.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<h2>Current links</h2>
+{% for link in links %}
+<form method="post" action="/admin/social?store={{ store_slug }}" class="panel" style="margin-bottom:10px">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <input type="hidden" name="store_slug" value="{{ store_slug }}">
+  <input type="hidden" name="link_id" value="{{ link.id }}">
+  <input type="hidden" name="action" value="update">
+  <div class="field-row two">
+    <div class="field"><label for="label-{{ link.id }}">Label</label>
+      <input id="label-{{ link.id }}" name="label" value="{{ link.label }}" required></div>
+    <div class="field"><label for="url-{{ link.id }}">URL</label>
+      <input id="url-{{ link.id }}" type="url" name="url" value="{{ link.url }}" required></div>
+  </div>
+  <div class="field"><label for="blurb-{{ link.id }}">Description</label>
+    <input id="blurb-{{ link.id }}" name="blurb" value="{{ link.blurb }}"></div>
+  <label class="opt"><input type="checkbox" name="active" {% if link.active %}checked{% endif %}> Active</label>
+  <button class="btn small grass" type="submit">Save</button>
+  <button class="btn small tomato" type="submit" name="action" value="delete">Remove</button>
+</form>
+{% endfor %}
+
+<section class="panel">
+  <h2 style="margin-top:0">Add a link for {{ store.name }}</h2>
+  <form method="post" action="/admin/social">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="store_slug" value="{{ store_slug }}">
+    <div class="field-row two">
+      <div class="field"><label for="new-label">Label</label>
+        <input id="new-label" name="label" required></div>
+      <div class="field"><label for="new-url">URL</label>
+        <input id="new-url" name="url" type="url" required placeholder="https://..."></div>
+    </div>
+    <div class="field"><label for="new-blurb">Description</label>
+      <input id="new-blurb" name="blurb"></div>
+    <button class="btn grass" type="submit">Add link</button>
+  </form>
+</section>
+{% endblock %}

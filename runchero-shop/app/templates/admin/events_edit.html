@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Edit event{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>Edit event</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/events" aria-current="page">Events</a>
+  {% if admin_name %}<span class="muted">{{ admin_name }}</span>{% endif %}
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+{% if flashes %}
+{% include "_flashes.html" %}
+{% endif %}
+
+<form method="post" action="/admin/events/{{ event.id }}/edit" class="panel">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <h2 style="margin-top:0">{{ event.title }}</h2>
+  <div class="field-row two">
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" required value="{{ event.title }}"></div>
+    <div class="field"><label for="location">Location</label>
+      <input id="location" name="location" required value="{{ event.location }}"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="event_date">Date</label>
+      <input id="event_date" name="event_date" type="date" required value="{{ event.event_date }}"></div>
+    <div class="field"><label for="start_time">Starts</label>
+      <input id="start_time" name="start_time" type="time" required value="{{ event.start_time }}"></div>
+    <div class="field"><label for="end_time">Ends</label>
+      <input id="end_time" name="end_time" type="time" required value="{{ event.end_time }}"></div>
+  </div>
+  <div class="field"><label for="description">Description</label>
+    <textarea id="description" name="description" rows="3">{{ event.description }}</textarea></div>
+  <div class="field-row two">
+    <div class="field"><label for="capacity">Capacity</label>
+      <input id="capacity" name="capacity" type="number" min="1" value="{{ event.capacity }}"></div>
+    <div class="field"><label for="sort_order">Sort order</label>
+      <input id="sort_order" name="sort_order" type="number" value="{{ event.sort_order }}"></div>
+  </div>
+  <label class="opt"><input type="checkbox" name="active" {% if event.active %}checked{% endif %}> Active</label>
+  <button class="btn grass" type="submit">Save changes</button>
+  <a class="btn ghost" href="/admin/events">Back to events</a>
+</form>
+{% endblock %}

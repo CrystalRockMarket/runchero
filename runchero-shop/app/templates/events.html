@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Community events{% endblock %}
+{% block description %}Canning and fermenting workshops, drop days and other
+Runchero co-op gatherings at The Crea in Shelbyville, Kentucky. Sign up and
+join us.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Community events</h1>
+  <p>Workshops, drop days and gatherings at
+    {{ content.pickup_name }}, {{ content.pickup_address }}. Sign up at the
+    counter or email {{ content.contact_email }}.</p>
+</div>
+
+{% if not events %}
+<div class="panel paper">
+  <h2 style="color:var(--ink)">Nothing on the calendar yet.</h2>
+  <p>New workshops and drop days are posted here as they are scheduled.</p>
+</div>
+{% else %}
+<div class="grid2">
+  {% for event in events %}
+  <article class="card panel" style="display:flex;gap:14px;align-items:flex-start">
+    <div style="flex:none;width:96px;text-align:center;padding:10px 0">
+        <span style="font-family:var(--font-pixel);font-size:20px;
+        color:var(--sun);display:block">{{ event.event_date|shortdate }}</span>
+      <span style="font-size:11px;color:var(--silver);display:block;
+        margin-top:4px">{{ event.start_time }}&ndash;{{ event.end_time }}</span>
+    </div>
+    <div>
+      <h3 style="margin-top:0">{{ event.title }}</h3>
+      <p class="blurb">{{ event.description }}</p>
+      <p style="font-size:13px;color:var(--silver)">
+        <strong>Where:</strong> {{ event.location }}&middot;
+        <strong>Room for:</strong> {{ event.capacity }} folks
+      </p>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

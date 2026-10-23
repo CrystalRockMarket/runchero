@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ package.name }}{% endblock %}
+{% block description %}{{ package.name }} from Runchero Beef: {{ package.blurb|truncate(110) }} Cut to order and priced by the pound.{% endblock %}
+{% block body %}
+<p class="pill-row" style="margin-top:8px">
+  <a class="pill" href="/packages">&larr; All packages</a>
+</p>
+<div class="hero">
+  <div>
+    <h1>{{ package.name }}</h1>
+    <p class="lede">{{ package.blurb }}</p>
+    {% if package.badge %}<span class="badge tomato">{{ package.badge }}</span>{% endif %}
+  </div>
+  <div class="hero-art">
+    <img src="/static/img/icons/{{ package.icon }}@4x.png" alt="" width="72" height="72">
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">What is inside</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Cut</th><th class="num">Pounds</th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td><a href="/cut/{{ item.cut_slug }}">{{ item.cut_name }}</a></td>
+            <td class="num">{{ item.qty }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td>Total take-home</td><td class="num">{{ package.total_lbs|round(1) }} lb</td></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">The price</h2>
+    <div class="totals">
+      <div class="row"><span>Bought separately</span>
+        <span class="num">{{ package.compare_at|money }}</span></div>
+      <div class="row saving"><span>Box price</span>
+        <span class="num">{{ package.price|money }}</span></div>
+      <div class="row saving"><span>You save</span>
+        <span class="num">{{ (package.compare_at - package.price)|money }}</span></div>
+    </div>
+    <form method="post" action="/cart/add" style="margin-top:14px">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="type" value="package">
+      <input type="hidden" name="ref" value="{{ package.id }}">
+      <input type="hidden" name="qty" value="1">
+      <input type="hidden" name="name" value="{{ package.name }}">
+      <button class="btn grass block" type="submit">Add this box</button>
+    </form>
+    <p class="hint">Wrapping and portioning are chosen at checkout.</p>
+  </div>
+</div>
+{% endblock %}

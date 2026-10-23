@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Pricing console{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing" aria-current="page">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<div class="section-head" style="margin-top:4px">
+  <h1>Pricing console</h1>
+  <p>Change the rule, not ninety-two prices. Every action previews before it
+    applies, and every change is reversible.</p>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-head">
+      <h2 style="margin:0">Act on a scope</h2>
+    </div>
+    <form method="post" action="/admin/pricing/preview">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <div class="field-row two">
+        <div class="field">
+          <label for="scope">Scope</label>
+          <select id="scope" name="scope">
+            <option value="all" {% if scope == 'all' %}selected{% endif %}>All cuts</option>
+            <option value="primal" {% if scope == 'primal' %}selected{% endif %}>One primal</option>
+            <option value="section" {% if scope == 'section' %}selected{% endif %}>One section</option>
+            <option value="tag" {% if scope == 'tag' %}selected{% endif %}>One tag</option>
+            <option value="band" {% if scope == 'band' %}selected{% endif %}>Price band</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="value">Value</label>
+          <input type="text" id="value" name="value" value="{{ value }}"
+                 placeholder="chuck / steaks / roast / 5-10">
+        </div>
+      </div>
+      <div class="field">
+        <label for="kind">Action</label>
+        <select id="kind" name="kind">
+          <option value="rake">Rake to a target discount</option>
+          <option value="percent">Apply a percentage off</option>
+          <option value="fixed">Set a fixed price</option>
+          <option value="markdown">Flat markdown</option>
+        </select>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label for="discount">Discount %</label>
+          <input type="number" id="discount" name="discount" value="20" step="0.5" min="0" max="90">
+        </div>
+        <div class="field">
+          <label for="percent">Off %</label>
+          <input type="number" id="percent" name="percent" value="0" step="0.5">
+        </div>
+        <div class="field">
+          <label for="amount">Markdown $</label>
+          <input type="number" id="amount" name="amount" value="0" step="0.25">
+        </div>
+      </div>
+      <div class="field">
+        <label for="q">Filter by name or tag (optional)</label>
+        <input type="search" id="q" name="q" value="{{ search }}">
+      </div>
+      <button class="btn block" type="submit">Preview what this does</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 style="margin:0">Rules in force</h2>
+    </div>
+    {% if rules %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Scope</th><th>Value</th><th class="num">Discount</th></tr></thead>
+        <tbody>
+          {% for rule in rules %}
+          <tr>
+            <td>{{ rule.scope_type }}</td>
+            <td>{{ rule.scope_value or '-' }}</td>
+            <td class="num">{{ rule.discount_pct }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint">No rules. Seeding adds the global 20% rule.</p>
+    {% endif %}
+    <p class="hint">Rules apply most-specific-first: tag beats section beats
+      primal beats band beats global.</p>
+  </div>
+</div>
+
+{% if preview %}
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">Preview: {{ preview.total }} cuts in scope,
+      {{ preview.changed }} change</h2>
+    {% if preview.revenue_delta is defined %}
+    <span class="badge">line-item delta {{ preview.revenue_delta|money }}</span>
+    {% endif %}
+  </div>
+  {% if preview.error %}
+  <div class="alert error" role="alert">{{ preview.error }}</div>
+  {% endif %}
+  {% if preview.rows %}
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Cut</th><th class="num">Shelf</th>
+        <th class="num">Now</th><th class="num">Would be</th>
+        <th class="num">Delta</th></tr></thead>
+      <tbody>
+        {% for row in preview.rows %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td class="num">${{ '%.2f'|format(row.local) }}</td>
+          <td class="num">${{ '%.2f'|format(row.old) }}</td>
+          <td class="num">${{ '%.2f'|format(row.new) }}</td>
+          <td class="num" style="color:{% if row.delta > 0 %}var(--tomato){% else %}var(--grass3){% endif %}">
+            {{ '%+.2f'|format(row.delta) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if preview.changed and not preview.error %}
+  <form method="post" action="/admin/pricing/apply" style="margin-top:12px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="scope" value="{{ preview.action.scope }}">
+    <input type="hidden" name="value" value="{{ preview.action.value }}">
+    <input type="hidden" name="kind" value="{{ preview.action.kind }}">
+    <input type="hidden" name="discount" value="{{ preview.action.discount }}">
+    <input type="hidden" name="percent" value="{{ preview.action.percent }}">
+    <input type="hidden" name="amount" value="{{ preview.action.amount }}">
+    <input type="hidden" name="q" value="{{ preview.action.search or '' }}">
+    <label class="check" style="margin-bottom:10px">
+      <input type="checkbox" name="confirm" value="yes" required>
+      <span>I looked at the preview. Apply it.</span>
+    </label>
+    <button class="btn tomato" type="submit">
+      Apply to {{ preview.changed }} cuts</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">The grid: {{ cuts|length }} cuts</h2>
+    <form method="get" action="/admin/pricing" class="inline-form">
+      <input type="hidden" name="scope" value="{{ scope }}">
+      <input type="search" name="q" value="{{ search }}" placeholder="Filter"
+             aria-label="Filter cuts">
+      <button class="btn small" type="submit">Filter</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead><tr><th>Cut</th><th>Primal</th><th class="num">Shelf</th>
+        <th class="num">Ours</th><th class="num">Off</th>
+        <th class="num">Market now</th><th>Claim</th><th class="num">Stock</th></tr></thead>
+      <tbody>
+        {% for cut in cuts %}
+        {% set cmp = comparisons[cut.id] %}
+        <tr>
+          <td>{{ cut.name }}</td>
+          <td>{{ cut.primal_name }}</td>
+          <td class="num">${{ '%.2f'|format(cut.local_price) }}</td>
+          <td class="num">${{ '%.2f'|format(cut.runchero_price) }}</td>
+          <td class="num">{{ ((1 - cut.runchero_price / cut.local_price) * 100)|round(1) }}%</td>
+          <td class="num">{% if cmp and cmp.available %}
+            ${{ '%.2f'|format(cmp.value) }}{% else %}-{% endif %}</td>
+          <td>
+            {% if cmp and cmp.available %}
+              {% if cmp.under %}<span class="badge grass">under</span>
+              {% else %}<span class="badge tomato">over</span>{% endif %}
+            {% else %}<span class="badge ghost">no data</span>{% endif %}
+          </td>
+          <td class="num">{{ cut.stock_lbs|round(0)|int }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2 style="margin:0">Recent changes</h2></div>
+  {% for audit in audits %}
+  <div class="logentry">
+    <strong>{{ audit.action }}</strong> on {{ audit.scope }}
+    by {{ audit.actor }} at {{ audit.created_at|prettydatetime }}
+    {% if not audit.reverted_at %}
+    <form method="post" action="/admin/pricing/revert" class="inline-form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="audit" value="{{ audit.id }}">
+      <button class="btn small tomato" type="submit">Revert</button>
+    </form>
+    {% else %}
+    <span class="badge ghost">reverted</span>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="hint">No pricing changes yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

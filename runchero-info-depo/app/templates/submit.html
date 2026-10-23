@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Submit a book - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/download.png') }}" alt="">
+    SUBMIT A BOOK TO THE ARCHIVE
+  </h1>
+  <div class="callout safety">
+    <strong>Submissions are switched off in this build.</strong>
+    This build is read-only: nothing can be written to the archive, and no
+    files can be uploaded. The form below is the real layout - it is only the
+    wiring that is missing. Turn on the admin phase and this page starts
+    accepting books.
+  </div>
+  <p class="small muted">
+    When submissions open, a dropped file is copied into
+    <code>{{ '/home/barn/archive' }}</code>, fingerprinted with a SHA-256 checksum,
+    given a generated pixel cover, and queued for review. Nothing is published
+    without a human saying yes.
+  </p>
+</div>
+
+<div class="grid-2 mb">
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+      SUBMISSION FORM
+    </div>
+    <form action="/library/submit" method="post" onsubmit="return false">
+      <div class="field">
+        <label for="title">BOOK TITLE</label>
+        <input type="text" id="title" name="title" disabled placeholder="e.g. The Sheep Book">
+      </div>
+      <div class="field">
+        <label for="author">AUTHOR / EDITOR</label>
+        <input type="text" id="author" name="author" disabled placeholder="e.g. A. Fletcher">
+      </div>
+      <div class="field">
+        <label for="source">SOURCE OR LINK</label>
+        <input type="url" id="source" name="source" disabled placeholder="https://...">
+        <div class="hint">Public domain text, a scan you own, or a link to where it lives.</div>
+      </div>
+      <div class="field">
+        <label for="file">EBOOK FILE</label>
+        <input type="file" id="file" name="file" disabled accept=".epub,.pdf,.txt,.html,.md">
+        <div class="hint">EPUB, PDF, plain text or HTML. Maximum 512 MB.</div>
+      </div>
+      <div class="field">
+        <label for="notes">NOTES FOR THE REVIEWER</label>
+        <textarea id="notes" name="notes" disabled placeholder="What is this book, where did it come from, is it public domain?"></textarea>
+      </div>
+      <button class="btn disabled" type="submit" disabled>SUBMIT (DISABLED)</button>
+      <p class="hint mt">Read-only build. The button lights up in the admin phase.</p>
+    </form>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-title">
+        <img src="{{ static_url('img/icons/check.png') }}" alt="">
+        WHAT WE ACCEPT
+      </div>
+      <ul class="small">
+        <li>Public domain farm books and manuals, in any language.</li>
+        <li>Reference works for livestock, crops, machinery and soil.</li>
+        <li>Local handbooks and almanacs written for this farm.</li>
+        <li>Anything with clear rights, or openly licensed.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        <img src="{{ static_url('img/icons/x.png') }}" alt="">
+        WHAT WE DO NOT ACCEPT
+      </div>
+      <ul class="small">
+        <li>Copyrighted works with no licence.</li>
+        <li>Scanned magazines or newspapers in bulk.</li>
+        <li>Anything that is really an advert in a coat.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        <img src="{{ static_url('img/icons/chat.png') }}" alt="">
+        QUEUE
+        <span class="count">{{ pending|length }} waiting</span>
+      </div>
+      <ul class="side-list" style="padding:0">
+        {% for row in pending %}
+        <li>
+          <a href="#" onclick="return false">
+            <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+            {{ row.title or row.file_name or 'Untitled' }}
+            <span class="n">{{ row.status }}</span>
+          </a>
+        </li>
+        {% else %}
+        <li><div class="empty" style="padding:14px">Nothing waiting. The archive is tidy.</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Equipment - {{ site_name }}{% endblock %}
+
+{% block content %}
+{% if view == "index" %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <span class="current">Equipment</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    EQUIPMENT LIBRARY
+    <span class="count">{{ vehicles|length }} records</span>
+  </h1>
+  <p class="page-intro muted">
+    Browse by equipment type, manufacturer and model. Each model record brings
+    specifications, service manuals and related community notes together.
+  </p>
+</div>
+
+<section class="mb" aria-labelledby="equipment-types-heading">
+  <div class="section-heading">
+    <h2 id="equipment-types-heading">Browse by equipment type</h2>
+    <span class="small muted">Choose a type, then a manufacturer</span>
+  </div>
+  <div class="equipment-types">
+    {% for kind, makes in grouped.items() %}
+    <article class="card equipment-type-card">
+      <h3 class="panel-title">
+        <img src="{{ static_url('img/icons/' ~ equipment_kind_icons.get(kind, 'tractor') ~ '.png') }}" alt="">
+        {{ equipment_kind_labels.get(kind, kind|replace('-', ' ')|title)|upper }}
+        <span class="count">{{ makes.values()|map('length')|sum }} records</span>
+      </h3>
+      <p>{{ equipment_kind_descriptions.get(kind, 'Browse records by manufacturer and model.') }}</p>
+      <div class="small muted">{{ makes.keys()|length }} manufacturers</div>
+      <a class="btn ghost type-link" href="/vehicles?type={{ kind }}">BROWSE {{ equipment_kind_labels.get(kind, kind|replace('-', ' ')|upper) }}</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% if ford %}
+<section class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    FORD TRACTORS
+    <span class="count">{{ ford|length }} models</span>
+  </h2>
+  <p class="small muted">Model directory with linked factory manuals and related notes.</p>
+  <div class="chips">
+    {% for m in ford[:8] %}
+    <a class="chip blue" href="/vehicles/{{ m.slug }}">{{ m.model }}</a>
+    {% endfor %}
+  </div>
+  <div class="row mt">
+    <a class="btn" href="/vehicles?type=tractor&make=Ford">BROWSE ALL FORD MODELS</a>
+    <a class="btn ghost" href="/hub/ford-tractors">FORD TRACTOR GUIDE</a>
+  </div>
+</section>
+{% endif %}
+
+{% elif view == "type" %}
+{% set type_label = equipment_kind_labels.get(vehicle_type, vehicle_type|replace('-', ' ')|title) %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/vehicles">Equipment</a><span class="separator">/</span>
+  <span class="current">{{ type_label|title }}</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    {{ type_label|upper }} BY MANUFACTURER
+    <span class="count">{{ available_brands|length }} with records</span>
+  </h1>
+  <p class="page-intro muted">
+    Manufacturers with equipment records appear first. Open a manufacturer to
+    compare models, specifications, manuals and community notes.
+  </p>
+  <div class="chips mt"><a class="chip" href="/vehicles">All equipment</a></div>
+</div>
+
+{% if available_brands %}
+<div class="equipment-brand-grid">
+  {% for brand in available_brands %}
+  <article class="card equipment-brand-card {{ 'featured' if brand.name == 'Ford' else '' }}">
+    <h2 class="panel-title">
+      <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+      {{ brand.name|upper }}
+      <span class="count">{{ brand.count }} models</span>
+    </h2>
+    {% if brand.models and brand.name == 'Ford' %}
+    <div class="brand-models">
+      {% for m in brand.models[:8] %}<a class="chip blue" href="/vehicles/{{ m.slug }}">{{ m.model }}</a>{% endfor %}
+    </div>
+    {% endif %}
+    <a class="btn ghost type-link" href="/vehicles?type={{ vehicle_type }}&make={{ brand.name|urlencode }}">BROWSE {{ brand.name|upper }} MODELS</a>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">No manufacturers have records for this equipment type yet.</div>
+{% endif %}
+
+{% if planned_brands %}
+<details class="planned-brands">
+  <summary>Other planned manufacturers ({{ planned_brands|length }})</summary>
+  <div class="equipment-brand-grid mt">
+    {% for brand in planned_brands %}
+    <article class="card equipment-brand-card">
+      <h2 class="card-title">{{ brand.name }}</h2>
+      <p class="small muted">No model records yet.</p>
+    </article>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
+{% elif view == "brand" %}
+{% set type_label = equipment_kind_labels.get(vehicle_type, vehicle_type|replace('-', ' ')|title) %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/vehicles">Equipment</a><span class="separator">/</span>
+  <a href="/vehicles?type={{ vehicle_type }}">{{ type_label|title }}</a><span class="separator">/</span>
+  <span class="current">{{ make }}</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    {{ make|upper }} {{ type_label|upper }}
+    <span class="count">{{ models|length }} models</span>
+  </h1>
+  <p class="page-intro muted">
+    Compare model years and specifications, then open a model record for its
+    manuals and related community notes.
+  </p>
+  <div class="chips mt">
+    <a class="chip" href="/vehicles?type={{ vehicle_type }}">All {{ type_label }} manufacturers</a>
+    <a class="chip" href="/vehicles">All equipment</a>
+  </div>
+</div>
+
+{% if models %}
+<div class="equipment-model-grid">
+  {% for item in models %}
+  <article class="card equipment-model-card">
+    <div class="chead">
+      <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+      <span class="chip blue">{{ item.kind|replace('-', ' ') }}</span>
+    </div>
+    <h2 class="card-title"><a href="/vehicles/{{ item.slug }}">{{ item.make }} {{ item.model }}</a></h2>
+    <div class="meta">
+      {% if item.year_from %}<span>{{ item.year_from }}{% if item.year_to %}-{{ item.year_to }}{% endif %}</span>{% endif %}
+      {% if item.engine %}<span>{{ item.engine }}</span>{% endif %}
+      {% if item.power %}<span>{{ item.power }}</span>{% endif %}
+    </div>
+    {% if item.notes %}<p class="small muted">{{ item.notes|truncate(140) }}</p>{% endif %}
+    <a class="btn ghost model-link" href="/vehicles/{{ item.slug }}">VIEW MODEL</a>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">No models filed for {{ make }} yet.</div>
+{% endif %}
+{% endif %}
+{% endblock %}

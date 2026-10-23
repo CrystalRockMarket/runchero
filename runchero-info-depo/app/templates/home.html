@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}{{ site_name }} - {{ site_tagline }}{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <img src="{{ static_url('img/hero.png') }}" alt="Pixel farm scene">
+  <span class="tag">NO AI-WRITTEN ARTICLES &middot; EVERY ITEM LINKS TO ITS SOURCE</span>
+</div>
+
+<div class="home-intro mb">
+  <h1>A sourced field library for the small farm</h1>
+  <p>
+    The depot is an <b>AI-organised index</b>, not a feed of generated advice.
+    It points to real public-domain books, government reports and factory manuals.
+    Open any record to read the full text here or follow the link to the original.
+  </p>
+</div>
+
+<div class="tiles mb">
+  <div class="tile"><img src="{{ static_url('img/icons/seedling.png') }}" alt="">
+    <span><span class="num">{{ stats.collections }}</span><br><span class="lbl">Organised depots</span></span>
+  </div>
+  <div class="tile green"><img src="{{ static_url('img/icons/archive.png') }}" alt="">
+    <span><span class="num">{{ stats.books }}</span><br><span class="lbl">Sourced books</span></span>
+  </div>
+  <div class="tile blue"><img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    <span><span class="num">{{ stats.vehicles }}</span><br><span class="lbl">Machines indexed</span></span>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/magnifier.png') }}" alt="">
+    SEARCH THE DEPOTS AND THE ARCHIVE
+  </div>
+  <p class="small muted">Search crop and animal depots, public-domain books, factory manuals and formula indexes.</p>
+  <form action="/search" method="get" class="home-search" style="margin-top:10px">
+    <input type="text" name="q" aria-label="Search all records" placeholder="e.g. tomato blight, cattle disease, canning, milk, fencing">
+    <button class="btn sun" type="submit">SEARCH ALL RECORDS</button>
+  </form>
+</div>
+
+{% if featured %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/star.png') }}" alt="">
+    DEEP DIVES
+    <span class="count">featured, best-stocked shelves</span>
+  </div>
+  <div class="cards">
+    {% for item in featured %}
+    <div class="card depot-card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+        <span class="chip {{ 'sun' if item.kind == 'crop' else 'blue' }}">{{ item.kind|upper }}</span>
+      </div>
+      <div class="card-title"><a href="/{{ 'grow' if item.kind == 'crop' else 'animals' }}/{{ item.slug }}">{{ item.name }}</a></div>
+      {% if item.scientific %}<div class="small muted"><i>{{ item.scientific }}</i></div>{% endif %}
+      <p>{{ item.summary }}</p>
+      <div class="meta">
+        <span>{{ item.source_count }} sources</span>
+        <span>{{ item.group_name }}</span>
+      </div>
+      <a class="btn ghost mt" href="/{{ 'grow' if item.kind == 'crop' else 'animals' }}/{{ item.slug }}">OPEN DEPOT</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2 mb">
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/seedling.png') }}" alt="">
+      GROW
+      <span class="count">{{ stats.crops }} depots</span>
+    </div>
+    <p class="small muted">Vegetables, grains, fruit, herbs and forage, grouped by type. Each crop opens a depot of growing, cooking and preserving sources.</p>
+    <div class="chips mb">
+      {% for group in grow_groups %}
+      <a class="chip green" href="/grow">{{ group.name }} ({{ group['items'] }})</a>
+      {% endfor %}
+    </div>
+    <a class="btn" href="/grow">BROWSE EVERYTHING GROWABLE</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/cow.png') }}" alt="">
+      ANIMALS
+      <span class="count">{{ stats.animals }} depots</span>
+    </div>
+    <p class="small muted">Ungulates, poultry, waterfowl, rabbits, bees and working animals, grouped by type. Each depot gathers husbandry, health and kitchen sources.</p>
+    <div class="chips mb">
+      {% for group in animal_groups %}
+      <a class="chip blue" href="/animals">{{ group.name }} ({{ group['items'] }})</a>
+      {% endfor %}
+    </div>
+    <a class="btn blue" href="/animals">BROWSE ALL ANIMALS</a>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+    THE REST OF THE DEPOT
+  </div>
+  <div class="grid-3">
+    {% for group in topic_groups %}
+    <div class="card topic-card">
+      <div class="card-title">{{ group.name }}</div>
+      <div class="chips">
+        {% for sub in group.subgroups[:6] %}
+        <a class="chip green" href="/topic/{{ sub['items'][0].slug }}">{{ sub.name }} ({{ sub['items']|length }})</a>
+        {% endfor %}
+      </div>
+      <a class="btn ghost mt" href="/collections">OPEN TOPICS</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+      LATEST IN THE ARCHIVE
+    </div>
+    <div class="stack" style="gap:12px">
+      {% for book in latest_books %}
+      <div class="card bookcard" style="box-shadow:none;border-width:2px">
+        <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+        <div class="info">
+          <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+          <div class="small muted">{{ book.author }}{% if book.year %} &middot; {{ book.year }}{% endif %}</div>
+          <div class="chips">
+            <span class="chip sun">{{ book.format }}</span>
+            <span class="chip">{{ book.bytes|filesize }}</span>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty">The archive is empty. Run the seed script to fill it.</div>
+      {% endfor %}
+    </div>
+    <a class="btn ghost mt" href="/library/archive">BROWSE ARCHIVE</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/book.png') }}" alt="">
+      RECENTLY INDEXED
+    </div>
+    <div class="cards">
+      {% for book in recent_crop[:2] + recent_animal[:2] %}
+      <div class="card">
+        <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+        <div class="small muted">{{ book.author }} &middot; {{ book.category_name }}</div>
+        <div class="chips"><span class="chip sun">{{ book.format }}</span><span class="chip">{{ book.pages or '-' }} pages</span></div>
+      </div>
+      {% else %}
+      <div class="empty">No depots indexed yet.</div>
+      {% endfor %}
+    </div>
+    <div class="callout tip mt">
+      <b>How this works.</b> The depot writes no articles. It groups public-domain
+      sources, keeps their rights and links, and lets you read the original.
+    </div>
+  </div>
+</div>
+{% endblock %}

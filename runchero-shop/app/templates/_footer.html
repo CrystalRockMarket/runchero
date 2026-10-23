@@ -1,0 +1,60 @@
+<footer class="footer">
+  <div class="cols">
+    <div>
+      <h3>{{ site_name }}</h3>
+      <p>{{ site_tagline }} Prepared by independent co-op producers in
+        {{ site_locale }}. Order for pickup at {{ content.pickup_name }}.</p>
+      <p>Pickup: {{ content.pickup_address }}<br>
+        Hours: {{ content.pickup_hours }}</p>
+      <p>{% if content.facebook_url %}<a href="{{ content.facebook_url }}" rel="noopener">Follow us on Facebook</a>{% endif %}
+        &middot; <a href="/terms">Terms of Service</a>
+        &middot; <a href="/policy">Shop Policy</a></p>
+    </div>
+    <div>
+      <h3>Shop</h3>
+      <ul>
+        <li><a href="/shop">All cuts</a></li>
+        <li><a href="/packages">Packages &amp; deals</a></li>
+        <li><a href="/shares">Cow shares</a></li>
+        <li><a href="/market-prices">Market prices</a></li>
+        <li><a href="/how-it-works">How it works</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Account</h3>
+      <ul>
+        {% if customer %}
+        <li><a href="/account">Your account</a></li>
+        <li><a href="/account/orders">Order history</a></li>
+        <li><a href="/account/preferences">Preferences</a></li>
+        {% else %}
+        <li><a href="/account/login">Sign in</a></li>
+        <li><a href="/account/signup">Create an account</a></li>
+        {% endif %}
+        <li><a href="/cart">Your cart</a></li>
+        <li><a href="/orders">Look up an order</a></li>
+        <li><a href="/manage">Manage a subscription</a></li>
+        <li><a href="/contact">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  {% if social_links %}
+  <h3 style="margin-top:18px">Also from the farm</h3>
+  <ul class="pill-row" style="list-style:none;padding:0">
+    {% for link in social_links %}
+    <li><a class="pill" href="{{ link.url }}" rel="noopener">{{ link.label }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p style="margin-top:16px;font-size:13px">
+    {{ site_badge }} build {{ site_version }}. Prices compare against published
+    USDA market averages; every figure carries its source and date.
+    <a href="/data-sources">Where our numbers come from</a>.
+  </p>
+  <p class="footer-admin">
+    <a class="btn small ghost" href="/admin/login">Admin login</a>
+  </p>
+  <p style="margin-top:10px;font-size:13px">
+    Join us at the counter: <a href="/events">community events &amp; workshops</a>.
+  </p>
+</footer>

@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+{% block title %}Conversions - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/tool.png') }}" alt="">
+    CONVERSIONS
+    <span class="count">offline reference</span>
+  </h1>
+  <p class="small muted">
+    The numbers you reach for when there is no internet. Cooking, weights,
+    lengths, areas, volumes, temperatures, seed rates, fuel, livestock, building,
+    preserving and the quick sums behind them. Everything is on this page, so it
+    works offline; open only the drawer you need.
+  </p>
+  <div class="chips mt">
+    <a class="chip" href="#cooking">COOKING</a>
+    <a class="chip" href="#temperature">TEMPERATURE</a>
+    <a class="chip" href="#length">LENGTH &amp; AREA</a>
+    <a class="chip" href="#volume">VOLUME</a>
+    <a class="chip" href="#weight">WEIGHT</a>
+    <a class="chip" href="#farm">FARM INPUTS</a>
+    <a class="chip" href="#livestock">LIVESTOCK</a>
+    <a class="chip" href="#weather">WEATHER</a>
+    <a class="chip" href="#workshop">WORKSHOP</a>
+    <a class="chip" href="#garden">GARDEN</a>
+    <a class="chip" href="#preserving">PRESERVING</a>
+    <a class="chip" href="#energy">ENERGY</a>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-title"><img src="{{ static_url('img/icons/list.png') }}" alt=""> HOW TO USE THIS PAGE</div>
+  <div class="grid-2">
+    <div>
+      <p class="small"><b>Open one drawer at a time.</b> Each section is collapsed by default, which keeps the page fast on an old phone or a small tablet. Tap the heading to open it.</p>
+      <p class="small"><b>Use the quick jumps.</b> The chips above go straight to a section. The browser back button returns you here.</p>
+    </div>
+    <div>
+      <p class="small"><b>Check the unit, not just the number.</b> US and UK gallons, pints and cups are different. Recipes usually say which they mean; when they do not, assume the local measure.</p>
+      <p class="small"><b>Write down the local ones.</b> A feed bag weight, a bucket volume or a trailer load is more useful than a generic table. Add it to the margin.</p>
+    </div>
+  </div>
+</div>
+
+<details class="acc" id="cooking">
+  <summary><img src="{{ static_url('img/icons/jar.png') }}" alt=""> COOKING MEASURES</summary>
+  <div class="acc-body">
+    <h4>Volume</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Measure</th><th>Metric</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>1 teaspoon (tsp)</td><td>5 ml</td><td>Level, not heaped, unless stated.</td></tr>
+          <tr><td>1 tablespoon (tbsp)</td><td>15 ml</td><td>3 teaspoons.</td></tr>
+          <tr><td>1 dessertspoon</td><td>10 ml</td><td>2 teaspoons.</td></tr>
+          <tr><td>1 cup (US)</td><td>240 ml</td><td>US legal cup; customary is 236.6 ml.</td></tr>
+          <tr><td>1 cup (UK)</td><td>250 ml</td><td>Often used in older British recipes.</td></tr>
+          <tr><td>1 fluid ounce (US)</td><td>29.57 ml</td><td>Not the same as an ounce of weight.</td></tr>
+          <tr><td>1 fluid ounce (UK)</td><td>28.41 ml</td><td>Imperial fluid ounce.</td></tr>
+          <tr><td>1 pint (US)</td><td>473 ml</td><td>16 US fluid ounces.</td></tr>
+          <tr><td>1 pint (UK)</td><td>568 ml</td><td>20 UK fluid ounces.</td></tr>
+          <tr><td>1 quart (US)</td><td>946 ml</td><td>2 US pints.</td></tr>
+          <tr><td>1 quart (UK)</td><td>1,137 ml</td><td>2 UK pints.</td></tr>
+          <tr><td>1 gallon (US)</td><td>3.785 L</td><td>4 US quarts.</td></tr>
+          <tr><td>1 gallon (UK)</td><td>4.546 L</td><td>4 UK quarts; the old milk churn measure.</td></tr>
+          <tr><td>1 litre</td><td>1,000 ml</td><td>1 cubic decimetre.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Cooking weights</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Ingredient</th><th>1 cup</th><th>1 tablespoon</th></tr></thead>
+        <tbody>
+          <tr><td>Water / milk</td><td>240 g</td><td>15 g</td></tr>
+          <tr><td>Plain flour</td><td>120-125 g</td><td>8-9 g</td></tr>
+          <tr><td>Bread flour</td><td>130-135 g</td><td>9 g</td></tr>
+          <tr><td>Wholemeal flour</td><td>120-130 g</td><td>8-9 g</td></tr>
+          <tr><td>White sugar</td><td>200 g</td><td>12.5 g</td></tr>
+          <tr><td>Brown sugar (packed)</td><td>220 g</td><td>13-14 g</td></tr>
+          <tr><td>Icing sugar</td><td>120 g</td><td>7-8 g</td></tr>
+          <tr><td>Rolled oats</td><td>90 g</td><td>5-6 g</td></tr>
+          <tr><td>Rice (uncooked)</td><td>185 g</td><td>11-12 g</td></tr>
+          <tr><td>Butter</td><td>227 g</td><td>14 g</td></tr>
+          <tr><td>Oil</td><td>218 g</td><td>13.5 g</td></tr>
+          <tr><td>Honey / syrup</td><td>340 g</td><td>21 g</td></tr>
+          <tr><td>Salt (table)</td><td>288 g</td><td>18 g</td></tr>
+          <tr><td>Salt (kosher / coarse)</td><td>145-160 g</td><td>9-10 g</td></tr>
+          <tr><td>Fresh yeast</td><td>--</td><td>10 g per 500 g flour</td></tr>
+          <tr><td>Dried yeast</td><td>--</td><td>5-7 g per 500 g flour</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Cup weights vary with how the flour is scooped. Weighing is always more repeatable; a cheap digital scale is the best kitchen upgrade.</p>
+  </div>
+</details>
+
+<details class="acc" id="temperature">
+  <summary><img src="{{ static_url('img/icons/fire.png') }}" alt=""> TEMPERATURE, OVEN AND DONENESS</summary>
+  <div class="acc-body">
+    <p class="small">F = (C x 9/5) + 32. C = (F - 32) x 5/9. K = C + 273.15.</p>
+    <h4>Oven settings</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Gas mark</th><th>Celsius</th><th>Fahrenheit</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1/4</td><td>110</td><td>225</td><td>Very cool / drying</td></tr>
+          <tr><td>1/2</td><td>130</td><td>250</td><td>Very cool</td></tr>
+          <tr><td>1</td><td>140</td><td>275</td><td>Cool</td></tr>
+          <tr><td>2</td><td>150</td><td>300</td><td>Cool</td></tr>
+          <tr><td>3</td><td>160</td><td>325</td><td>Warm</td></tr>
+          <tr><td>4</td><td>180</td><td>350</td><td>Moderate</td></tr>
+          <tr><td>5</td><td>190</td><td>375</td><td>Moderately hot</td></tr>
+          <tr><td>6</td><td>200</td><td>400</td><td>Hot</td></tr>
+          <tr><td>7</td><td>220</td><td>425</td><td>Hot</td></tr>
+          <tr><td>8</td><td>230</td><td>450</td><td>Very hot</td></tr>
+          <tr><td>9</td><td>240</td><td>475</td><td>Very hot</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Safe cooking temperatures</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Food</th><th>Internal temperature</th><th>Rest</th></tr></thead>
+        <tbody>
+          <tr><td>Poultry, whole or pieces</td><td>74 C / 165 F</td><td>5-10 min</td></tr>
+          <tr><td>Minced meat, sausages</td><td>71 C / 160 F</td><td>3 min</td></tr>
+          <tr><td>Pork, fresh cuts</td><td>63 C / 145 F</td><td>3 min</td></tr>
+          <tr><td>Beef, lamb, venison (whole cuts)</td><td>55-70 C / 130-160 F</td><td>5-20 min</td></tr>
+          <tr><td>Fish</td><td>63 C / 145 F</td><td>2 min</td></tr>
+          <tr><td>Leftovers, reheated</td><td>74 C / 165 F</td><td>--</td></tr>
+          <tr><td>Fridge</td><td>0-4 C / 32-40 F</td><td>--</td></tr>
+          <tr><td>Freezer</td><td>-18 C / 0 F or colder</td><td>--</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Sugar stages and kitchen benchmarks</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Stage</th><th>Temperature</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Thread</td><td>110 C / 230 F</td><td>Syrups and glazes</td></tr>
+          <tr><td>Soft ball</td><td>113-116 C / 235-240 F</td><td>Fudge, fondant</td></tr>
+          <tr><td>Firm ball</td><td>118-120 C / 244-248 F</td><td>Caramels, toffee</td></tr>
+          <tr><td>Hard ball</td><td>121-130 C / 250-266 F</td><td>Nougat, marshmallow</td></tr>
+          <tr><td>Soft crack</td><td>132-143 C / 270-290 F</td><td>Taffy, butterscotch</td></tr>
+          <tr><td>Hard crack</td><td>146-154 C / 295-310 F</td><td>Lollipops, brittle</td></tr>
+          <tr><td>Caramel</td><td>160-170 C / 320-340 F</td><td>Caramel, praline</td></tr>
+          <tr><td>Yeast water</td><td>35-40 C / 95-104 F</td><td>Activating dried yeast</td></tr>
+          <tr><td>Bread proof</td><td>24-27 C / 75-80 F</td><td>First and second rise</td></tr>
+          <tr><td>Deep frying</td><td>175-190 C / 350-375 F</td><td>Chips, doughnuts, battered fish</td></tr>
+          <tr><td>Jam setting</td><td>104-105 C / 219-221 F</td><td>Setting point at sea level</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="length">
+  <summary><img src="{{ static_url('img/icons/seedling.png') }}" alt=""> LENGTH, AREA AND LAND</summary>
+  <div class="acc-body">
+    <h4>Length</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 inch (in)</td><td>millimetres / centimetres</td><td>25.4 mm / 2.54 cm</td></tr>
+          <tr><td>1 foot (ft)</td><td>metres / centimetres</td><td>0.3048 m / 30.48 cm</td></tr>
+          <tr><td>1 yard (yd)</td><td>metres</td><td>0.9144 m</td></tr>
+          <tr><td>1 chain</td><td>metres</td><td>20.1168 m</td></tr>
+          <tr><td>1 rod / perch / pole</td><td>metres</td><td>5.0292 m</td></tr>
+          <tr><td>1 furlong</td><td>metres / miles</td><td>201.168 m / 0.125 mile</td></tr>
+          <tr><td>1 mile</td><td>kilometres</td><td>1.60934 km</td></tr>
+          <tr><td>1 nautical mile</td><td>kilometres</td><td>1.852 km</td></tr>
+          <tr><td>1 hand (horses)</td><td>centimetres</td><td>10.16 cm (4 in)</td></tr>
+          <tr><td>1 metre</td><td>feet / inches</td><td>3.2808 ft / 39.37 in</td></tr>
+          <tr><td>1 kilometre</td><td>miles</td><td>0.62137 mile</td></tr>
+          <tr><td>1 millimetre</td><td>inches</td><td>0.03937 in</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Area</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 square foot</td><td>square metres</td><td>0.0929 m2</td></tr>
+          <tr><td>1 square yard</td><td>square metres</td><td>0.8361 m2</td></tr>
+          <tr><td>1 acre</td><td>square metres / hectares</td><td>4,046.86 m2 / 0.404686 ha</td></tr>
+          <tr><td>1 acre</td><td>square feet / square yards</td><td>43,560 sq ft / 4,840 sq yd</td></tr>
+          <tr><td>1 hectare</td><td>acres / square metres</td><td>2.47105 acres / 10,000 m2</td></tr>
+          <tr><td>1 square mile</td><td>acres / hectares</td><td>640 acres / 259.0 ha</td></tr>
+          <tr><td>1 rood</td><td>acres / square metres</td><td>0.25 acre / 1,011.7 m2</td></tr>
+          <tr><td>1 section</td><td>acres / square miles</td><td>640 acres / 1 sq mile</td></tr>
+          <tr><td>1 square metre</td><td>square feet</td><td>10.7639 sq ft</td></tr>
+          <tr><td>1 square kilometre</td><td>hectares / acres</td><td>100 ha / 247.1 acres</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">A hectare is a square 100 m by 100 m. An acre is roughly the area a pair of oxen could plough in a day; that is why it is an awkward shape to pace out.</p>
+  </div>
+</details>
+
+<details class="acc" id="volume">
+  <summary><img src="{{ static_url('img/icons/droplet.png') }}" alt=""> VOLUME, LIQUID AND RAINFALL</summary>
+  <div class="acc-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 cubic metre</td><td>litres / cubic feet</td><td>1,000 L / 35.315 cu ft</td></tr>
+          <tr><td>1 cubic foot</td><td>litres / gallons (US)</td><td>28.317 L / 7.481 US gal</td></tr>
+          <tr><td>1 litre</td><td>cubic centimetres / US gallons</td><td>1,000 cm3 / 0.2642 US gal</td></tr>
+          <tr><td>1 US gallon</td><td>litres / UK gallons</td><td>3.785 L / 0.8327 UK gal</td></tr>
+          <tr><td>1 UK gallon</td><td>litres / US gallons</td><td>4.546 L / 1.201 US gal</td></tr>
+          <tr><td>1 US quart</td><td>litres</td><td>0.9464 L</td></tr>
+          <tr><td>1 UK quart</td><td>litres</td><td>1.1365 L</td></tr>
+          <tr><td>1 US pint</td><td>litres</td><td>0.4732 L</td></tr>
+          <tr><td>1 UK pint</td><td>litres</td><td>0.5683 L</td></tr>
+          <tr><td>1 US fluid ounce</td><td>millilitres</td><td>29.574 ml</td></tr>
+          <tr><td>1 UK fluid ounce</td><td>millilitres</td><td>28.413 ml</td></tr>
+          <tr><td>1 bushel (US dry)</td><td>litres / cubic feet</td><td>35.239 L / 1.244 cu ft</td></tr>
+          <tr><td>1 peck</td><td>litres</td><td>8.810 L (US dry)</td></tr>
+          <tr><td>1 barrel (oil)</td><td>US gallons / litres</td><td>42 US gal / 158.99 L</td></tr>
+          <tr><td>1 acre-foot</td><td>cubic metres / litres</td><td>1,233.5 m3 / 1,233,500 L</td></tr>
+          <tr><td>1 hectare-mm</td><td>cubic metres / litres</td><td>10 m3 / 10,000 L</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Rainfall</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Rainfall</th><th>On 1 m2</th><th>On 1 acre</th><th>On 1 ha</th></tr></thead>
+        <tbody>
+          <tr><td>1 mm</td><td>1 litre</td><td>4,047 L / 1,069 US gal</td><td>10,000 L / 10 m3</td></tr>
+          <tr><td>1 inch / 25.4 mm</td><td>25.4 L</td><td>102.8 m3 / 27,154 US gal</td><td>254 m3</td></tr>
+          <tr><td>10 mm</td><td>10 L</td><td>40.47 m3</td><td>100 m3 / 100,000 L</td></tr>
+          <tr><td>100 mm / 4 in</td><td>100 L</td><td>404.7 m3</td><td>1,000 m3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">A 100 m2 roof sheds about 1,000 L from 10 mm of rain before losses. That is a useful first number for tank sizing.</p>
+  </div>
+</details>
+
+<details class="acc" id="weight">
+  <summary><img src="{{ static_url('img/icons/tag.png') }}" alt=""> WEIGHT, GRAIN AND FEED</summary>
+  <div class="acc-body">
+    <h4>Everyday weight</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 ounce (oz)</td><td>grams</td><td>28.3495 g</td></tr>
+          <tr><td>1 pound (lb)</td><td>grams / kilograms</td><td>453.592 g / 0.4536 kg</td></tr>
+          <tr><td>1 kilogram</td><td>pounds / ounces</td><td>2.2046 lb / 35.274 oz</td></tr>
+          <tr><td>1 stone</td><td>pounds / kilograms</td><td>14 lb / 6.3503 kg</td></tr>
+          <tr><td>1 hundredweight (UK)</td><td>pounds / kilograms</td><td>112 lb / 50.802 kg</td></tr>
+          <tr><td>1 hundredweight (US)</td><td>pounds / kilograms</td><td>100 lb / 45.359 kg</td></tr>
+          <tr><td>1 short ton (US)</td><td>pounds / kilograms</td><td>2,000 lb / 907.18 kg</td></tr>
+          <tr><td>1 long ton (UK)</td><td>pounds / kilograms</td><td>2,240 lb / 1,016.05 kg</td></tr>
+          <tr><td>1 tonne (metric)</td><td>kilograms / pounds</td><td>1,000 kg / 2,204.6 lb</td></tr>
+          <tr><td>1 grain</td><td>milligrams</td><td>64.799 mg</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>US bushel weights</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Grain</th><th>lb per bushel</th><th>kg per bushel</th><th>Bushels per tonne</th></tr></thead>
+        <tbody>
+          <tr><td>Wheat</td><td>60</td><td>27.22</td><td>36.74</td></tr>
+          <tr><td>Corn / maize</td><td>56</td><td>25.40</td><td>39.37</td></tr>
+          <tr><td>Barley</td><td>48</td><td>21.77</td><td>45.93</td></tr>
+          <tr><td>Oats</td><td>32</td><td>14.51</td><td>68.89</td></tr>
+          <tr><td>Soybeans</td><td>60</td><td>27.22</td><td>36.74</td></tr>
+          <tr><td>Rye</td><td>56</td><td>25.40</td><td>39.37</td></tr>
+          <tr><td>Buckwheat</td><td>48</td><td>21.77</td><td>45.93</td></tr>
+          <tr><td>Flaxseed</td><td>56</td><td>25.40</td><td>39.37</td></tr>
+          <tr><td>Potatoes</td><td>60</td><td>27.22</td><td>36.74</td></tr>
+          <tr><td>Apples (fresh)</td><td>48</td><td>21.77</td><td>45.93</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Bales, bags and bulk</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Item</th><th>Typical weight</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Small square hay bale</td><td>18-25 kg</td><td>Depends on moisture and density.</td></tr>
+          <tr><td>Round hay bale</td><td>240-350 kg</td><td>1.2-1.5 m diameter.</td></tr>
+          <tr><td>Large square hay bale</td><td>350-500 kg</td><td>Often 1.2 x 1.2 x 2.4 m.</td></tr>
+          <tr><td>Round silage bale</td><td>600-900 kg</td><td>Higher moisture than hay.</td></tr>
+          <tr><td>Feed sack</td><td>20-25 kg</td><td>Check the label; 50 lb is common in the US.</td></tr>
+          <tr><td>Fertiliser bag</td><td>25 kg or 50 kg</td><td>50 lb bags also common.</td></tr>
+          <tr><td>Wool fleece</td><td>2-5 kg</td><td>Breed and year matter.</td></tr>
+          <tr><td>Live weight to carcass</td><td>50-60% cattle</td><td>Sheep 45-55%; pigs 70-75%.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="speed">
+  <summary><img src="{{ static_url('img/icons/clock.png') }}" alt=""> SPEED, FLOW, PRESSURE AND TORQUE</summary>
+  <div class="acc-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 mph</td><td>km/h / m/s</td><td>1.609 km/h / 0.447 m/s</td></tr>
+          <tr><td>1 km/h</td><td>mph / m/s</td><td>0.6214 mph / 0.2778 m/s</td></tr>
+          <tr><td>1 knot</td><td>km/h / mph</td><td>1.852 km/h / 1.151 mph</td></tr>
+          <tr><td>1 m/s</td><td>km/h / ft/s</td><td>3.6 km/h / 3.281 ft/s</td></tr>
+          <tr><td>1 US gallon/min (gpm)</td><td>litres/min</td><td>3.785 L/min</td></tr>
+          <tr><td>1 UK gallon/min</td><td>litres/min</td><td>4.546 L/min</td></tr>
+          <tr><td>1 litre/min</td><td>US gpm</td><td>0.2642 US gpm</td></tr>
+          <tr><td>1 cubic metre/hour</td><td>litres/min / US gpm</td><td>16.67 L/min / 4.403 US gpm</td></tr>
+          <tr><td>1 psi</td><td>bar / kPa</td><td>0.06895 bar / 6.895 kPa</td></tr>
+          <tr><td>1 bar</td><td>psi / kPa</td><td>14.504 psi / 100 kPa</td></tr>
+          <tr><td>1 atmosphere</td><td>psi / bar</td><td>14.696 psi / 1.013 bar</td></tr>
+          <tr><td>1 lb-ft torque</td><td>Nm</td><td>1.3558 Nm</td></tr>
+          <tr><td>1 Nm torque</td><td>lb-ft</td><td>0.7376 lb-ft</td></tr>
+          <tr><td>1 kgf-m</td><td>Nm</td><td>9.8067 Nm</td></tr>
+          <tr><td>1 horsepower (hp)</td><td>kW</td><td>0.7457 kW</td></tr>
+          <tr><td>1 kW</td><td>hp</td><td>1.341 hp</td></tr>
+          <tr><td>1 hp</td><td>BTU/hour</td><td>2,545 BTU/h</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Tyre pressure, sprayer pressure and compressor pressure are different jobs. Use the unit on the gauge, and check whether it is gauge pressure or absolute pressure.</p>
+  </div>
+</details>
+
+<details class="acc" id="farm">
+  <summary><img src="{{ static_url('img/icons/wheat.png') }}" alt=""> SEED, FERTILISER AND SPRAY</summary>
+  <div class="acc-body">
+    <h4>Sowing rates</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Crop</th><th>Rate per hectare</th><th>Rate per acre</th></tr></thead>
+        <tbody>
+          <tr><td>Winter wheat</td><td>150-220 kg/ha</td><td>60-90 kg/acre</td></tr>
+          <tr><td>Spring wheat</td><td>160-220 kg/ha</td><td>65-90 kg/acre</td></tr>
+          <tr><td>Winter barley</td><td>140-180 kg/ha</td><td>55-73 kg/acre</td></tr>
+          <tr><td>Spring barley</td><td>150-190 kg/ha</td><td>60-77 kg/acre</td></tr>
+          <tr><td>Oats</td><td>140-170 kg/ha</td><td>57-69 kg/acre</td></tr>
+          <tr><td>Rye</td><td>140-180 kg/ha</td><td>57-73 kg/acre</td></tr>
+          <tr><td>Field beans</td><td>180-250 kg/ha</td><td>73-101 kg/acre</td></tr>
+          <tr><td>Peas</td><td>180-250 kg/ha</td><td>73-101 kg/acre</td></tr>
+          <tr><td>Oilseed rape</td><td>4-6 kg/ha</td><td>1.6-2.4 kg/acre</td></tr>
+          <tr><td>Grass seed (leys)</td><td>25-35 kg/ha</td><td>10-14 kg/acre</td></tr>
+          <tr><td>Potatoes (seed)</td><td>1.5-2.5 t/ha</td><td>0.6-1.0 t/acre</td></tr>
+          <tr><td>Maize</td><td>20-30 kg/ha</td><td>8-12 kg/acre</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Fertiliser quick sums</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Product</th><th>Analysis</th><th>To supply 1 kg nutrient</th></tr></thead>
+        <tbody>
+          <tr><td>Urea</td><td>46-0-0</td><td>2.17 kg urea per kg N</td></tr>
+          <tr><td>Ammonium nitrate</td><td>34-0-0</td><td>2.94 kg per kg N</td></tr>
+          <tr><td>DAP</td><td>18-46-0</td><td>2.17 kg per kg P2O5 (also supplies N)</td></tr>
+          <tr><td>Triple superphosphate</td><td>0-46-0</td><td>2.17 kg per kg P2O5</td></tr>
+          <tr><td>Muriate of potash</td><td>0-0-60</td><td>1.67 kg per kg K2O</td></tr>
+          <tr><td>Sulphate of potash</td><td>0-0-50</td><td>2.00 kg per kg K2O</td></tr>
+          <tr><td>Lime (ground)</td><td>Neutralising value varies</td><td>Use a soil test; 2-6 t/ha is common.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">N-P-K numbers are percentages by weight: 100 kg of 18-46-0 contains 18 kg N, 46 kg P2O5 and 0 kg K2O.</p>
+    <h4>Spray and dilution</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Job</th><th>Typical rate</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Knapsack sprayer</td><td>200-300 L/ha</td><td>Calibrate with water before mixing.</td></tr>
+          <tr><td>Boom sprayer</td><td>100-200 L/ha</td><td>Follow the product label.</td></tr>
+          <tr><td>Product dose</td><td>Label rate per ha</td><td>Do not guess; measure the sprayed width.</td></tr>
+          <tr><td>10% dilution</td><td>1 part product + 9 parts water</td><td>By volume unless stated.</td></tr>
+          <tr><td>1% spray</td><td>10 ml per litre</td><td>Use a clean measuring jug.</td></tr>
+          <tr><td>0.1% spray</td><td>1 ml per litre</td><td>Check the label; some products are stronger.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="livestock">
+  <summary><img src="{{ static_url('img/icons/cow.png') }}" alt=""> LIVESTOCK NUMBERS</summary>
+  <div class="acc-body">
+    <h4>Gestation and incubation</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Animal</th><th>Days</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Cattle</td><td>283</td><td>Range 279-287; breed and parity vary.</td></tr>
+          <tr><td>Sheep</td><td>147</td><td>Range 142-152.</td></tr>
+          <tr><td>Goat</td><td>150</td><td>Range 145-155.</td></tr>
+          <tr><td>Pig</td><td>114</td><td>3 months, 3 weeks, 3 days.</td></tr>
+          <tr><td>Horse</td><td>340</td><td>Range 320-370.</td></tr>
+          <tr><td>Donkey</td><td>365</td><td>About 12 months.</td></tr>
+          <tr><td>Rabbit</td><td>31</td><td>Range 28-32.</td></tr>
+          <tr><td>Chicken</td><td>21</td><td>Incubation.</td></tr>
+          <tr><td>Duck</td><td>28</td><td>Incubation.</td></tr>
+          <tr><td>Goose</td><td>30</td><td>Incubation.</td></tr>
+          <tr><td>Turkey</td><td>28</td><td>Incubation.</td></tr>
+          <tr><td>Quail</td><td>17-18</td><td>Incubation.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Water and feed rules of thumb</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Animal</th><th>Water per day</th><th>Dry matter intake</th></tr></thead>
+        <tbody>
+          <tr><td>Dairy cow</td><td>60-120 L</td><td>3-4% of body weight</td></tr>
+          <tr><td>Beef cow</td><td>40-80 L</td><td>2-2.5% of body weight</td></tr>
+          <tr><td>Sheep</td><td>4-10 L</td><td>2-3% of body weight</td></tr>
+          <tr><td>Goat</td><td>4-10 L</td><td>3-4% of body weight</td></tr>
+          <tr><td>Pig</td><td>10-25 L</td><td>3-4% of body weight</td></tr>
+          <tr><td>Horse</td><td>30-60 L</td><td>1.5-2.5% of body weight</td></tr>
+          <tr><td>Laying hen</td><td>0.2-0.4 L</td><td>100-120 g feed</td></tr>
+          <tr><td>Broiler</td><td>0.15-0.3 L</td><td>Feed conversion 1.6-2.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Weight and yield</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Measure</th><th>Typical figure</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Cattle live weight</td><td>500-700 kg</td><td>Dose rates and transport.</td></tr>
+          <tr><td>Sheep live weight</td><td>60-90 kg</td><td>Dose rates and feed.</td></tr>
+          <tr><td>Pig live weight</td><td>90-120 kg</td><td>Market weight.</td></tr>
+          <tr><td>Hen egg yield</td><td>280-320 eggs/year</td><td>Hybrid layers.</td></tr>
+          <tr><td>Milk yield</td><td>6,000-10,000 L/cow/year</td><td>Dairy herd average.</td></tr>
+          <tr><td>Wool fleece</td><td>2-5 kg</td><td>Breed dependent.</td></tr>
+          <tr><td>Carcass yield</td><td>50-60% cattle</td><td>Dead weight / live weight.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="weather">
+  <summary><img src="{{ static_url('img/icons/sun.png') }}" alt=""> WEATHER AND GROWING DEGREE DAYS</summary>
+  <div class="acc-body">
+    <h4>Rainfall and water</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Measure</th><th>Equivalent</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>1 mm rain</td><td>1 L/m2</td><td>10 m3/ha.</td></tr>
+          <tr><td>1 inch rain</td><td>25.4 mm</td><td>25.4 L/m2; 254 m3/ha.</td></tr>
+          <tr><td>1 acre-inch</td><td>27,154 US gal</td><td>102.8 m3.</td></tr>
+          <tr><td>1 hectare-mm</td><td>10,000 L</td><td>10 m3.</td></tr>
+          <tr><td>1 acre-foot</td><td>325,851 US gal</td><td>1,233.5 m3.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Growing degree days</h4>
+    <p class="small">GDD = ((daily max + daily min) / 2) - base temperature. Use the crop base: wheat 0 C, maize 10 C, potatoes 7 C, most insects 10 C. Cap the maximum at the crop's upper limit if your local method says so.</p>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Example day</th><th>Max</th><th>Min</th><th>Base</th><th>GDD</th></tr></thead>
+        <tbody>
+          <tr><td>Cool spring day</td><td>14 C</td><td>4 C</td><td>5 C</td><td>4</td></tr>
+          <tr><td>Warm summer day</td><td>28 C</td><td>14 C</td><td>10 C</td><td>11</td></tr>
+          <tr><td>Autumn day</td><td>16 C</td><td>8 C</td><td>5 C</td><td>7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Frost and wind</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Condition</th><th>Rule of thumb</th></tr></thead>
+        <tbody>
+          <tr><td>Ground frost</td><td>Air 2 C at 1.5 m can mean 0 C at grass level.</td></tr>
+          <tr><td>Frost protection</td><td>Water, fleece and moving air are the practical tools.</td></tr>
+          <tr><td>Spraying</td><td>Avoid wind above 15 km/h and inversions.</td></tr>
+          <tr><td>Hay drying</td><td>Below 15% moisture for safe storage.</td></tr>
+          <tr><td>Grain drying</td><td>Below 14% for wheat; below 13% for long storage.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="energy">
+  <summary><img src="{{ static_url('img/icons/sun.png') }}" alt=""> ENERGY, ELECTRICITY AND SOLAR</summary>
+  <div class="acc-body">
+    <h4>Energy units</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>From</th><th>To</th><th>Factor</th></tr></thead>
+        <tbody>
+          <tr><td>1 kWh</td><td>MJ / BTU</td><td>3.6 MJ / 3,412 BTU</td></tr>
+          <tr><td>1 MJ</td><td>kWh / BTU</td><td>0.2778 kWh / 947.8 BTU</td></tr>
+          <tr><td>1 BTU</td><td>joules</td><td>1,055 J</td></tr>
+          <tr><td>1 therm (natural gas)</td><td>kWh / MJ</td><td>29.3 kWh / 105.5 MJ</td></tr>
+          <tr><td>1 tonne oil equivalent</td><td>kWh</td><td>11,630 kWh</td></tr>
+          <tr><td>1 hp</td><td>kW</td><td>0.7457 kW</td></tr>
+          <tr><td>1 kW</td><td>BTU/hour</td><td>3,412 BTU/h</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Electrical quick checks</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Formula</th><th>Use</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Watts = volts x amps</td><td>Load on a circuit</td><td>230 V x 10 A = 2,300 W</td></tr>
+          <tr><td>Amps = watts / volts</td><td>Fuse or breaker size</td><td>2,000 W / 230 V = 8.7 A</td></tr>
+          <tr><td>kWh = watts x hours / 1,000</td><td>Energy used</td><td>1,000 W for 5 h = 5 kWh</td></tr>
+          <tr><td>Battery Ah = Wh / volts</td><td>Bank size</td><td>2,400 Wh / 24 V = 100 Ah</td></tr>
+          <tr><td>Runtime = Ah x V x 0.8 / W</td><td>Off-grid estimate</td><td>100 Ah x 12 V x 0.8 / 100 W = 9.6 h</td></tr>
+          <tr><td>Inverter VA = W / power factor</td><td>Inverter size</td><td>2,000 W / 0.8 = 2,500 VA</td></tr>
+          <tr><td>Solar panels = daily Wh / (sun hours x 0.75)</td><td>Array size</td><td>3,000 Wh / (4 x 0.75) = 1,000 W</td></tr>
+          <tr><td>Voltage drop = 2 x I x R x L / 1,000</td><td>Cable run</td><td>10 A, 50 m, 4 mm2: about 4.4 V</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Mains wiring is regulated work in most places. Use these numbers for planning and checking, not as a substitute for local rules and a qualified electrician.</p>
+  </div>
+</details>
+
+<details class="acc" id="workshop">
+  <summary><img src="{{ static_url('img/icons/wrench.png') }}" alt=""> WORKSHOP, BUILDING AND MATERIALS</summary>
+  <div class="acc-body">
+    <h4>Drill and fastener sizes</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Fraction</th><th>Decimal inch</th><th>Millimetres</th></tr></thead>
+        <tbody>
+          <tr><td>1/16</td><td>0.0625</td><td>1.59</td></tr>
+          <tr><td>3/32</td><td>0.0938</td><td>2.38</td></tr>
+          <tr><td>1/8</td><td>0.1250</td><td>3.18</td></tr>
+          <tr><td>5/32</td><td>0.1563</td><td>3.97</td></tr>
+          <tr><td>3/16</td><td>0.1875</td><td>4.76</td></tr>
+          <tr><td>1/4</td><td>0.2500</td><td>6.35</td></tr>
+          <tr><td>5/16</td><td>0.3125</td><td>7.94</td></tr>
+          <tr><td>3/8</td><td>0.3750</td><td>9.53</td></tr>
+          <tr><td>7/16</td><td>0.4375</td><td>11.11</td></tr>
+          <tr><td>1/2</td><td>0.5000</td><td>12.70</td></tr>
+          <tr><td>5/8</td><td>0.6250</td><td>15.88</td></tr>
+          <tr><td>3/4</td><td>0.7500</td><td>19.05</td></tr>
+          <tr><td>1</td><td>1.0000</td><td>25.40</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Materials</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Material</th><th>Figure</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Concrete</td><td>2.4 t/m3</td><td>1:2:4 mix by volume; order ready-mix for big pours.</td></tr>
+          <tr><td>Steel</td><td>7,850 kg/m3</td><td>Rebar mass about d2/162 kg/m.</td></tr>
+          <tr><td>Timber (softwood)</td><td>450-600 kg/m3</td><td>Seasoned; species varies.</td></tr>
+          <tr><td>Board foot</td><td>144 cubic inches / 2.36 L</td><td>1 in x 12 in x 12 in.</td></tr>
+          <tr><td>1 m3 timber</td><td>424 board feet</td><td>Nominal sizes.</td></tr>
+          <tr><td>Water</td><td>1,000 kg/m3</td><td>1 litre = 1 kg.</td></tr>
+          <tr><td>Topsoil</td><td>1.2-1.4 t/m3</td><td>Depends on moisture and compaction.</td></tr>
+          <tr><td>Sand</td><td>1.5-1.7 t/m3</td><td>Dry; wet sand is heavier.</td></tr>
+          <tr><td>Gravel</td><td>1.5-1.8 t/m3</td><td>20-40 mm aggregate.</td></tr>
+          <tr><td>Paint</td><td>10-12 m2/L</td><td>One coat; porous surfaces take more.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Concrete and fence quick sums</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Job</th><th>Rule of thumb</th></tr></thead>
+        <tbody>
+          <tr><td>Post hole</td><td>0.03-0.05 m3 of concrete per post.</td></tr>
+          <tr><td>Fence post spacing</td><td>2.5-3.5 m for stock fence; 3-4 m for boundary.</td></tr>
+          <tr><td>Concrete path</td><td>0.1 m3 per m2 at 100 mm thick.</td></tr>
+          <tr><td>Shed slab</td><td>0.1 m3/m2 at 100 mm; 0.15 m3/m2 at 150 mm.</td></tr>
+          <tr><td>Gravel drive</td><td>0.1 m3/m2 at 100 mm compacted.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="garden">
+  <summary><img src="{{ static_url('img/icons/seedling.png') }}" alt=""> GARDEN, SPACING AND WATERING</summary>
+  <div class="acc-body">
+    <h4>Spacing rules of thumb</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Crop</th><th>Spacing</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Tomatoes (cordon)</td><td>45-60 cm in row, 80-100 cm between rows</td><td>Stake or string.</td></tr>
+          <tr><td>Potatoes</td><td>30-40 cm in row, 70-75 cm rows</td><td>Earlies closer; maincrop wider.</td></tr>
+          <tr><td>Carrots</td><td>5-8 cm in row, 25-30 cm rows</td><td>Thin to avoid forking.</td></tr>
+          <tr><td>Onions</td><td>10-15 cm in row, 25-30 cm rows</td><td>Sets or transplants.</td></tr>
+          <tr><td>Leeks</td><td>15-20 cm in row, 30 cm rows</td><td>Blanch with soil.</td></tr>
+          <tr><td>Cabbage</td><td>40-60 cm each way</td><td>Larger heads need more.</td></tr>
+          <tr><td>Beans (bush)</td><td>10-15 cm in row, 45-60 cm rows</td><td>Succession sow.</td></tr>
+          <tr><td>Peas</td><td>5-8 cm in row, 60-75 cm rows</td><td>Support tall varieties.</td></tr>
+          <tr><td>Salad leaves</td><td>15-20 cm each way</td><td>Cut-and-come-again.</td></tr>
+          <tr><td>Sweetcorn</td><td>30-40 cm each way in blocks</td><td>Blocks pollinate better than rows.</td></tr>
+          <tr><td>Pumpkins</td><td>1-1.5 m each way</td><td>Give them room to run.</td></tr>
+          <tr><td>Fruit trees</td><td>3-5 m apart</td><td>Rootstock and training decide.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Seed depth and watering</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Rule</th><th>Figure</th></tr></thead>
+        <tbody>
+          <tr><td>Seed depth</td><td>About 2-3 times the seed diameter.</td></tr>
+          <tr><td>Small seed</td><td>5-10 mm; barely cover.</td></tr>
+          <tr><td>Bean / pea seed</td><td>25-40 mm.</td></tr>
+          <tr><td>Watering a bed</td><td>10-20 mm per watering; 10-20 L/m2.</td></tr>
+          <tr><td>Mulch depth</td><td>50-100 mm of well-rotted material.</td></tr>
+          <tr><td>Compost application</td><td>20-50 mm over the bed; 0.02-0.05 m3/m2.</td></tr>
+          <tr><td>1 m3 compost covers</td><td>10 m2 at 100 mm; 20 m2 at 50 mm.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="preserving">
+  <summary><img src="{{ static_url('img/icons/jar.png') }}" alt=""> PRESERVING, BRINING AND FOOD STORAGE</summary>
+  <div class="acc-body">
+    <h4>Salt brine</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Brine strength</th><th>Salt per litre water</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>2%</td><td>20 g</td><td>Light vegetable brine.</td></tr>
+          <tr><td>3%</td><td>30 g</td><td>Sauerkraut and pickles.</td></tr>
+          <tr><td>5%</td><td>50 g</td><td>General pickling.</td></tr>
+          <tr><td>10%</td><td>100 g</td><td>Strong brine; cure and preserve.</td></tr>
+          <tr><td>Saturated</td><td>About 360 g at 20 C</td><td>Salt will no longer dissolve.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Sugar syrup</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Syrup</th><th>Sugar : water</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Light</td><td>1 : 2</td><td>Light fruit, poaching.</td></tr>
+          <tr><td>Medium</td><td>1 : 1</td><td>General bottling.</td></tr>
+          <tr><td>Heavy</td><td>2 : 1</td><td>Dense fruit, preserving.</td></tr>
+          <tr><td>Jam</td><td>About 1 : 1 fruit to sugar</td><td>Use pectin and acid as needed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Acid, headspace and storage</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Item</th><th>Figure</th></tr></thead>
+        <tbody>
+          <tr><td>Vinegar for pickling</td><td>At least 5% acetic acid.</td></tr>
+          <tr><td>Water-bath canning</td><td>High-acid foods only; follow tested times.</td></tr>
+          <tr><td>Pressure canning</td><td>Low-acid vegetables and meat.</td></tr>
+          <tr><td>Headspace, jams</td><td>5-10 mm.</td></tr>
+          <tr><td>Headspace, pickles</td><td>10-13 mm.</td></tr>
+          <tr><td>Cool, dark store</td><td>5-15 C; keep dry.</td></tr>
+          <tr><td>Dried food</td><td>Below 10% moisture for long storage.</td></tr>
+          <tr><td>Freezer temperature</td><td>-18 C or colder.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="fuel">
+  <summary><img src="{{ static_url('img/icons/fire.png') }}" alt=""> FUEL, OIL AND WOOD</summary>
+  <div class="acc-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Item</th><th>Figure</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Diesel</td><td>0.83-0.85 kg/L</td><td>1 tonne is about 1,180-1,200 L.</td></tr>
+          <tr><td>Petrol</td><td>0.72-0.75 kg/L</td><td>1 tonne is about 1,330-1,390 L.</td></tr>
+          <tr><td>2-stroke mix 50:1</td><td>20 ml oil per litre petrol</td><td>For small engines that specify 50:1.</td></tr>
+          <tr><td>2-stroke mix 40:1</td><td>25 ml oil per litre petrol</td><td>Check the machine label.</td></tr>
+          <tr><td>2-stroke mix 32:1</td><td>31 ml oil per litre petrol</td><td>Older saws and trimmers.</td></tr>
+          <tr><td>Propane</td><td>1 L liquid = 0.51 kg</td><td>1 kg = about 1.96 L.</td></tr>
+          <tr><td>Heating oil</td><td>1 L = about 10.35 kWh</td><td>Boiler efficiency changes the useful heat.</td></tr>
+          <tr><td>Firewood</td><td>1 m3 stacked = 0.6-0.7 m3 solid wood</td><td>Season to below 20% moisture.</td></tr>
+          <tr><td>Wood energy</td><td>About 4.5 kWh/kg dry wood</td><td>Stove efficiency 60-80%.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Treat fuel figures as planning estimates. Temperature, tank shape and supplier metering all move the number.</p>
+  </div>
+</details>
+
+<details class="acc" id="time">
+  <summary><img src="{{ static_url('img/icons/clock.png') }}" alt=""> TIME, SEASONS AND QUICK SUMS</summary>
+  <div class="acc-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Item</th><th>Figure</th></tr></thead>
+        <tbody>
+          <tr><td>1 day</td><td>24 hours / 1,440 minutes</td></tr>
+          <tr><td>1 week</td><td>7 days / 168 hours</td></tr>
+          <tr><td>1 year</td><td>365 days / 52 weeks + 1 day</td></tr>
+          <tr><td>1 leap year</td><td>366 days</td></tr>
+          <tr><td>1 fortnight</td><td>14 days</td></tr>
+          <tr><td>1 month</td><td>About 4.35 weeks</td></tr>
+          <tr><td>Day of year</td><td>1 January = 1; 31 December = 365 or 366</td></tr>
+          <tr><td>Growing season</td><td>Last frost to first frost; local, not generic.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Quick sums</h4>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td>How much area is 100 x 50 m?</td><td>5,000 m2 = 0.5 ha = 1.24 acres.</td></tr>
+          <tr><td>How much water fills a 2 m x 2 m x 1 m tank?</td><td>4 m3 = 4,000 L.</td></tr>
+          <tr><td>How many 25 kg bags in a tonne?</td><td>40.</td></tr>
+          <tr><td>How many 50 kg bags in a tonne?</td><td>20.</td></tr>
+          <tr><td>How many bales in a tonne at 20 kg?</td><td>50.</td></tr>
+          <tr><td>What is 15% of 240?</td><td>36.</td></tr>
+          <tr><td>What is a 20% margin on a 50 cost?</td><td>Sell at 62.50 for 20% margin.</td></tr>
+          <tr><td>How many litres in a 3 m x 2 m x 1 m trailer?</td><td>6 m3 = 6,000 L.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="acc" id="abbreviations">
+  <summary><img src="{{ static_url('img/icons/list.png') }}" alt=""> ABBREVIATIONS AND SYMBOLS</summary>
+  <div class="acc-body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Short</th><th>Meaning</th><th>Short</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>mm</td><td>millimetre</td><td>cm</td><td>centimetre</td></tr>
+          <tr><td>m</td><td>metre</td><td>km</td><td>kilometre</td></tr>
+          <tr><td>in</td><td>inch</td><td>ft</td><td>foot</td></tr>
+          <tr><td>yd</td><td>yard</td><td>mi</td><td>mile</td></tr>
+          <tr><td>m2</td><td>square metre</td><td>ha</td><td>hectare</td></tr>
+          <tr><td>m3</td><td>cubic metre</td><td>L</td><td>litre</td></tr>
+          <tr><td>ml</td><td>millilitre</td><td>gal</td><td>gallon</td></tr>
+          <tr><td>g</td><td>gram</td><td>kg</td><td>kilogram</td></tr>
+          <tr><td>t</td><td>tonne</td><td>lb</td><td>pound</td></tr>
+          <tr><td>oz</td><td>ounce</td><td>cwt</td><td>hundredweight</td></tr>
+          <tr><td>C</td><td>degrees Celsius</td><td>F</td><td>degrees Fahrenheit</td></tr>
+          <tr><td>kW</td><td>kilowatt</td><td>kWh</td><td>kilowatt-hour</td></tr>
+          <tr><td>hp</td><td>horsepower</td><td>BTU</td><td>British thermal unit</td></tr>
+          <tr><td>psi</td><td>pounds per square inch</td><td>bar</td><td>100 kPa</td></tr>
+          <tr><td>Nm</td><td>newton-metre</td><td>lb-ft</td><td>pound-foot</td></tr>
+          <tr><td>ha</td><td>hectare</td><td>GDD</td><td>growing degree days</td></tr>
+          <tr><td>N</td><td>nitrogen</td><td>P2O5</td><td>phosphate</td></tr>
+          <tr><td>K2O</td><td>potash</td><td>DM</td><td>dry matter</td></tr>
+          <tr><td>CP</td><td>crude protein</td><td>ME</td><td>metabolisable energy</td></tr>
+          <tr><td>Ah</td><td>amp-hour</td><td>VA</td><td>volt-ampere</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">When a recipe or label uses a unit you do not recognise, write the local equivalent next to it. This reference is a starting point, not a substitute for the product label or a soil test.</p>
+  </div>
+</details>
+{% endblock %}

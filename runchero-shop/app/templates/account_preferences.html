@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Preferences{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="account-head">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Preferences</h1>
+    <p class="hint">These fill in checkout for you. Nothing here commits you to
+      an order.</p>
+  </div>
+</div>
+
+{% include "_account_nav.html" %}
+
+<form method="post" action="/account/preferences" novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+  <section class="panel" aria-labelledby="where-head">
+    <div class="panel-head"><h2 id="where-head">Pickup or delivery</h2></div>
+    {% if errors.fulfillment %}<div class="alert error" role="alert">{{ errors.fulfillment }}</div>{% endif %}
+
+    <label class="radio-card">
+      <input type="radio" name="fulfillment" value="pickup"
+             {% if values.fulfillment == 'pickup' %}checked{% endif %}>
+      <span class="rc-body">
+        <span class="rc-title">Pickup at the farm</span>
+        <span class="rc-meta">Free. We hold it cold until you arrive.</span>
+      </span>
+    </label>
+    <label class="radio-card">
+      <input type="radio" name="fulfillment" value="delivery"
+             {% if values.fulfillment == 'delivery' %}checked{% endif %}>
+      <span class="rc-body">
+        <span class="rc-title">Delivery to my door</span>
+        <span class="rc-meta">Wednesday and Saturday, in
+          {{ counties|join(', ') }} counties.</span>
+      </span>
+    </label>
+
+    <div class="field">
+      <label for="line1">Street address</label>
+      <input type="text" id="line1" name="line1" value="{{ values.line1 }}"
+             autocomplete="address-line1">
+      {% if errors.line1 %}<p class="error-text" role="alert">{{ errors.line1 }}</p>{% endif %}
+    </div>
+    <div class="field">
+      <label for="line2">Apartment, suite, or landmark <span class="muted">(optional)</span></label>
+      <input type="text" id="line2" name="line2" value="{{ values.line2 }}"
+             autocomplete="address-line2">
+    </div>
+    <div class="field-row three">
+      <div class="field">
+        <label for="city">Town</label>
+        <input type="text" id="city" name="city" value="{{ values.city }}"
+               autocomplete="address-level2">
+        {% if errors.city %}<p class="error-text" role="alert">{{ errors.city }}</p>{% endif %}
+      </div>
+      <div class="field">
+        <label for="state">State</label>
+        <input type="text" id="state" name="state" value="{{ values.state }}"
+               autocomplete="address-level1" maxlength="2">
+      </div>
+      <div class="field">
+        <label for="zip">ZIP</label>
+        <input type="text" id="zip" name="zip" value="{{ values.zip }}"
+               autocomplete="postal-code" inputmode="numeric" maxlength="5">
+        {% if errors.zip %}<p class="error-text" role="alert">{{ errors.zip }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="field">
+      <label for="county">County</label>
+      <select id="county" name="county">
+        <option value="">Choose a county</option>
+        {% for county in counties %}
+        <option value="{{ county }}" {% if values.county == county %}selected{% endif %}>{{ county }}</option>
+        {% endfor %}
+      </select>
+      {% if errors.county %}<p class="error-text" role="alert">{{ errors.county }}</p>{% endif %}
+      <p class="hint">Delivery is limited to these counties. Pickup orders can
+        use any address.</p>
+    </div>
+    <div class="field">
+      <label for="delivery_notes">Delivery notes</label>
+      <textarea id="delivery_notes" name="delivery_notes"
+                placeholder="Gate code, where to leave the cooler, the dog's name...">{{ values.delivery_notes }}</textarea>
+      <p class="hint">Printed on the packing slip and shown to the driver.</p>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="repeat-head">
+    <div class="panel-head"><h2 id="repeat-head">Recurring orders</h2></div>
+    {% if errors.recurring_day %}<p class="error-text" role="alert">{{ errors.recurring_day }}</p>{% endif %}
+
+    <div class="field">
+      <label for="recurring_day">Preferred day of the month</label>
+      <select id="recurring_day" name="recurring_day">
+        <option value="0" {% if not values.recurring_day %}selected{% endif %}>No preference</option>
+        {% for day in days %}
+        <option value="{{ day }}" {% if values.recurring_day == day %}selected{% endif %}>{{ day }}</option>
+        {% endfor %}
+      </select>
+      <p class="hint">We schedule standing boxes around this day when we can.
+        Days 29&ndash;31 are left out so every month works.</p>
+    </div>
+
+    <div class="field">
+      <label for="contact_method">Best way to reach you</label>
+      <select id="contact_method" name="contact_method">
+        {% for method in contact_methods %}
+        <option value="{{ method }}" {% if values.contact_method == method %}selected{% endif %}>{{ method|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" name="market_updates"
+             {% if values.market_updates %}checked{% endif %}>
+      <span>Send the occasional market note when the local price moves.</span>
+    </label>
+  </section>
+
+  <button class="btn grass" type="submit">Save preferences</button>
+</form>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Packages &amp; deals{% endblock %}
+{% block description %}Freezer boxes and curated beef bundles from Runchero Beef. Priced by the pound, cut to order, and packed the way you ask.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Packages &amp; this week's deals</h1>
+  <p>Cheaper together than apart. Every box hits the order minimum on its own.</p>
+</div>
+<div class="product-grid">
+  {% for package in packages %}
+  <article class="card">
+    <div class="thumb"><img src="/static/img/icons/{{ package.icon }}@4x.png"
+      alt="" width="64" height="64"></div>
+    <div class="body">
+      <h3><a class="card-link" href="/package/{{ package.slug }}">{{ package.name }}</a></h3>
+      {% if package.badge %}<span class="badge tomato">{{ package.badge }}</span>{% endif %}
+      <p class="desc">{{ package.blurb }}</p>
+      <div class="foot">
+        <span class="price">{{ package.price|money }}
+          <small>{{ package.total_lbs|round(1) }} lb box</small></span>
+        <form method="post" action="/cart/add" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="type" value="package">
+          <input type="hidden" name="ref" value="{{ package.id }}">
+          <input type="hidden" name="qty" value="1">
+          <input type="hidden" name="name" value="{{ package.name }}">
+          <button class="btn small grass" type="submit">Add</button>
+        </form>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ vehicle.make }} {{ vehicle.model }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+{% set type_label = equipment_kind_labels.get(vehicle.kind, vehicle.kind|replace('-', ' ')|title) %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/vehicles">Equipment</a><span class="separator">/</span>
+  <a href="/vehicles?type={{ vehicle.kind }}">{{ type_label|title }}</a><span class="separator">/</span>
+  <a href="/vehicles?type={{ vehicle.kind }}&make={{ vehicle.make|urlencode }}">{{ vehicle.make }}</a><span class="separator">/</span>
+  <span class="current">{{ vehicle.model }}</span>
+</nav>
+
+<section class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    EQUIPMENT RECORD
+    <span class="count">{{ type_label }}</span>
+  </h2>
+  <div class="equipment-overview">
+    <div>
+      <div class="kicker">{{ vehicle.make }} · {{ vehicle.year_from or 'Year unknown' }}{% if vehicle.year_to %}–{{ vehicle.year_to }}{% endif %}</div>
+      <h1 class="vehicle-title">{{ vehicle.model }}</h1>
+      {% if vehicle.notes %}
+      <div class="callout tip">
+        <strong>Overview</strong>
+        <p>{{ vehicle.notes }}</p>
+        <span class="prov prov-{{ vehicle.origin }}">{{ source_labels.get(vehicle.origin, vehicle.origin|upper) }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="panel tight equipment-spec-panel">
+      <h2>Key specifications</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <tbody>
+            <tr><th scope="row">Manufacturer</th><td>{{ vehicle.make }}</td></tr>
+            <tr><th scope="row">Model</th><td>{{ vehicle.model }}</td></tr>
+            <tr><th scope="row">Production</th><td>{{ vehicle.year_from or '—' }}{% if vehicle.year_to %}–{{ vehicle.year_to }}{% endif %}</td></tr>
+            {% if vehicle.engine %}<tr><th scope="row">Engine</th><td>{{ vehicle.engine }}</td></tr>{% endif %}
+            {% if vehicle.drive %}<tr><th scope="row">Drive</th><td>{{ vehicle.drive }}</td></tr>{% endif %}
+            {% if vehicle.power %}<tr><th scope="row">Power</th><td>{{ vehicle.power }}</td></tr>{% endif %}
+            <tr><th scope="row">Record type</th><td><span class="prov prov-{{ vehicle.origin }}">{{ source_labels.get(vehicle.origin, vehicle.origin|upper) }}</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if manuals %}
+<section class="panel equipment-section mb" aria-labelledby="manuals-heading">
+  <h2 class="panel-title" id="manuals-heading">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    SERVICE &amp; OPERATOR MANUALS
+    <span class="count">{{ manuals|length }} records</span>
+  </h2>
+  <div class="cards">
+    {% for m in manuals %}
+    <article class="card manual-card">
+      <div class="bookcard">
+        <img class="cover" src="{{ static_url('img/covers/' ~ m.slug ~ '.png') }}" alt="Cover of {{ m.title }}">
+        <div class="info">
+          <div class="card-title"><a href="/library/archive/{{ m.slug }}">{{ m.title }}</a></div>
+          <div class="small muted">{{ m.author or 'Unknown author' }}{% if m.year %} · {{ m.year }}{% endif %}</div>
+          {% if m.summary %}<p class="small">{{ m.summary|truncate(150) }}</p>{% endif %}
+          <div class="small muted">{{ m.pages }} pages · {{ m.bytes|filesize }}</div>
+        </div>
+      </div>
+      <div class="manual-actions">
+        <a class="btn" href="/read/{{ m.slug }}">READ ONLINE</a>
+        <a class="btn ghost" href="/library/archive/{{ m.slug }}">RECORD DETAILS</a>
+        {% if m.source_url %}<a class="btn blue" href="{{ m.source_url }}" target="_blank" rel="noopener noreferrer">ORIGINAL SCAN</a>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if books %}
+<section class="panel equipment-section mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+    RELATED BOOKS
+    <span class="count">{{ books|length }}</span>
+  </h2>
+  <div class="cards">
+    {% for b in books %}
+    <article class="card">
+      <div class="card-title"><a href="/library/archive/{{ b.slug }}">{{ b.title }}</a></div>
+      <div class="small muted">{{ b.author }}{% if b.year %} · {{ b.year }}{% endif %}</div>
+      <a class="btn ghost model-link" href="/library/archive/{{ b.slug }}">BOOK DETAILS</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

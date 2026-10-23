@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}How it works{% endblock %}
+{% block description %}How ordering, packing, pickup, and delivery work at Runchero Beef, from the pasture to your porch.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>How buying from us works</h1>
+  <p>From the pasture to your porch, here is the whole path.</p>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">1. We raise it</h2>
+    <p>Beef raised in Shelby County by people whose names you can ask for at
+      the pickup window. Processed at a USDA-inspected plant, so every wrap
+      carries the inspection mark, the safe handling statement, and a
+      freeze-by date.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">2. You order it</h2>
+    <p>Cut by cut, in a package, or by the share. Check out as a guest, or
+      sign in to keep your address, preferences, and order history. Your
+      receipt appears on screen when the order is placed, ready to print or
+      save.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">3. We pack it your way</h2>
+    <p>Vacuum sealed or butcher paper. Whole cuts, or steaks portioned to
+      your thickness. Ground in 1, 2, 5, or 10 pound wraps. The defaults are
+      chosen for you, and everything else is one click and clearly priced.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">4. Pickup or delivery</h2>
+    <p>Pickup at {{ content.pickup_name }}, {{ content.pickup_address }},
+      {{ content.pickup_hours }}. Delivery on Wednesdays and Saturdays to
+      {{ content.delivery_counties|join(', ') }} counties.</p>
+  </div>
+</div>
+
+<div class="panel paper" style="margin-top:6px">
+  <h2 style="color:var(--ink);margin-top:0">The rules that matter to you</h2>
+  <div class="grid2">
+    <div>
+      <ul style="color:var(--ink);padding-left:20px">
+        <li>Order minimum {{ content.min_order|money }}.</li>
+        <li>Delivery {{ content.delivery_fee|money }}, free over
+          {{ content.free_delivery_over|money }}.</li>
+        <li>Wednesday closes Tuesday 11:59pm; Saturday closes Friday
+          11:59pm.</li>
+      </ul>
+    </div>
+    <div>
+      <ul style="color:var(--ink);padding-left:20px">
+        <li>{{ content.tax_note }}</li>
+        <li>Beef arrives at or below 41&deg;F.</li>
+        <li>Savings claims compare against published USDA market averages,
+          with the source and date shown.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

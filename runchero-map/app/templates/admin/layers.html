@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Layers{% endblock %}
+{% block body %}
+<h1>Layers</h1>
+<form method="post" action="/admin/layers">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <p><input name="slug" placeholder="slug" required> <input name="name" placeholder="name" required>
+  <input name="description" placeholder="description" style="width:200px">
+  <label><input type="checkbox" name="visible" value="1" checked> visible</label>
+  <input name="sort_order" type="number" value="0"> <button type="submit">Add/Save</button></p>
+</form>
+<table style="width:100%;border-collapse:collapse">
+<tr><th>Slug</th><th>Name</th><th>Visible</th><th></th></tr>
+{% for l in layers %}
+<tr>
+  <td>{{ l.slug }}</td><td>{{ l.name }}</td><td>{{ 'yes' if l.visible else 'no' }}</td>
+  <td><form method="post" action="/admin/layers" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="delete_slug" value="{{ l.slug }}"><button type="submit">delete</button></form></td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

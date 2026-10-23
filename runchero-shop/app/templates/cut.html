@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ cut.name }}{% endblock %}
+{% block description %}{{ cut.name }} from Runchero Beef: {{ cut.blurb|truncate(100) }} Priced against the latest USDA market average and cut to order.{% endblock %}
+{% block body %}
+
+<p class="pill-row" style="margin-top:8px">
+  <a class="pill" href="/shop">&larr; All cuts</a>
+  {% if cut.primal_slug %}
+  <a class="pill" href="/shop/{{ cut.primal_slug }}">{{ cut.primal_name }}</a>
+  {% endif %}
+</p>
+
+<div class="hero">
+  <div>
+    <h1>{{ cut.name }}</h1>
+    <p class="lede">{{ cut.blurb }}</p>
+    <p style="font-size:15px;color:var(--silver)">
+      {{ cut.serving }} &middot; {{ cut.unit_lbs }} lb
+      {{- ' each' if cut.unit == 'each' else ' on average' }}
+    </p>
+  </div>
+  <div class="hero-art">
+    <img src="/static/img/icons/{{ cut.icon }}@4x.png" alt="" width="72" height="72">
+  </div>
+</div>
+
+{% if comparison and comparison.available %}
+<div class="price-compare" role="group" aria-label="Price comparison">
+  <div class="ours">
+    <span class="lbl">Our price</span>
+    <span class="val">{{ cut.runchero_price|money }}</span>
+    <span class="sub">{{ 'each' if cut.unit == 'each' else 'per lb' }}</span>
+  </div>
+  <div>
+    <span class="lbl">Grocery average</span>
+    <span class="val">${{ '%.2f'|format(comparison.value) }}</span>
+    <span class="sub">per lb</span>
+  </div>
+  {% if comparison.under %}
+  <div class="delta">
+    ${{ '%.2f'|format(comparison.delta) }} under the shelf price
+    ({{ '%.0f'|format(comparison.pct) }}% less), before packing options.
+  </div>
+  {% else %}
+  <div class="delta bad">
+    Our price does not beat this week's market average, so we are not
+    claiming it does.
+  </div>
+  {% endif %}
+</div>
+<p style="font-size:13px;color:var(--grey);margin-top:6px">
+  Market figure: {{ comparison.label }} &middot; {{ comparison.source }},
+  {{ comparison.region }}, observed {{ comparison.observed_at|prettydate }}.
+  Savings are calculated on the base cut price only; packing choices such as
+  butcher paper are priced separately at checkout.
+</p>
+{% else %}
+<p class="market missing">No published market average matched this cut this
+  week, so there is nothing to compare against.</p>
+{% endif %}
+
+<div class="grid2" style="margin-top:18px">
+  <div class="panel" id="add-to-cart">
+    <h2 style="margin-top:0">Add to cart</h2>
+    <form method="post" action="/cart/add">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="type" value="cut">
+      <input type="hidden" name="ref" value="{{ cut.id }}">
+      <input type="hidden" name="name" value="{{ cut.name }}">
+      <div class="field">
+        <label for="qty">How much</label>
+        <input type="number" id="qty" name="qty" value="1" min="0.5" step="0.5">
+        <p class="hint">{{ 'Priced each.' if cut.unit == 'each' else 'Priced per pound.' }}
+          A typical order is 1-3.</p>
+      </div>
+      {% for group, opts in (line_groups or {}).items() %}
+      <fieldset style="border:2px solid var(--grey2);padding:12px;margin:0 0 12px">
+        <legend style="font-family:var(--font-pixel);font-size:9px;
+                       color:var(--cream);padding:0 6px">{{ opts[0].group_label }}</legend>
+        {% for opt in opts %}
+        <label class="opt">
+          <input type="radio" name="{{ group }}" value="{{ opt.code }}"
+                 {% if opt.is_default %}checked{% endif %}>
+          <span class="opt-body">
+            <span class="opt-label">{{ opt.label }}</span>
+            {% if opt.description %}
+            <span class="opt-desc">{{ opt.description }}</span>{% endif %}
+          </span>
+          <span class="opt-cost {% if opt.amount == 0 %}free{% endif %}">
+            {% if opt.amount == 0 %}Included{% elif opt.price_mode == 'per_lb' %}
+            +{{ opt.amount|money }}/lb{% elif opt.price_mode == 'per_unit' %}
+            +{{ opt.amount|money }}/cut{% elif opt.price_mode == 'percent' %}
+            {{ opt.amount|money }}%{% else %}+{{ opt.amount|money }}{% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      {% endfor %}
+      <button class="btn grass block" type="submit">Add {{ cut.name }}</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">The cut, plainly</h2>
+    <dl class="kv">
+      <dt>Primal</dt><dd>{{ cut.primal_name or '-' }}</dd>
+      <dt>Comes as</dt><dd>{% if cut.unit == 'each' %}{{ cut.unit_lbs }} lb
+        each{% else %}Sold by the pound; {{ cut.unit_lbs }} lb average{% endif %}</dd>
+      <dt>Feeds</dt><dd>{{ cut.serving }}</dd>
+      <dt>In stock</dt><dd>{{ cut.stock_lbs|round(0)|int }} lb</dd>
+    </dl>
+    <p style="font-size:14px;color:var(--silver)">Wrapping, portioning, and
+      pack sizes are chosen at checkout. Vacuum sealed comes standard.</p>
+  </div>
+</div>
+
+{% if related %}
+<section aria-labelledby="related" style="margin-top:22px">
+  <div class="section-head">
+    <h2 id="related">More from the {{ cut.primal_name }}</h2>
+  </div>
+  <div class="product-grid">
+    {% for item in related %}
+    <article class="card">
+      <div class="thumb"><img src="/static/img/icons/{{ item.icon }}@4x.png"
+        alt="" width="64" height="64"></div>
+      <div class="body">
+        <h3><a class="card-link" href="/cut/{{ item.slug }}">{{ item.name }}</a></h3>
+        <div class="foot">
+          <span class="price">{{ item.runchero_price|money }}
+            <small>{{ 'each' if item.unit == 'each' else 'per lb' }}</small></span>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section aria-labelledby="trust-head" style="margin-top:22px">
+  <h2 id="trust-head" class="sr-only">Why buy here</h2>
+  {% include "_trust.html" %}
+</section>
+
+{# One button, always reachable on a phone. It jumps to the real form
+   rather than pretending to be a second, hidden checkout. #}
+<div class="sticky-cta">
+  <span class="sticky-price">{{ cut.runchero_price|money }}
+    <small>{{ 'each' if cut.unit == 'each' else 'per lb' }}</small></span>
+  <a class="btn grass" href="#add-to-cart">Add to cart</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Manage subscription{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Your subscription</h1>
+  <p>{{ subscriber.email }} &middot; status:
+    <strong>{{ subscriber.status }}</strong>
+    {% if subscriber.free_delivery %}&middot; free delivery{% endif %}</p>
+</div>
+
+{% for sub, items in pairs %}
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">Subscription #{{ sub.id }}</h2>
+    <span class="badge {% if sub.status == 'active' %}grass{% elif sub.status == 'paused' %}tomato{% else %}ghost{% endif %}">
+      {{ sub.status }}</span>
+  </div>
+  <div class="grid2">
+    <div>
+      <dl class="kv">
+        <dt>Cadence</dt><dd>{{ sub.cadence }}</dd>
+        <dt>Next delivery</dt><dd>{{ sub.next_date|prettydate }}</dd>
+        <dt>Skips used</dt><dd>{{ sub.skips }}</dd>
+        <dt>Discount</dt><dd>{{ subscriber.discount_pct|round(0)|int }}% off,
+          every order</dd>
+      </dl>
+      <h3>What comes</h3>
+      <ul style="padding-left:20px">
+        {% for item in items %}
+        <li>{{ item.name }} &times; {{ item.qty }}</li>
+        {% else %}
+        <li>Rebuilt from your last order at renewal time.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      {% if sub.status != 'cancelled' %}
+      <form method="post" action="/manage/{{ subscriber.token }}" style="margin-bottom:8px">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="sub" value="{{ sub.id }}">
+        <input type="hidden" name="action" value="skip">
+        <button class="btn block" type="submit">Skip the next one</button>
+      </form>
+      {% if sub.status == 'active' %}
+      <form method="post" action="/manage/{{ subscriber.token }}" style="margin-bottom:8px">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="sub" value="{{ sub.id }}">
+        <input type="hidden" name="action" value="pause">
+        <button class="btn block" type="submit">Pause it</button>
+      </form>
+      {% else %}
+      <form method="post" action="/manage/{{ subscriber.token }}" style="margin-bottom:8px">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="sub" value="{{ sub.id }}">
+        <input type="hidden" name="action" value="resume">
+        <button class="btn grass block" type="submit">Resume it</button>
+      </form>
+      {% endif %}
+      <form method="post" action="/manage/{{ subscriber.token }}" class="field-row"
+            style="gap:8px;align-items:end;margin-bottom:8px">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="sub" value="{{ sub.id }}">
+        <input type="hidden" name="action" value="cadence">
+        <div class="field" style="margin:0;flex:1">
+          <label for="cadence-{{ sub.id }}">Change cadence</label>
+          <select id="cadence-{{ sub.id }}" name="cadence">
+            {% for option in ('weekly', 'biweekly', 'monthly', 'quarterly') %}
+            <option value="{{ option }}" {% if sub.cadence == option %}selected{% endif %}>
+              {{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn small" type="submit">Save</button>
+      </form>
+      <form method="post" action="/manage/{{ subscriber.token }}"
+            onsubmit="return confirm('Cancel this subscription? It takes effect at the end of the paid period.')">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="sub" value="{{ sub.id }}">
+        <input type="hidden" name="action" value="cancel">
+        <button class="btn tomato block" type="submit">Cancel subscription</button>
+      </form>
+      {% else %}
+      <p class="alert info">This subscription is cancelled. Nothing further
+        will be billed.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<p class="hint">This link is yours: keep it. Anyone holding it can change
+  the subscription, which is why we do not print it in public places.</p>
+{% endblock %}

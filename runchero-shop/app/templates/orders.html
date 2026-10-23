@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Find your order{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block description %}Find a Runchero Beef order by its code. Enter the code from your receipt to see the details.{% endblock %}
+{% block body %}
+<div class="panel" style="max-width:560px;margin:20px auto">
+  <h1 style="margin-top:0">Find your order</h1>
+  <p>Enter the order code from your receipt, for example
+    <span class="mono">RB-1A2B3C4D</span>.</p>
+  <form method="get" action="/orders">
+    <div class="field">
+      <label for="code">Order code</label>
+      <input type="text" id="code" name="code" placeholder="RB-XXXXXXXX"
+             autocomplete="off" required>
+    </div>
+    <button class="btn grass block" type="submit">Show my order</button>
+  </form>
+</div>
+{% endblock %}

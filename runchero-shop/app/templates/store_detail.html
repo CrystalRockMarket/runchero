@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block description %}{{ product.name }} from {{ store.name }}: {{ product.blurb|truncate(120) }}{% endblock %}
+{% block body %}
+  <div class="hero">
+    <div>
+      <h1>{{ product.name }}</h1>
+      <p class="lede">{{ product.blurb }}</p>
+      {% if product.serving %}<p style="font-size:15px;color:var(--silver)">{{ product.serving }}</p>{% endif %}
+      <p style="font-size:13px;color:var(--silver);margin-top:6px">
+        Learn to make it yourself:
+        <a href="/events" style="color:var(--sun)">Sign up for a workshop &rarr;</a>
+      </p>
+    </div>
+  <div class="hero-art">
+    {% if product.image %}
+    <img src="{{ product.image }}" alt="" width="160" height="160">
+    {% else %}
+    <img src="/static/img/icons/{{ product.icon or 'box' }}.png" alt="" width="120" height="120">
+    {% endif %}
+  </div>
+</div>
+
+{% if variants %}
+<div class="panel" style="margin-top:16px">
+  <h2 style="margin-top:0">Choose a size</h2>
+  <p class="hint">Bigger pails cost less per pound &mdash; the unit price drops with size.</p>
+  <form method="post" action="/cart/add" id="size-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="type" value="product">
+    <input type="hidden" name="ref" value="{{ product.id }}">
+    <input type="hidden" name="name" value="{{ product.name }}">
+    <input type="hidden" name="variant_id" value="{{ default.id if default else '' }}">
+    <input type="hidden" name="next" value="/{{ url_prefix }}/{{ product.slug }}">
+    <div class="size-grid">
+      {% for v in variants %}
+      <label class="opt size-opt">
+        <input type="radio" name="variant_id" value="{{ v.id }}"
+               {% if default and v.id == default.id %}checked{% endif %}>
+        <span class="opt-body">
+          <span class="opt-label">{{ v.size_label }} {% if v.unit_lbs %}(
+            {{ v.unit_lbs|round(1) }} lb){% endif %}</span>
+          <span class="opt-cost">{{ v.price|money }}{% if v.unit_lbs %}
+            <small>{{ (v.price / v.unit_lbs)|money }}/lb</small>{% endif %}</span>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label for="qty">How many</label>
+      <input type="number" id="qty" name="qty" value="1" min="1" step="1">
+    </div>
+    <button class="btn grass block" type="submit">Add to cart</button>
+  </form>
+</div>
+{% else %}
+<div class="price-compare" role="group" aria-label="Price">
+  <div class="ours">
+    <span class="lbl">Our price</span>
+    <span class="val">{{ product.price|money }}</span>
+    <span class="sub">{{ 'per ' ~ product.unit if product.unit != 'each' else 'each' }}</span>
+  </div>
+  {% if product.compare_at %}
+  <div>
+    <span class="lbl">Compare at</span>
+    <span class="val">${{ '%.2f'|format(product.compare_at) }}</span>
+    <span class="sub">{{ 'per ' ~ product.unit if product.unit != 'each' else 'each' }}</span>
+  </div>
+  {% endif %}
+</div>
+{% if product.compare_at %}
+<p style="font-size:13px;color:var(--grey);margin-top:6px">
+  {% if product.compare_brand %}Comparable listing: {{ product.compare_brand }}{% endif %}
+  {% if product.compare_size %}&mdash; {{ product.compare_size }}{% endif %}.
+  {% if product.compare_url %}<a href="{{ product.compare_url }}" target="_blank" rel="noopener noreferrer">View source</a>.{% endif %}
+  {% if product.compare_observed_at %}Price checked {{ product.compare_observed_at }}.{% endif %}
+  {% if product.unit == 'lb' %}The reference is normalized to price per pound;
+  package size and bulk discounts vary.{% else %}Prices are compared per package;
+  declared serving counts and recipes vary by brand.{% endif %}
+</p>
+{% endif %}
+{% endif %}
+
+{% if others %}
+<section aria-labelledby="also-head" style="margin-top:26px">
+  <div class="section-head"><h2 id="also-head">Also from {{ store.name }}</h2>
+    <p>More from the same drop.</p></div>
+  <div class="grid3">
+    {% for p in others %}
+    <article class="card">
+      <div class="thumb">
+        {% if p.image %}
+        <img src="{{ p.image }}" alt="" width="64" height="64" loading="lazy" decoding="async">
+        {% else %}
+        <img src="/static/img/icons/{{ p.icon or 'box' }}.png" alt="" width="64" height="64" loading="lazy" decoding="async">
+        {% endif %}
+      </div>
+      <div class="body">
+        <h3><a class="card-link" href="/{{ url_prefix }}/{{ p.slug }}">{{ p.name }}</a></h3>
+        <p class="blurb">{{ p.blurb }}</p>
+        <div class="foot">
+          <span class="price">{{ p.price|money }} <small>{{ 'per ' ~ p.unit if p.unit != 'each' else 'each' }}</small></span>
+          <a class="btn small grass" href="/{{ url_prefix }}/{{ p.slug }}">Details</a>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

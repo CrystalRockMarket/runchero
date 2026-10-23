@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Manage a subscription{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="panel" style="max-width:560px;margin:20px auto">
+  <h1 style="margin-top:0">Manage a subscription</h1>
+  <p>Enter the email you ordered with and we will take you to your manage
+    page. No email is sent in this demo.</p>
+  <form method="post" action="/manage">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="email">
+    </div>
+    <button class="btn grass block" type="submit">Find my subscription</button>
+  </form>
+  <p class="hint">Subscribers can skip, pause, change cadence, or cancel from
+    that link. No phone call, no email thread, no hoops.</p>
+</div>
+{% endblock %}

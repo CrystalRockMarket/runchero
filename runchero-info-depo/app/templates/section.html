@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ cat.name }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/' ~ cat.icon ~ '.png') }}" alt="">
+    <span class="panel-title-text">{{ cat.name|upper }}</span>
+    <span class="count">{{ articles|length }} notes</span>
+  </h1>
+  <p class="muted small">{{ cat.blurb }}</p>
+  {% if children %}
+  <div class="chips mt">
+    {% for child in children %}
+    <span class="chip green"><a href="/section/{{ child.slug }}">{{ child.name }} ({{ child_counts.get(child.slug, 0) }})</a></span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if vehicles %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+    MACHINES IN THIS SECTION
+  </h2>
+  <div class="cards">
+    {% for machine in vehicles %}
+    <div class="card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
+        <span class="chip blue">{{ machine.kind }}</span>
+      </div>
+      <div class="card-title"><a href="/vehicles/{{ machine.slug }}">{{ machine.make }} {{ machine.model }}</a></div>
+      <div class="meta">
+        {% if machine.year_from %}<span>{{ machine.year_from }}{% if machine.year_to %}-{{ machine.year_to }}{% endif %}</span>{% endif %}
+        {% if machine.engine %}<span>{{ machine.engine }}</span>{% endif %}
+        {% if machine.power %}<span>{{ machine.power }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if hubs %}
+<div class="panel mb">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/star.png') }}" alt="">
+    RELATED TOPICS
+  </h2>
+  <p class="small muted">Topic pages bring related notes, books, formulas and equipment records together.</p>
+  <div class="grid-3 mt">
+    {% for slug, name in hubs %}
+    <div class="card topic-card">
+      <div class="chead"><img src="{{ static_url('img/icons/star.png') }}" alt=""><span class="chip blue">TOPIC</span></div>
+      <div class="card-title"><a href="/hub/{{ slug }}">{{ name }}</a></div>
+      <p class="small muted">Notes, books, formulas and machines on {{ name|lower }}.</p>
+      <a class="btn ghost topic-link" href="/hub/{{ slug }}">OPEN TOPIC</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2 class="panel-title">
+    <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+    ALL NOTES
+  </h2>
+  <div class="cards">
+    {% for item in articles %}
+    <div class="card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ (item.category_icon or cat.icon) ~ '.png') }}" alt="">
+        {% if item.category_slug and item.category_slug != cat.slug %}
+        <span class="chip"><a href="/section/{{ item.category_slug }}">{{ item.category_name }}</a></span>
+        {% endif %}
+        <span class="chip green">{{ item.difficulty }}</span>
+      </div>
+      <div class="card-title"><a href="/a/{{ item.slug }}">{{ item.title }}</a></div>
+      <p>{{ item.summary }}</p>
+      <div class="meta">
+        <span>{{ item.read_minutes }} min read</span>
+        <span>by {{ item.author }}</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">No notes filed under this section yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

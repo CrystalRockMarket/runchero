@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Reading: {{ book.title }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    {{ book.title|upper }}
+    <span class="count">{{ book.format }}</span>
+  </h1>
+  <div class="byline mb">
+    <span>{{ book.author or 'Unknown author' }}</span>
+    {% if book.year %}<span>&middot; {{ book.year }}</span>{% endif %}
+    <span>&middot; {{ book.bytes|filesize }}</span>
+    <span class="prov prov-{{ 'manual' if book.format == 'MANUAL' else 'book' }}">{{ source_labels.get('manual' if book.format == 'MANUAL' else 'book', book.source|upper) }}</span>
+    <span class="spacer"></span>
+    <a class="btn ghost" href="/library/archive/{{ book.slug }}">BOOK DETAILS</a>
+    <a class="btn blue" href="/download/{{ book.slug }}">DOWNLOAD</a>
+  </div>
+
+  {% if readable %}
+  <div class="reader-controls">
+    <div class="reader-nav">
+      {% if page > 1 %}
+      <a class="btn ghost" href="/read/{{ book.slug }}?page={{ page - 1 }}{% if query %}&q={{ query|urlencode }}{% endif %}">&larr; PREV</a>
+      {% else %}
+      <span class="btn ghost disabled">&larr; PREV</span>
+      {% endif %}
+      <form action="/read/{{ book.slug }}" method="get" class="reader-jump">
+        {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+        <label for="reader-page" class="small">PAGE</label>
+        <select id="reader-page" name="page" data-reader-jump>
+          {% for label in labels %}
+          <option value="{{ loop.index }}" {{ 'selected' if loop.index == page else '' }}>{{ loop.index }} / {{ pages }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% if page < pages %}
+      <a class="btn ghost" href="/read/{{ book.slug }}?page={{ page + 1 }}{% if query %}&q={{ query|urlencode }}{% endif %}">NEXT &rarr;</a>
+      {% else %}
+      <span class="btn ghost disabled">NEXT &rarr;</span>
+      {% endif %}
+      <span class="small muted">Page {{ page }} of {{ pages }}</span>
+    </div>
+
+    <form action="/read/{{ book.slug }}" method="get" class="reader-search">
+      <input type="text" name="q" value="{{ query }}" placeholder="Search inside this book" aria-label="Search inside this book">
+      <button class="btn sun" type="submit">FIND</button>
+      {% if query %}<a class="btn ghost" href="/read/{{ book.slug }}?page={{ page }}">CLEAR</a>{% endif %}
+    </form>
+
+    <div class="reader-display" aria-label="Reading display options">
+      <span class="small muted">TEXT</span>
+      <button class="btn ghost" type="button" data-reader-font="small">A-</button>
+      <button class="btn ghost" type="button" data-reader-font="normal">A</button>
+      <button class="btn ghost" type="button" data-reader-font="large">A+</button>
+      <span class="small muted">PAPER</span>
+      <button class="btn ghost" type="button" data-reader-theme="paper">CREAM</button>
+      <button class="btn ghost" type="button" data-reader-theme="sepia">SEPIA</button>
+      <button class="btn ghost" type="button" data-reader-theme="dark">DARK</button>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if truncated %}
+  <div class="callout mt"><strong>Long book.</strong> This reader is showing the first 4 MB. Download the file for the complete text.</div>
+  {% endif %}
+</div>
+
+{% if query %}
+<div class="panel mb reader-hits">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/magnifier.png') }}" alt="">
+    SEARCH INSIDE THIS BOOK
+    <span class="count">{{ hits|length }} pages</span>
+  </div>
+  {% if hits %}
+  <p class="small muted">Results for <b>{{ query }}</b>. Open a page to see the matches highlighted.</p>
+  <div class="stack" style="gap:8px">
+    {% for hit in hits[:80] %}
+    <a class="reader-hit" href="/read/{{ book.slug }}?page={{ hit.page }}&q={{ query|urlencode }}">
+      <b>Page {{ hit.page }}</b> <span class="chip">{{ hit.count }} match{{ '' if hit.count == 1 else 'es' }}</span>
+      <span class="small muted">{{ hit.snippet }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">No match for <b>{{ query }}</b> in this book. Try a shorter word or a different spelling; OCR scans are imperfect.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if readable %}
+<div class="reader-shell">
+  <aside class="panel reader-toc">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/list.png') }}" alt="">
+      CONTENTS
+    </div>
+    <ol class="reader-page-list">
+      {% for label in labels %}
+      <li>
+        <a class="{{ 'active' if loop.index == page else '' }}"
+           href="/read/{{ book.slug }}?page={{ loop.index }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+           title="{{ label }}">
+          <span class="n">{{ loop.index }}</span>{{ label }}
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </aside>
+
+  <div class="panel reader-main">
+    <div class="reader-toolbar">
+      <span class="small muted">{{ labels[page - 1] }}</span>
+      <span class="spacer"></span>
+      <span class="small muted">{{ text|length }} characters on this page</span>
+    </div>
+    <div class="reader-text reader-page" id="reader-text">{{ text_html|safe }}</div>
+    <div class="reader-bottom-nav">
+      {% if page > 1 %}
+      <a class="btn ghost" href="/read/{{ book.slug }}?page={{ page - 1 }}{% if query %}&q={{ query|urlencode }}{% endif %}">&larr; PREVIOUS</a>
+      {% endif %}
+      {% if page < pages %}
+      <a class="btn ghost" href="/read/{{ book.slug }}?page={{ page + 1 }}{% if query %}&q={{ query|urlencode }}{% endif %}">NEXT &rarr;</a>
+      {% endif %}
+      <a class="btn ghost" href="/library/archive/{{ book.slug }}">BOOK DETAILS</a>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="panel mb">
+  <div class="empty">
+    This title is stored as <b>{{ book.format }}</b>, which cannot be rendered as plain text here.
+    Download the file and open it in any reader.
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if readable %}<script src="{{ static_url('js/reader.js') }}"></script>{% endif %}
+{% endblock %}

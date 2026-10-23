@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Places{% endblock %}
+{% block body %}
+<h1>Places</h1>
+<p><a href="/admin/places/new">+ New place</a></p>
+<table style="width:100%;border-collapse:collapse">
+<tr><th>Name</th><th>Category</th><th>Kind</th><th>Status</th><th>Hidden</th><th></th></tr>
+{% for p in places %}
+<tr>
+  <td><a href="/admin/place/{{ p.id }}">{{ p.name }}</a></td>
+  <td>{{ p.catname }}</td>
+  <td>{{ p.kind }}</td>
+  <td>{{ p.status }}</td>
+  <td>{{ 'yes' if p.hidden else 'no' }}</td>
+  <td>
+    <form method="post" action="/admin/place/{{ p.id }}/delete" style="display:inline">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><button type="submit" onclick="return confirm('Delete?')">delete</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

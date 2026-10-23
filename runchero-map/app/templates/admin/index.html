@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block body %}
+<h1>Admin Console</h1>
+<p>Places: {{ stats.places }} (visible {{ stats.visible }}) · Records: {{ stats.records }} · Photos: {{ stats.photos }} · Layers: {{ stats.layers }}</p>
+<ul>
+  <li><a href="/admin/places">Places</a></li>
+  <li><a href="/admin/categories">Categories</a></li>
+  <li><a href="/admin/layers">Layers</a></li>
+  <li><a href="/admin/settings">Settings</a></li>
+  <li><a href="/admin/audit">Audit Log</a></li>
+</ul>
+<h2>Recent audit</h2>
+{% for r in recent %}<div class="record">{{ r.created_at }} · {{ r.actor }} · {{ r.action }} · {{ r.entity }} {{ r.entity_id }}</div>{% endfor %}
+<form method="post" action="/admin/logout" style="margin-top:12px">
+  <input type="hidden" name="_csrf" value="{{ csrf }}"><button type="submit">Logout</button>
+</form>
+{% endblock %}

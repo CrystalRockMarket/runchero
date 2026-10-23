@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.name }}{% endblock %}
+{% block description %}{{ campaign.name }}: {{ campaign.blurb|truncate(110) }} Join the drop and reserve your household's share.{% endblock %}
+{% block body %}
+
+<p class="pill-row" style="margin-top:8px">
+  <a class="pill" href="/campaigns">&larr; All cow drops</a>
+</p>
+
+<div class="hero">
+  <div>
+    <h1>{{ campaign.name }}</h1>
+    <p class="lede">{{ campaign.blurb }}</p>
+    <p style="font-size:15px;color:var(--silver)">
+      Drop {{ info.drop_date|prettydate }} &middot;
+      {{ info.claimed_lbs|round(0)|int }} lb of {{ info.total_lbs|round(0)|int }} lb claimed
+    </p>
+  </div>
+  <div class="hero-art">
+    <img src="/static/img/icons/box@4x.png" alt="" width="72" height="72">
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2 style="margin:0">Households</h2>
+    <span class="badge grass">{{ info.joined }} of {{ info.target }}</span></div>
+  <div class="bar"><span style="width: {{ info.pct }}%"></span></div>
+  <p style="font-size:14px;margin-top:10px">
+    {% if info.open %}
+    <strong>{{ info.left }} place{{ '' if info.left == 1 else 's' }} left.</strong>
+    Each household takes a {{ info.share_lbs|round(0)|int }} lb share for
+    {{ info.share_price|money }}.
+    {% else %}
+    <strong>This drop is full.</strong> Join the wait list and we will
+    call you when the next cow opens up.
+    {% endif %}
+  </p>
+</div>
+
+<div class="grid2" style="margin-top:16px">
+  <div class="panel">
+    <h2 style="margin-top:0">Hold a place</h2>
+    {% if info.open %}
+    <form method="post" action="/campaign/{{ campaign.slug }}/join">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <div class="field">
+        <label for="name">Household name</label>
+        <input type="text" id="name" name="name" required
+               autocomplete="name" placeholder="The Alvarez household">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required
+               autocomplete="email">
+        <p class="hint">We use this to tell you the cut sheet is ready.</p>
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label for="note">Notes</label>
+        <textarea id="note" name="note" rows="3"
+                  placeholder="How you like it cut, freezer space, questions"></textarea>
+      </div>
+      <button class="btn grass block" type="submit">Hold our place</button>
+      <p class="hint">Holding a place costs nothing. You order and pay
+        separately, once the cut sheet is ready.</p>
+    </form>
+    {% else %}
+    <p>This drop is full. Check the
+      <a href="/campaigns">other drops</a> or the
+      <a href="/shares">share tiers</a>.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">How the cow is split</h2>
+    <dl class="kv">
+      <dt>Carcass</dt><dd>{{ info.total_lbs|round(0)|int }} lb</dd>
+      <dt>Your share</dt><dd>{{ info.share_lbs|round(0)|int }} lb</dd>
+      <dt>Price</dt><dd>{{ info.share_price|money }} per household</dd>
+      <dt>Drop</dt><dd>{{ info.drop_date|prettydate }}</dd>
+      <dt>Pickup</dt><dd>{{ content.pickup_name }}, {{ content.pickup_hours }}</dd>
+      <dt>The most one household may take</dt>
+      <dd>{{ info.max_share_lbs|round(0)|int }} lb (half the carcass)</dd>
+      <dt>Minimum that must go to households</dt>
+      <dd>{{ info.min_household_lbs|round(0)|int }} lb (three quarters)</dd>
+    </dl>
+    <p style="font-size:14px;color:var(--silver)">
+      The retail exemption does not allow one sale to be more than half a
+      carcass, so the most any household may take is
+      {{ info.max_share_lbs|round(0)|int }} lb. At least three quarters of
+      the cow has to go to households, which is
+      {{ info.min_household_lbs|round(0)|int }} lb. That is why the cow is
+      split into {{ info.target }} shares of
+      {{ info.share_lbs|round(0)|int }} lb: every household takes one, and
+      the whole cow is butchered once, on one day, to one cut sheet that
+      everyone sees before their meat is wrapped.
+    </p>
+    <p style="font-size:14px;color:var(--silver)">
+      <a href="/how-it-works">How the whole thing works</a> &middot;
+      <a href="/terms">the terms</a>
+    </p>
+  </div>
+</div>
+
+{% endblock %}

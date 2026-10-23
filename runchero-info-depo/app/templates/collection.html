@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.name }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+{% set back = '/grow' if collection.kind == 'crop' else ('/animals' if collection.kind == 'animal' else '/collections') %}
+{% set back_label = 'Grow' if collection.kind == 'crop' else ('Animals' if collection.kind == 'animal' else 'Topics') %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a><span class="separator">/</span>
+  <a href="{{ back }}">{{ back_label }}</a><span class="separator">/</span>
+  <span class="current">{{ collection.group_name }}</span><span class="separator">/</span>
+  <span class="current">{{ collection.name }}</span>
+</nav>
+
+<section class="panel mb depot-hero">
+  <div class="depot-head">
+    <img class="depot-icon" src="{{ static_url('img/icons/' ~ collection.icon ~ '.png') }}" alt="">
+    <div>
+      <div class="kicker">{{ collection.group_name }} &middot; {{ collection.subgroup_name }} &middot; {{ collection.source_count }} sources</div>
+      <h1>{{ collection.name }}</h1>
+      {% if collection.scientific %}<div class="scientific"><i>{{ collection.scientific }}</i></div>{% endif %}
+      <p>{{ collection.summary }}</p>
+      {% if collection.aliases %}<div class="small muted">Also known as: {{ collection.aliases }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="callout tip mt">
+    <b>This is an index, not an article.</b> The depot groups public-domain books,
+    government reports and manuals. Each record keeps its author, licence and
+    original source link. Read the local copy or open the publication itself.
+  </div>
+  <div class="chips mt">
+    <a class="chip green" href="{{ back }}">ALL {{ back_label|upper }}</a>
+    {% for child in children[:8] %}
+      {% if child.slug != collection.slug %}
+      <a class="chip" href="/{{ 'grow' if collection.kind == 'crop' else ('animals' if collection.kind == 'animal' else 'topic') }}/{{ child.slug }}">{{ child.name }}</a>
+      {% endif %}
+    {% endfor %}
+    <a class="chip sun" href="/sources">SOURCE INDEX</a>
+  </div>
+</section>
+
+{% for role, items in shelves %}
+<div class="panel mb" id="shelf-{{ role }}">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    {{ role_labels.get(role, role|replace('-', ' ')|title)|upper }}
+    <span class="count">{{ items|length }} sources</span>
+  </div>
+  <div class="cards">
+    {% for book in items %}
+    <article class="card bookcard source-book">
+      <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+      <div class="info">
+        <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+        <div class="small muted">{{ book.author or 'Unknown author' }}{% if book.year %} &middot; {{ book.year }}{% endif %}{% if book.publisher %} &middot; {{ book.publisher }}{% endif %}</div>
+        {% if book.summary %}<p class="small">{{ book.summary|truncate(170) }}</p>{% endif %}
+        <div class="chips">
+          <span class="prov prov-{{ 'manual' if book.format == 'MANUAL' else 'book' }}">{{ source_labels.get('manual' if book.format == 'MANUAL' else 'book', 'SOURCE') }}</span>
+          <span class="chip sun">{{ book.format }}</span>
+          {% if book.pages %}<span class="chip">{{ book.pages }} pages</span>{% endif %}
+          <span class="chip">{{ book.bytes|filesize }}</span>
+        </div>
+        <div class="row">
+          {% if book.format in ('TEXT', 'HTML', 'MANUAL') %}
+          <a class="btn sun" href="/read/{{ book.slug }}">READ HERE</a>
+          {% endif %}
+          <a class="btn ghost" href="/library/archive/{{ book.slug }}">RECORD</a>
+          {% if book.source_url %}
+          <a class="btn blue" href="{{ book.source_url }}" target="_blank" rel="noopener noreferrer">ORIGINAL SOURCE</a>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="empty">No sources are linked to this depot yet.</div>
+{% endfor %}
+
+{% if related %}
+<section class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/list.png') }}" alt="">
+    NEARBY DEPOTS
+  </div>
+  <div class="cards depot-grid">
+    {% for item in related %}
+    <div class="card depot-card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+        <span class="chip">{{ item.source_count }} sources</span>
+      </div>
+      <div class="card-title">
+        <a href="/{{ 'grow' if item.kind == 'crop' else ('animals' if item.kind == 'animal' else 'topic') }}/{{ item.slug }}">{{ item.name }}</a>
+      </div>
+      <p class="small">{{ item.summary|truncate(110) }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

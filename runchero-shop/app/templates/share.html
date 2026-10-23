@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ share.name }}{% endblock %}
+{% block description %}{{ share.name }} from Runchero Beef: {{ share.blurb|truncate(110) }} One cow, one cut sheet, beef for your freezer.{% endblock %}
+{% block body %}
+<p class="pill-row" style="margin-top:8px">
+  <a class="pill" href="/shares">&larr; All shares</a>
+  {% for other in all_shares %}
+  {% if other.slug != share.slug %}
+  <a class="pill" href="/share/{{ other.slug }}">{{ other.name }}</a>
+  {% endif %}
+  {% endfor %}
+</p>
+
+<div class="hero">
+  <div>
+    <h1>{{ share.name }}</h1>
+    <p class="lede">{{ share.blurb }}</p>
+    <dl class="kv" style="margin-top:10px">
+      <dt>Price</dt><dd>{{ share.price|money }} ({{ share.price_per_lb|money }}/lb take-home)</dd>
+      <dt>Deposit</dt><dd>{{ share.deposit|money }} today, balance at the drop</dd>
+      <dt>Take-home</dt><dd>{{ share.takehome_lbs|round(0)|int }} lb</dd>
+      <dt>Hanging weight</dt><dd>{{ share.hanging_lbs|round(0)|int }} lb</dd>
+    </dl>
+  </div>
+  <div class="hero-art">
+    <img src="/static/img/icons/{{ share.icon }}@4x.png" alt="" width="72" height="72">
+  </div>
+</div>
+
+{% if choice %}
+<div class="price-compare">
+  <div class="ours">
+    <span class="lbl">This share, per lb</span>
+    <span class="val">{{ share.price_per_lb|money }}</span>
+    <span class="sub">all-in, take-home weight</span>
+  </div>
+  <div>
+    <span class="lbl">Grocery average</span>
+    <span class="val">{{ choice.value|money }}</span>
+    <span class="sub">per lb, USDA Choice</span>
+  </div>
+  <div class="delta">
+    Same beef at the grocery would run about
+    {{ (choice.value * share.takehome_lbs)|money }}.
+    This share is {{ share.price|money }}.
+  </div>
+</div>
+{% endif %}
+
+<div class="grid2" style="margin-top:18px">
+  <div class="panel">
+    <h2 style="margin-top:0">What lands in your freezer</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Part of the share</th><th class="num">Pounds</th></tr></thead>
+        <tbody>
+          {% for part in contents %}
+          <tr><td>{{ part.label }}</td><td class="num">{{ part.lbs }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">Your cut sheet decides the exact mix. More ground and
+      roasts, fewer steaks, or the other way around.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Reserve your share</h2>
+    <p>The deposit holds your portion of the next drop. The balance is due
+      when the beef is cut and wrapped.</p>
+    <form method="post" action="/cart/add">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="type" value="share">
+      <input type="hidden" name="ref" value="{{ share.id }}">
+      <input type="hidden" name="qty" value="1">
+      <input type="hidden" name="name" value="{{ share.name }}">
+      <button class="btn grass block" type="submit">
+        Reserve with {{ share.deposit|money }} deposit</button>
+    </form>
+    <p class="hint">One share per household per drop. Wrapping and portioning
+      choices come at checkout, on your own cut sheet.</p>
+  </div>
+</div>
+{% endblock %}

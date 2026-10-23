@@ -1,0 +1,7 @@
+{% if flashes %}
+<div class="wrap" style="padding-bottom:0">
+  {% for f in flashes %}
+  <div class="alert {{ f.level }}" role="{{ 'alert' if f.level == 'error' else 'status' }}">{{ f.message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

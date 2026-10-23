@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Claim integrity{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity" aria-current="page">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<div class="section-head" style="margin-top:4px">
+  <h1>Claim integrity</h1>
+  <p>The site's whole pitch is &ldquo;priced under the local shelf.&rdquo;
+    These are the cuts that fail it right now, with their badges
+    suppressed.</p>
+</div>
+
+{% if not flagged %}
+<div class="alert ok" role="status">Nothing is flagged. Every tracked cut
+  beats its benchmark.</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Cut</th><th class="num">Ours</th>
+      <th class="num">Market</th><th class="num">Gap</th><th>Observed</th></tr></thead>
+    <tbody>
+      {% for cut in flagged %}
+      {% set cmp = comparisons[cut.id] %}
+      <tr>
+        <td>{{ cut.name }}</td>
+        <td class="num">${{ '%.2f'|format(cut.runchero_price) }}</td>
+        <td class="num">${{ '%.2f'|format(cmp.value) }}</td>
+        <td class="num">${{ '%.2f'|format(cmp.value - cut.runchero_price) }}</td>
+        <td>{{ cmp.observed_at|prettydate }} ({{ cmp.source }})</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="hint">Fix these from the pricing console: rake the flagged scope to
+  a discount that clears the benchmark, or re-pin the shelf reference if the
+  cut is not comparable. The badge stays off until the number is honest.</p>
+{% endif %}
+{% endblock %}

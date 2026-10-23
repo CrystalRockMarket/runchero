@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="auth-shell">
+  <div class="panel">
+    <h1 style="margin-top:0">Sign in</h1>
+    <p class="hint">Your account keeps order history, addresses, and
+      recurring-order preferences in one place.</p>
+
+    {% if errors and errors.login %}
+    <div class="alert error" role="alert">{{ errors.login }}</div>
+    {% endif %}
+
+    <form method="post" action="/account/login">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ email }}"
+               autocomplete="email" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password"
+               autocomplete="current-password" required>
+      </div>
+      <button class="btn grass block" type="submit">Sign in</button>
+    </form>
+
+    <p class="auth-switch">New here?
+      <a href="/account/signup">Create an account</a>.</p>
+    <p class="auth-switch">Forgot your password?
+      <a href="/contact">Contact the farm</a> and we will reset it.</p>
+    <p class="demo-note">Demo mode: no email is sent. New accounts are marked
+      verified on sign-up.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Shop policy{% endblock %}
+{% block description %}Runchero Beef shop policy: drops, cutoffs, packing, cold chain, shares, refunds, and no-shows.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Shop policy</h1>
+  <p>How we run the drop, in plain language. This is policy, not the binding
+    terms, which live <a href="/terms">here</a>.</p>
+</div>
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">Drops and cutoffs</h2>
+    <p>We cut and deliver on Wednesdays and Saturdays. Wednesday orders close
+      Tuesday 11:59pm, Saturday orders close Friday 11:59pm. Slots hold a
+      fixed number of pounds, so a window can genuinely fill up; if it does,
+      the next one is listed right there.</p>
+    <h3>Packing</h3>
+    <p>Vacuum sealed is standard at no charge. Butcher paper is
+      {{ content.wrap_paper_fee|money }}/lb, paper plus vacuum is
+      {{ content.wrap_both_fee|money }}/lb, and a gift box with a card is
+      {{ content.gift_wrap_fee|money }} for the order. Steaks portioned to
+      size are priced per cut at checkout, in front of you, before you
+      commit.</p>
+    <h3>Cold chain</h3>
+    <p>Beef travels at or below 41&deg;F and goes straight into your fridge
+      or freezer on arrival. Once it is in your hands, storage is yours.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Shares</h2>
+    <p>A share deposit reserves your portion of a drop and is credited
+      against the balance. One share per household per drop, so the line
+      stays fair. A whole cow is sold as a coordinated multi-household drop:
+      each household has its own order, cut sheet, and packing choices, and
+      no single sale exceeds half a carcass, which is how the federal retail
+      exemption works.</p>
+    <h3>Refunds</h3>
+    <p>If an order is wrong or lost in our care, we replace it or refund it.
+      Cancelled drops refund deposits in full. Beef is perishable: once it
+      leaves our cooler in good order, it is yours.</p>
+    <h3>No-shows</h3>
+    <p>Life happens; tell us and we hold the beef another day. Repeated
+      no-shows lose pickup privileges, because cold beef should not sit.</p>
+    <h3>Tax</h3>
+    <p>{{ content.tax_note }}</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% if page_sources %}
+<div class="panel mb sources-panel" id="sources">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/info.png') }}" alt="">
+    SOURCES &amp; PROVENANCE
+    <span class="count">{{ page_sources|length }} listed</span>
+  </div>
+  <p class="small muted">
+    This page is an <b>AI-organised index</b>. The label means the grouping and
+    cross-links were compiled with AI; the information itself comes from the
+    public-domain books, reports and manuals listed below. Open any source to
+    read the local copy or follow the link to the original publication.
+  </p>
+  <div class="source-list">
+    {% for s in page_sources %}
+    <div class="source-row">
+      <div class="source-head">
+        <span class="source-kind kind-{{ s.kind }}">{{ source_labels.get(s.kind, s.kind|upper) }}</span>
+        {% if s.url %}
+          <a class="source-title" href="{{ s.url }}"
+             {% if s.url.startswith('http') %}rel="noopener noreferrer" target="_blank"{% endif %}>{{ s.title }}</a>
+        {% else %}
+          <span class="source-title">{{ s.title }}</span>
+        {% endif %}
+        {% if s.author %}<span class="source-author">{{ s.author }}</span>{% endif %}
+        {% if s.role %}<span class="chip source-role">{{ s.role }}</span>{% endif %}
+      </div>
+      {% if s.locator %}<div class="small muted">{{ s.locator }}</div>{% endif %}
+      {% if s.citation_note %}<div class="small">{{ s.citation_note }}</div>{% endif %}
+      {% if s.note and s.note != s.citation_note %}<div class="small muted">{{ s.note }}</div>{% endif %}
+      <div class="source-foot">
+        {% if s.license %}<span class="small muted">Rights: {{ s.license }}</span>{% endif %}
+        {% if s.book_slug %}<a class="small" href="/library/archive/{{ s.book_slug }}">Open this source in the library</a>{% endif %}
+        {% if s.url and s.url.startswith('http') %}<a class="small" href="{{ s.url }}" rel="noopener noreferrer" target="_blank">Open original</a>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

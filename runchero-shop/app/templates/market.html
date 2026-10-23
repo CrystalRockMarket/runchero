@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Market prices{% endblock %}
+{% block description %}The published USDA and BLS market figures behind every Runchero Beef price, with the source, region, and observation date for each one.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>What the grocery charges</h1>
+  <p>Published USDA and BLS figures, not our own math. This is the number
+    every &ldquo;under the shelf&rdquo; claim on this site is measured against.</p>
+</div>
+
+{% if not table %}
+<div class="panel paper">
+  <h2 style="color:var(--ink)">No market data yet.</h2>
+  <p>The daily job has not run. Seeded figures land the first time the box
+    reaches the internet.</p>
+</div>
+{% else %}
+<div class="table-wrap">
+  <table class="data">
+    <caption>Latest benchmark behind each cut we sell. Stale means older
+      than {{ stale_days }} days; we say so rather than quietly quoting
+      it.</caption>
+    <thead>
+      <tr><th>Series</th><th>Source</th><th>Region</th>
+        <th class="num">Benchmark / lb</th><th>Observed</th><th>Our cut</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table %}
+      <tr>
+        <td>{{ row.label }}</td>
+        <td>{{ row.source }}</td>
+        <td>{{ row.region }}</td>
+        <td class="num">${{ '%.2f'|format(row.value) }}</td>
+        <td>{{ row.observed_at|prettydate }}</td>
+        <td>
+          {% set cut = by_key.get(row.series_key) %}
+          {% if cut %}
+          <a href="/cut/{{ cut.slug }}">{{ cut.name }}</a>
+          {% else %}&mdash;{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="hint" style="margin-top:10px">Advertised grocery prices come from
+  the USDA AMS weekly survey of major outlets (Kentucky sits in the Midwest
+  region block). Monthly averages come from USDA ERS and BLS. Local
+  observations entered by the shop carry the store name and date. National
+  averages, price spreads, and the full feed list are on
+  <a href="/data-sources">the data sources page</a>.</p>
+{% endif %}
+{% endblock %}

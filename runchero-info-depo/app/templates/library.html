@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Library - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    SOURCE LIBRARY
+  </h1>
+  <p class="muted small">
+    The <b>book archive</b> holds {{ stats.books }} digitised public-domain works,
+    read locally or downloaded whole. The <b>depots</b> are AI-organised indexes
+    that point into this archive. There are no AI-written articles on this site.
+  </p>
+  <div class="tabs-sub mt">
+    <a href="/library/archive" class="active">ARCHIVE BOOKS ({{ stats.books }})</a>
+    <a href="/grow">GROW DEPOTS ({{ stats.crops }})</a>
+    <a href="/animals">ANIMAL DEPOTS ({{ stats.animals }})</a>
+    <a href="/collections">TOPIC DEPOTS ({{ stats.topics }})</a>
+    <a href="/sources">SOURCE INDEX</a>
+  </div>
+</div>
+
+<div class="grid-2 mb">
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+      ARCHIVE
+    </div>
+    <p class="small muted">
+      {{ stats.books }} books, {{ stats.pages }} pages, {{ stats.bytes|filesize }} stored locally.
+      Every file can be read in the browser or downloaded whole.
+    </p>
+    <div class="chips mb">
+      {% for row in formats %}
+      <span class="chip sun">{{ row.format }} &middot; {{ row.n }}</span>
+      {% endfor %}
+    </div>
+    <div class="chips mb">
+      {% for row in themes %}
+      <a class="chip" href="/library/archive?theme={{ row.theme }}">{{ row.theme }} &middot; {{ row.n }}</a>
+      {% endfor %}
+    </div>
+    <a class="btn" href="/library/archive">BROWSE THE ARCHIVE</a>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/seedling.png') }}" alt="">
+      ORGANISED DEPOTS
+    </div>
+    <p class="small muted">
+      {{ stats.collections }} indexes across {{ stats.crops }} crops, {{ stats.animals }} animals
+      and {{ stats.topics }} practical topics. Each one is a shelf of sources, not a written guide.
+    </p>
+    <div class="chips mb">
+      {% for item in featured %}
+      <a class="chip green" href="/{{ 'grow' if item.kind == 'crop' else 'animals' }}/{{ item.slug }}">{{ item.name }} ({{ item.source_count }})</a>
+      {% endfor %}
+    </div>
+    <div class="row">
+      <a class="btn sun" href="/grow">GROW</a>
+      <a class="btn blue" href="/animals">ANIMALS</a>
+      <a class="btn ghost" href="/collections">TOPICS</a>
+    </div>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/star.png') }}" alt="">
+    DEPOT SPOTLIGHT
+  </div>
+  <div class="cards depot-grid">
+    {% for item in featured %}
+    <div class="card depot-card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+        <span class="chip {{ 'sun' if item.kind == 'crop' else 'blue' }}">{{ item.kind|upper }}</span>
+      </div>
+      <div class="card-title"><a href="/{{ 'grow' if item.kind == 'crop' else 'animals' }}/{{ item.slug }}">{{ item.name }}</a></div>
+      <p class="small">{{ item.summary|truncate(150) }}</p>
+      <div class="meta"><span>{{ item.source_count }} sources</span><span>{{ item.group_name }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+    ARCHIVE SPOTLIGHT
+  </div>
+  <div class="cards">
+    {% for book in archive[:8] %}
+    <div class="card bookcard">
+      <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+      <div class="info">
+        <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+        <div class="small muted">{{ book.author }}{% if book.year %} &middot; {{ book.year }}{% endif %}</div>
+        <div class="chips">
+          <span class="chip sun">{{ book.format }}</span>
+          <span class="chip">{{ book.bytes|filesize }}</span>
+        </div>
+        <div class="row">
+          <a class="btn ghost" href="/library/archive/{{ book.slug }}">DETAILS</a>
+          <a class="btn blue" href="/download/{{ book.slug }}">DOWNLOAD</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

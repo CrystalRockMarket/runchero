@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<form method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <p><label>Site title <input name="site_title" value="{{ content.site_title }}"></label></p>
+  <p><label>Subtitle <input name="site_subtitle" value="{{ content.site_subtitle }}" style="width:100%"></label></p>
+  <p><label>Banner <input name="banner" value="{{ content.banner }}" style="width:100%"></label></p>
+  <p><label>Contact email <input name="contact_email" value="{{ content.contact_email }}"></label></p>
+  <p><label>Map width <input name="map_width" type="number" value="{{ content.map_width }}"></label></p>
+  <p><label>Map height <input name="map_height" type="number" value="{{ content.map_height }}"></label></p>
+  <p><label>Theme <input name="theme" value="{{ content.theme }}"></label></p>
+  <p><button type="submit">Save</button></p>
+</form>
+{% endblock %}

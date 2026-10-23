@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>Owner console</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin" aria-current="page">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<div class="grid3">
+  <div class="panel">
+    <h2 style="margin-top:0">Cuts</h2>
+    <p style="font-family:var(--font-pixel);font-size:22px;color:var(--sun)">
+      {{ stats.cuts }}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Orders</h2>
+    <p style="font-family:var(--font-pixel);font-size:22px;color:var(--sun)">
+      {{ stats.orders }}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Paid revenue</h2>
+    <p style="font-family:var(--font-pixel);font-size:22px;color:var(--grass3)">
+      {{ stats.revenue|money }}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Active subscribers</h2>
+    <p style="font-family:var(--font-pixel);font-size:22px;color:var(--sun)">
+      {{ stats.subscribers }}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Price changes</h2>
+    <p style="font-family:var(--font-pixel);font-size:22px;color:var(--sun)">
+      {{ stats.audits }}</p>
+  </div>
+</div>
+
+{% if integrity %}
+<div class="alert warn" role="status">
+  <strong>{{ integrity|length }} cuts are at or above their market price.</strong>
+  Their savings badges are suppressed until they are repriced or explicitly
+  overridden. <a href="/admin/integrity">Review them &rarr;</a>
+</div>
+{% else %}
+<div class="alert ok" role="status">Every tracked cut is under its market
+  benchmark. The &ldquo;under the shelf&rdquo; claim holds everywhere.</div>
+{% endif %}
+
+<div class="panel">
+  <h2 style="margin-top:0">The promise, in one sentence</h2>
+  <p>Every cut is priced about 20% under the local shelf, floored to a
+    9-ending price, and compared against published USDA figures with the
+    source and date printed next to it. The pricing console changes rules,
+    never prices by hand, and every change is previewed, confirmed, logged,
+    and reversible.</p>
+</div>
+{% endblock %}

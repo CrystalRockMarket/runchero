@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block body %}
+<h1>Audit Log</h1>
+{% for r in rows %}<div class="record">{{ r.created_at }} · {{ r.actor }} · {{ r.action }} · {{ r.entity }} {{ r.entity_id }} — {{ r.detail_json }}</div>{% endfor %}
+{% endblock %}

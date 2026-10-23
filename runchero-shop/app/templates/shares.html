@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Cow shares{% endblock %}
+{% block description %}Cow shares from an eighth to a half, plus whole-cow drops. Kentucky-raised beef, cut to your sheet and priced by take-home weight.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Buy beef by the share</h1>
+  <p>A share is beef priced by the pound of take-home weight, cut exactly how
+    you like it. It is the cheapest way to fill a freezer.</p>
+</div>
+
+{% if choice %}
+<div class="notice-strip" role="status">
+  <strong>For scale:</strong> USDA Choice beef runs
+  {{ choice.value|money }}/lb at the grocery ({{ choice.source }},
+  {{ choice.observed_at|prettydate }}). Shares land well under that, all-in.
+</div>
+{% endif %}
+
+<div class="grid2">
+  {% for share in shares %}
+  <article class="sharecard">
+    <span class="tier">{{ share.name }}</span>
+    <span class="big">{{ share.price|money }}</span>
+    <ul>
+      <li>{{ share.takehome_lbs|round(0)|int }} lb take-home beef</li>
+      <li>{{ share.price_per_lb|money }} per pound, all-in</li>
+      <li>{{ share.deposit|money }} deposit, balance at the drop</li>
+      <li>{{ share.blurb }}</li>
+    </ul>
+    <a class="btn grass" href="/share/share-{{ share.tier }}">See the share</a>
+  </article>
+  {% endfor %}
+</div>
+
+<div class="panel paper" style="margin-top:22px">
+  <h2 style="color:var(--ink)">How the whole-cow drop works</h2>
+  <p>A whole cow is too much for one household and too big for one sale:
+    federal retail rules cap a single sale at half a carcass. So the whole-cow
+    tier is a coordinated drop. Four households each take a quarter, each with
+    their own order, their own cut sheet, and their own packing choices.</p>
+  <ol style="padding-left:20px">
+    <li>Reserve your quarter with the deposit.</li>
+    <li>We match you with three neighbors on the same drop date.</li>
+    <li>You each get your own cut sheet to fill out.</li>
+    <li>The cow is processed at the USDA plant and delivered together.</li>
+  </ol>
+  <p><a class="btn" href="/campaigns">See the open whole cow drops</a>
+    &nbsp;<a class="btn ghost" href="/share/share-whole-drop">What a whole cow share includes</a></p>
+</div>
+{% endblock %}

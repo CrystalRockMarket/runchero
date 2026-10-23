@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block body %}
+<h1>Categories</h1>
+<form method="post" action="/admin/categories">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <p><input name="slug" placeholder="slug" required> <input name="name" placeholder="name" required>
+  <input name="colour" placeholder="colour" value="sky"> <input name="icon" placeholder="icon" value="box">
+  <input name="sort_order" type="number" value="0"> <button type="submit">Add/Save</button></p>
+</form>
+<table style="width:100%;border-collapse:collapse">
+<tr><th>Slug</th><th>Name</th><th>Colour</th><th></th></tr>
+{% for c in categories %}
+<tr>
+  <td>{{ c.slug }}</td><td>{{ c.name }}</td><td>{{ c.colour }}</td>
+  <td><form method="post" action="/admin/categories" style="display:inline"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="delete_slug" value="{{ c.slug }}"><button type="submit">delete</button></form></td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

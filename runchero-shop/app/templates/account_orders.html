@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Order history{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="account-head">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Order history</h1>
+    <p class="hint">{{ stats.count }} order{{ '' if stats.count == 1 else 's' }}
+      &middot; {{ stats.spend|money }} lifetime.</p>
+  </div>
+</div>
+
+{% include "_account_nav.html" %}
+
+{% if orders %}
+<div class="panel table-scroll">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Placed</th>
+        <th>Fulfillment</th>
+        <th class="num">Total</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td class="mono">{{ order.code }}</td>
+        <td>{{ order.created_at|prettydate }}</td>
+        <td>{{ order.fulfillment|capitalize }}</td>
+        <td class="num">{{ order.total|money }}</td>
+        <td><span class="badge {% if order.payment_status == 'paid' %}grass{% elif order.payment_status == 'failed' %}tomato{% else %}ghost{% endif %}">{{ order.payment_status }}</span></td>
+        <td><a href="/order/{{ order.code }}">Receipt</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel">
+  <p>No orders on this account yet.</p>
+  <p>If you checked out as a guest with this same email, those orders will
+    show up here automatically.</p>
+  <p><a class="btn grass" href="/shop">Shop the cuts</a></p>
+</div>
+{% endif %}
+{% endblock %}

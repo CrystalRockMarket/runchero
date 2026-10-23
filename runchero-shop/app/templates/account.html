@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Your account{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="account-head">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Hi, {{ customer.name.split()[0] if customer.name else 'friend' }}.</h1>
+    <p class="hint">Member since {{ customer.created_at|prettydate }}.</p>
+  </div>
+  <span class="badge {% if customer.email_verified %}grass{% else %}ghost{% endif %}">
+    {{ 'Email verified' if customer.email_verified else 'Email unverified' }}
+  </span>
+</div>
+
+{% include "_account_nav.html" %}
+
+<div class="acct-stats">
+  <div class="acct-stat">
+    <span class="n">{{ stats.count }}</span>
+    <span class="l">Orders</span>
+  </div>
+  <div class="acct-stat">
+    <span class="n">{{ stats.spend|money }}</span>
+    <span class="l">Lifetime total</span>
+  </div>
+  <div class="acct-stat">
+    <span class="n">{{ customer.recurring_day or '&mdash;'|safe }}</span>
+    <span class="l">Preferred processing day</span>
+  </div>
+</div>
+
+<div class="grid2">
+  <section class="panel" aria-labelledby="recent-head">
+    <div class="panel-head">
+      <h2 id="recent-head">Recent orders</h2>
+      <a class="btn small ghost" href="/account/orders">All orders</a>
+    </div>
+    {% if recent_orders %}
+    <ul class="acct-orders">
+      {% for order in recent_orders %}
+      <li>
+        <a href="/order/{{ order.code }}">
+          <span class="mono">{{ order.code }}</span>
+          <span class="when">{{ order.created_at|prettydate }}</span>
+        </a>
+        <span class="badge {% if order.payment_status == 'paid' %}grass{% elif order.payment_status == 'failed' %}tomato{% else %}ghost{% endif %}">
+          {{ order.payment_status }}</span>
+        <strong class="num">{{ order.total|money }}</strong>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>No orders yet. The freezer is not going to fill itself.</p>
+    <p><a class="btn grass" href="/shop">Build your first box</a></p>
+    {% endif %}
+  </section>
+
+  <section class="panel" aria-labelledby="prefs-head">
+    <div class="panel-head">
+      <h2 id="prefs-head">Your defaults</h2>
+      <a class="btn small ghost" href="/account/preferences">Edit</a>
+    </div>
+    <dl class="kv">
+      <dt>Email</dt><dd>{{ customer.email }}</dd>
+      <dt>Phone</dt><dd>{{ customer.phone or '&mdash;'|safe }}</dd>
+      <dt>Fulfillment</dt><dd>{{ prefs.fulfillment|capitalize }}</dd>
+      <dt>Address</dt>
+      <dd>{% if prefs.line1 %}{{ prefs.line1 }}{% if prefs.line2 %}, {{ prefs.line2 }}{% endif %}<br>
+        {{ prefs.city }}, {{ prefs.state }} {{ prefs.zip }}
+        {% else %}Not saved yet{% endif %}</dd>
+      <dt>Delivery notes</dt>
+      <dd>{{ prefs.delivery_notes or '&mdash;'|safe }}</dd>
+      <dt>Recurring day</dt>
+      <dd>{% if prefs.recurring_day %}{{ prefs.recurring_day }} of the month{% else %}No preference{% endif %}</dd>
+      <dt>Contact by</dt><dd>{{ prefs.contact_method|capitalize }}</dd>
+    </dl>
+  </section>
+</div>
+
+{% if subscriber %}
+<section class="panel" aria-labelledby="sub-head">
+  <div class="panel-head">
+    <h2 id="sub-head">Standing order</h2>
+    <a class="btn small ghost" href="/manage/{{ subscriber.token }}">Manage</a>
+  </div>
+  <p>You have a recurring box on file for <strong>{{ subscriber.email }}</strong>.
+    Skip, pause, change the cadence, or cancel any time from the manage page.</p>
+</section>
+{% endif %}
+{% endblock %}

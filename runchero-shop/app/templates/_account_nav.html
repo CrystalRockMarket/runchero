@@ -1,0 +1,11 @@
+<nav class="account-tabs" aria-label="Account">
+  <a href="/account"{% if path == '/account' %} aria-current="page"{% endif %}>Overview</a>
+  <a href="/account/orders"{% if path.startswith('/account/orders') %} aria-current="page"{% endif %}>Orders</a>
+  <a href="/account/preferences"{% if path.startswith('/account/preferences') %} aria-current="page"{% endif %}>Preferences</a>
+  <a href="/account/profile"{% if path.startswith('/account/profile') %} aria-current="page"{% endif %}>Profile</a>
+  <a href="/account/password"{% if path.startswith('/account/password') %} aria-current="page"{% endif %}>Password</a>
+  <form method="post" action="/account/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Sources - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/info.png') }}" alt="">
+    SOURCES &amp; PROVENANCE
+    <span class="count">{{ items|length }} records</span>
+  </h1>
+  <p class="small muted">
+    The depot contains <b>no AI-written articles</b>. Its pages are
+    <b>AI-organised indexes</b>: the labels, grouping and cross-links were
+    compiled with AI, but the information itself is read from public-domain
+    books, government reports and factory manuals. Every linked item keeps its
+    original source URL, author and licence.
+  </p>
+  <div class="source-legend">
+    <span class="source-kind kind-ai-organized">AI-ORGANISED INDEX</span>
+    <span class="small">A shelf, label or cross-link compiled by AI. It points at sources; it is not a source itself.</span>
+    <span class="source-kind kind-book">PUBLIC-DOMAIN BOOK</span>
+    <span class="small">A book, report or bulletin in the archive, with a link to the original publication.</span>
+    <span class="source-kind kind-manual">FACTORY MANUAL</span>
+    <span class="small">A scanned service, parts or operator manual, linked to the Internet Archive scan.</span>
+  </div>
+  <div class="chips mt">
+    {% for kind, count in source_counts.items() %}
+    <span class="chip">{{ source_labels.get(kind, kind|upper) }} &middot; {{ count }}</span>
+    {% endfor %}
+    <a class="chip sun" href="/library/archive">BROWSE ALL BOOKS</a>
+  </div>
+</div>
+
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/list.png') }}" alt="">
+    SOURCE RECORDS
+  </div>
+  <p class="small muted">
+    Each row is a real record behind an index. The citation count shows how many
+    depot shelves or equipment records point here.
+  </p>
+  <div class="source-list">
+    {% for s in items %}
+    <div class="source-row">
+      <div class="source-head">
+        <span class="source-kind kind-{{ s.kind }}">{{ source_labels.get(s.kind, s.kind|upper) }}</span>
+        {% if s.url %}
+          <a class="source-title" href="{{ s.url }}"
+             {% if s.url.startswith('http') %}rel="noopener noreferrer" target="_blank"{% endif %}>{{ s.title }}</a>
+        {% else %}
+          <span class="source-title">{{ s.title }}</span>
+        {% endif %}
+        {% if s.author %}<span class="source-author">{{ s.author }}</span>{% endif %}
+        <span class="chip source-role">{{ s.n }} citations</span>
+      </div>
+      {% if s.note %}<div class="small">{{ s.note }}</div>{% endif %}
+      <div class="source-foot">
+        {% if s.license %}<span class="small muted">Rights: {{ s.license }}</span>{% endif %}
+        {% if s.book_slug %}<a class="small" href="/library/archive/{{ s.book_slug }}">Open in the library</a>{% endif %}
+        {% if s.url and s.url.startswith('http') %}<a class="small" href="{{ s.url }}" rel="noopener noreferrer" target="_blank">Open original</a>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">No sources recorded yet. Run the seeder.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Market data{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market" aria-current="page">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<div class="section-head" style="margin-top:4px">
+  <h1>Market data</h1>
+  <p>Three public feeds: USDA AMS weekly advertised grocery prices (Kentucky
+    is in the Midwest region), USDA ERS monthly retail, BLS monthly series.
+    All keyless. Local observations are yours to enter, with store and date.</p>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2 style="margin:0">Pull the feeds now</h2>
+  </div>
+  <form method="post" action="/admin/market/refresh">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn grass" type="submit">Refresh all feeds</button>
+  </form>
+  <p class="hint">The daily cron job does this at 6:17am. Failures keep the
+    last known values live, and the public table shows the observation date
+    so a stale number never masquerades as a fresh one.</p>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <div class="panel-head"><h2 style="margin:0">Add a local observation</h2></div>
+    <form method="post" action="/admin/market">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <div class="field">
+        <label for="series_key">Cut this observation is about</label>
+        <select id="series_key" name="series_key">
+          {% for cut in cuts %}
+          {% if cut.market_series_key %}
+          <option value="{{ cut.market_series_key }}">{{ cut.name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-row two">
+        <div class="field">
+          <label for="store">Store</label>
+          <input type="text" id="store" name="store"
+                 placeholder="Kroger, Shelbyville" required>
+        </div>
+        <div class="field">
+          <label for="observed_at">Date observed</label>
+          <input type="date" id="observed_at" name="observed_at" required>
+        </div>
+      </div>
+      <div class="field-row two">
+        <div class="field">
+          <label for="value">Price per lb</label>
+          <input type="number" id="value" name="value" step="0.01" min="0.01" required>
+        </div>
+        <div class="field">
+          <label for="note">Note</label>
+          <input type="text" id="note" name="note" placeholder="Feature price, shelf edge">
+        </div>
+      </div>
+      <button class="btn block" type="submit">Save observation</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2 style="margin:0">Recent observations</h2></div>
+    {% if observations %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Series</th><th>Store</th><th class="num">$ / lb</th>
+          <th>Observed</th></tr></thead>
+        <tbody>
+          {% for row in observations %}
+          <tr>
+            <td>{{ row.series_key }}</td>
+            <td>{{ row.store }}</td>
+            <td class="num">${{ '%.2f'|format(row.value) }}</td>
+            <td>{{ row.observed_at|prettydate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint">No local observations yet. They carry provenance: store
+      name and date, shown on the public market table.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

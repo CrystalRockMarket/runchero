@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Browse saved sites{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/book.png" alt=""> Browse finished mirrors</div>
+  <p class="muted">These sites have finished downloading and are saved for offline browsing on the local network.</p>
+</section>
+
+<section class="panel">
+  {% if completed %}
+  <div class="cards">
+    {% for m in completed %}
+    <article class="card">
+      <div class="card-title"><img src="/static/img/icons/archive.png" alt=""> {{ m.name }}</div>
+      <p class="muted small break">{{ m.url }}</p>
+      {% if m.description %}<p>{{ m.description }}</p>{% endif %}
+      {% if m.notes %}<p class="note"><strong>Notes:</strong> {{ m.notes }}</p>{% endif %}
+      <p class="muted small">Pages: {{ m.pages_saved }} · Files: {{ m.files_saved }} · Finished: {{ m.finished_at }}</p>
+      <div class="card-actions">
+        <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Browse this site</a>
+        <a class="btn" href="{{ m.url }}" target="_blank" rel="noopener"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Original site</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No completed mirrors yet. Go to <a href="/add">Add a site</a> to start one, or check the <a href="/">Dashboard</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

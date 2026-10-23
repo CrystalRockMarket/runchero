@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Admin access{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>Admin access</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access" aria-current="page">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<p class="hint">Full-access admins can manage every store and access grant.
+Store-scoped admins only see products and orders for their assigned business.</p>
+
+{% for a in admins %}
+<div class="panel" style="margin-bottom:12px">
+  <h2 style="margin-top:0">{{ a.username }}</h2>
+  <form method="post" action="/admin/access">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="admin_id" value="{{ a.id }}">
+    <label class="opt" style="display:block;margin:4px 0 10px">
+      <input type="checkbox" name="full_access" {% if a.full_access %}checked{% endif %}>
+      Full access to all stores and admin access settings
+    </label>
+    {% for st in stores %}
+    <label class="opt" style="display:block;margin:4px 0">
+      <input type="checkbox" name="store_slug" value="{{ st.slug }}"
+        {% if not a.full_access and st.slug in access[a.id] %}checked{% endif %}>
+      {{ st.name }} ({{ st.slug }})
+    </label>
+    {% endfor %}
+    <button class="btn small grass" type="submit" style="margin-top:8px">Save access</button>
+  </form>
+  {% if a.id != current_admin_id %}
+  <form method="post" action="/admin/access/delete" style="margin-top:8px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <input type="hidden" name="admin_id" value="{{ a.id }}">
+    <button class="btn small tomato" type="submit">Remove admin</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+
+<section class="panel">
+  <h2 style="margin-top:0">Add an admin</h2>
+  <form method="post" action="/admin/access/new">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <div class="field-row two">
+      <div class="field"><label for="new-username">Username</label>
+        <input id="new-username" name="username" required autocomplete="off"></div>
+      <div class="field"><label for="new-password">Temporary password</label>
+        <input id="new-password" name="password" type="password" minlength="12" required autocomplete="new-password"></div>
+    </div>
+    <label class="opt" style="display:block;margin:4px 0 10px">
+      <input type="checkbox" name="full_access"> Full access to all stores and access settings
+    </label>
+    {% for st in stores %}
+    <label class="opt" style="display:block;margin:4px 0">
+      <input type="checkbox" name="store_slug" value="{{ st.slug }}">
+      {{ st.name }}
+    </label>
+    {% endfor %}
+    <button class="btn grass" type="submit" style="margin-top:10px">Create admin</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Contact{% endblock %}
+{% block description %}Questions about a cut, share, or drop date? Contact Runchero Beef in Shelbyville, Kentucky, before you buy.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Talk to us</h1>
+  <p>Questions about a cut, a share, or a drop date: ask before you buy.</p>
+</div>
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">The practical details</h2>
+    <dl class="kv">
+      <dt>Pickup</dt>
+      <dd>{{ content.pickup_name }}<br>{{ content.pickup_address }}<br>
+        {{ content.pickup_hours }}</dd>
+      <dt>Email</dt>
+      <dd>{{ content.contact_email }}</dd>
+      <dt>Delivery</dt>
+      <dd>{{ content.delivery_counties|join(', ') }} counties,
+        Wednesday and Saturday</dd>
+    </dl>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Find us elsewhere</h2>
+    <ul style="list-style:none;padding:0;margin:0">
+      {% for link in social_links %}
+      <li style="margin-bottom:10px">
+        <a class="pill" href="{{ link.url }}" rel="noopener">{{ link.label }}</a>
+        <p class="hint" style="margin:4px 0 0">{{ link.blurb }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

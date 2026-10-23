@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service{% endblock %}
+{% block description %}The plain-language terms for ordering beef, cow shares, and standing orders from Runchero Beef.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>{{ terms.title if terms else 'Terms of Service' }}
+    {% if terms %}v{{ terms.version }}{% endif %}</h1>
+  <p>The plain-language version. Every order stores the version it accepted.</p>
+</div>
+<div class="panel paper terms-body" style="color:var(--ink)">
+  {% if terms_html %}{{ terms_html | safe }}{% else %}
+  <p>Terms are seeded on first boot.</p>{% endif %}
+</div>
+{% endblock %}

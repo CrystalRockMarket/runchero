@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+
+<nav class="stepper" aria-label="Checkout steps">
+  <a href="/cart"><span class="num">1</span> Cart</a>
+  <span aria-current="step"><span class="num">2</span> {% if totals.has_beef %}Packing{% else %}Your items{% endif %}</span>
+  <span><span class="num">3</span> Pickup or delivery</span>
+  <span><span class="num">4</span> Pay</span>
+</nav>
+
+<h1>Checkout</h1>
+
+{% if errors.cart %}
+<div class="alert error" role="alert">{{ errors.cart }}</div>
+{% endif %}
+
+<form method="post" action="/checkout" novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <div class="checkout-layout">
+
+    <div>
+      {% if errors.slot %}
+      <div class="alert error" role="alert">{{ errors.slot }}</div>
+      {% endif %}
+
+      {% if totals.has_beef %}<section class="panel" aria-labelledby="pack-head">
+        <div class="panel-head"><h2 id="pack-head">How should it be packed?</h2>
+          <span class="badge grass">defaults need zero clicks</span></div>
+        {% for group, opts in packing_groups.items() %}
+          {% if group != 'ground_pack' %}
+          <fieldset style="border:2px solid var(--grey2);padding:12px;margin:0 0 12px">
+            <legend style="font-family:var(--font-pixel);font-size:9px;
+                           color:var(--cream);padding:0 6px">
+              {{ opts[0].group_label }}</legend>
+            {% for opt in opts %}
+            <label class="opt">
+              <input type="radio" name="{{ group }}" value="{{ opt.code }}"
+                     {% if (order_packing.get(group) or (opt.is_default and not order_packing.get(group))) %}checked{% endif %}>
+              <span class="opt-body">
+                <span class="opt-label">{{ opt.label }}</span>
+                {% if opt.description %}
+                <span class="opt-desc">{{ opt.description }}</span>{% endif %}
+              </span>
+              <span class="opt-cost {% if opt.amount == 0 %}free{% endif %}">
+                {% if opt.amount == 0 %}Included{% elif opt.price_mode == 'per_lb' %}
+                +{{ opt.amount|money }}/lb{% elif opt.price_mode == 'per_unit' %}
+                +{{ opt.amount|money }}/cut{% elif opt.price_mode == 'percent' %}
+                {{ opt.amount|money }}%{% else %}+{{ opt.amount|money }}{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+          </fieldset>
+          {% endif %}
+        {% endfor %}
+        {% for pack in line_packs %}
+        <fieldset style="border:2px solid var(--grey2);padding:12px;margin:0 0 12px">
+          <legend style="font-family:var(--font-pixel);font-size:9px;
+                         color:var(--cream);padding:0 6px">
+            {{ pack.group_label }} &mdash; {{ pack.name }}</legend>
+          {% for opt in pack.options %}
+          <label class="opt">
+            <input type="radio" name="line_{{ pack.item_id }}_{{ pack.group_code }}"
+                   value="{{ opt.code }}"
+                   {% if (pack.chosen == opt.code) or (not pack.chosen and opt.is_default) %}checked{% endif %}>
+            <span class="opt-body">
+              <span class="opt-label">{{ opt.label }}</span>
+              {% if opt.description %}
+              <span class="opt-desc">{{ opt.description }}</span>{% endif %}
+            </span>
+            <span class="opt-cost {% if opt.amount == 0 %}free{% endif %}">
+              {% if opt.amount == 0 %}Included{% elif opt.price_mode == 'per_lb' %}
+              +{{ opt.amount|money }}/lb{% elif opt.price_mode == 'per_unit' %}
+              +{{ opt.amount|money }}/cut{% elif opt.price_mode == 'percent' %}
+              {{ opt.amount|money }}%{% else %}+{{ opt.amount|money }}{% endif %}
+            </span>
+          </label>
+          {% endfor %}
+        </fieldset>
+        {% endfor %}
+        <p class="hint">Prices shown are what you pay. Vacuum sealed, whole
+          cuts, and bulk bags are standard and cost nothing extra. Savings
+          claims on cuts always refer to the base price, before packing
+          choices.</p>
+      </section>{% endif %}
+
+      <section class="panel" aria-labelledby="fulfil-head">
+        <div class="panel-head"><h2 id="fulfil-head">Pickup or delivery?</h2></div>
+        {% if errors.fulfillment %}
+        <p class="error-text" role="alert">{{ errors.fulfillment }}</p>
+        {% endif %}
+        <label class="radio-card">
+          <input type="radio" name="fulfillment" value="pickup"
+                 {% if (values.fulfillment or 'pickup') == 'pickup' %}checked{% endif %}>
+          <span class="rc-body">
+            <span class="rc-title">Pickup at {{ content.pickup_name }}</span>
+            <span class="rc-meta">{{ content.pickup_address }} &middot;
+              {{ content.pickup_hours }}</span>
+            <span class="rc-meta">Always free. We hold it cold until you
+              arrive.</span>
+          </span>
+          <span class="rc-price free">Free</span>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="fulfillment" value="delivery"
+                 {% if values.fulfillment == 'delivery' %}checked{% endif %}>
+          <span class="rc-body">
+            <span class="rc-title">Delivery to your door</span>
+            <span class="rc-meta">Wednesday and Saturday, to
+              {{ content.delivery_counties|join(', ') }} counties.</span>
+            <span class="rc-meta">{% if totals.subtotal >= content.free_delivery_over %}
+              Free on this order.{% else %}{{ content.delivery_fee|money }} on this
+              order, free over {{ content.free_delivery_over|money }}.{% endif %}</span>
+          </span>
+          <span class="rc-price {% if totals.subtotal >= content.free_delivery_over %}free{% endif %}">
+            {% if totals.subtotal >= content.free_delivery_over %}Free{% else %}
+            {{ content.delivery_fee|money }}{% endif %}</span>
+        </label>
+
+        <h3>Pickup times</h3>
+        <div class="slot-grid">
+          {% for slot in pickup_slots %}
+          <label class="opt">
+            <input type="radio" name="slot" value="{{ slot.id }}"
+                   {% if values.slot|string == slot.id|string %}checked{% endif %}>
+            <span class="opt-body">
+              <span class="opt-label">{{ slot.service_date|shortdate }}</span>
+              <span class="opt-desc">{{ slot.window_start }}-{{ slot.window_end }}
+                &middot; {{ ((slot.capacity_lbs - slot.reserved_lbs)|round(0)|int) }} lb left</span>
+            </span>
+          </label>
+          {% else %}
+          <p class="hint">No pickup slots open right now.</p>
+          {% endfor %}
+        </div>
+
+        <div id="delivery-windows">
+          <h3>Delivery windows</h3>
+          <div class="slot-grid">
+          {% for slot in delivery_slots %}
+          <label class="opt">
+            <input type="radio" name="slot" value="{{ slot.id }}"
+                   {% if values.slot|string == slot.id|string %}checked{% endif %}>
+            <span class="opt-body">
+              <span class="opt-label">{{ slot.service_date|shortdate }}</span>
+              <span class="opt-desc">{{ slot.window_start }}-{{ slot.window_end }}</span>
+            </span>
+          </label>
+          {% else %}
+          <p class="hint">No delivery windows open right now.</p>
+          {% endfor %}
+        </div>
+        </div>
+
+        <p class="hint">Wednesday orders close Tuesday 11:59pm, Saturday
+          orders close Friday 11:59pm.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="who-head">
+        <div class="panel-head"><h2 id="who-head">Who is it for?</h2></div>
+        <div class="field-row two">
+          <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" value="{{ values.name or '' }}"
+                   autocomplete="name" {% if errors.name %}aria-invalid="true"
+                   aria-describedby="err-name"{% endif %}>
+            {% if errors.name %}<span class="error-text" id="err-name" role="alert">
+              {{ errors.name }}</span>{% endif %}
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" value="{{ values.phone or '' }}"
+                   autocomplete="tel" {% if errors.phone %}aria-invalid="true"
+                   aria-describedby="err-phone"{% endif %}>
+            {% if errors.phone %}<span class="error-text" id="err-phone" role="alert">
+              {{ errors.phone }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="{{ values.email or '' }}"
+                 autocomplete="email" {% if errors.email %}aria-invalid="true"
+                 aria-describedby="err-email"{% endif %}>
+          {% if errors.email %}<span class="error-text" id="err-email" role="alert">
+            {{ errors.email }}</span>{% endif %}
+          <p class="hint">Used on the receipt and to match the order to your
+            account. Demo mode sends no email.</p>
+        </div>
+
+        <div id="delivery-address">
+          <h3>Delivery address</h3>
+          <p class="hint">Shown for delivery orders. The county dropdown is
+            what decides the route; the ZIP just helps and warns when it
+            straddles a county line.</p>
+          <div class="field">
+            <label for="line1">Street address</label>
+            <input type="text" id="line1" name="line1" value="{{ values.line1 or '' }}"
+                   autocomplete="street-address" {% if errors.line1 %}aria-invalid="true"
+                   aria-describedby="err-line1"{% endif %}>
+            {% if errors.line1 %}<span class="error-text" id="err-line1" role="alert">
+              {{ errors.line1 }}</span>{% endif %}
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label for="city">Town</label>
+              <input type="text" id="city" name="city" value="{{ values.city or '' }}"
+                     autocomplete="address-level2" {% if errors.city %}aria-invalid="true"
+                     aria-describedby="err-city"{% endif %}>
+              {% if errors.city %}<span class="error-text" id="err-city" role="alert">
+                {{ errors.city }}</span>{% endif %}
+            </div>
+            <div class="field">
+              <label for="zip">ZIP</label>
+              <input type="text" id="zip" name="zip" value="{{ values.zip or '' }}"
+                     inputmode="numeric" autocomplete="postal-code"
+                     {% if errors.zip %}aria-invalid="true"
+                     aria-describedby="err-zip"{% endif %}>
+              {% if errors.zip %}<span class="error-text" id="err-zip" role="alert">
+                {{ errors.zip }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label for="county">County</label>
+              <select id="county" name="county">
+                <option value="">Choose your county...</option>
+                {% for county in counties %}
+                <option value="{{ county }}"
+                        {% if values.county == county %}selected{% endif %}>
+                  {{ county }}</option>
+                {% endfor %}
+              </select>
+              {% if errors.county %}<span class="error-text" role="alert">
+                {{ errors.county }}</span>{% endif %}
+            </div>
+            <div class="field">
+              <label for="state">State</label>
+              <input type="text" id="state" name="state" value="KY" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes for the cutter or the driver</label>
+          <textarea id="notes" name="notes">{{ values.notes or '' }}</textarea>
+          <p class="hint">Cut thickness, leave the fat cap on, gate code,
+            anything.</p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="sub-head">
+        <div class="panel-head"><h2 id="sub-head">Make it a standing order?</h2>
+          <span class="badge">optional</span></div>
+        <label class="opt">
+          <input type="radio" name="subscribe" value=""
+                 {% if not values.subscribe %}checked{% endif %}>
+          <span class="opt-body">
+            <span class="opt-label">No, one time only</span>
+          </span>
+          <span class="opt-cost free">As-is</span>
+        </label>
+        {% for cadence, blurb, pct in [
+          ('weekly', 'Every week', content.share_discount),
+          ('biweekly', 'Every other week', content.share_discount),
+          ('monthly', 'Once a month', content.share_discount),
+          ('quarterly', 'Four times a year, freezer batch', content.share_discount_quarterly)] %}
+        <label class="opt">
+          <input type="radio" name="subscribe" value="{{ cadence }}"
+                 {% if values.subscribe == cadence %}checked{% endif %}>
+          <span class="opt-body">
+            <span class="opt-label">{{ blurb }}</span>
+            <span class="opt-desc">Skip, pause, or cancel any time from your
+              manage link. Subscribers get free delivery.</span>
+          </span>
+          <span class="opt-cost">{{ pct|round(0)|int }}% off</span>
+        </label>
+        {% endfor %}
+      </section>
+
+      <section class="panel" aria-labelledby="pay-head">
+        <div class="panel-head"><h2 id="pay-head">Payment</h2>
+          {% if payment_provider == 'mock' %}
+          <span class="badge tomato">Demo mode: no card is charged</span>
+          {% endif %}</div>
+        <div class="field">
+          <label for="card">Card number</label>
+          <input type="text" id="card" name="card" value="{{ values.card or '' }}"
+                 inputmode="numeric" autocomplete="cc-number"
+                 placeholder="4242 4242 4242 4242"
+                 {% if errors.card %}aria-invalid="true" aria-describedby="err-card"{% endif %}>
+          {% if errors.card %}<span class="error-text" id="err-card" role="alert">
+            {{ errors.card }}</span>{% endif %}
+        </div>
+        <div class="field-row two">
+          <div class="field">
+            <label for="exp">Expiry</label>
+            <input type="text" id="exp" name="exp" value="{{ values.exp or '' }}"
+                   placeholder="MM/YY" autocomplete="cc-exp"
+                   {% if errors.exp %}aria-invalid="true" aria-describedby="err-exp"{% endif %}>
+            {% if errors.exp %}<span class="error-text" id="err-exp" role="alert">
+              {{ errors.exp }}</span>{% endif %}
+          </div>
+          <div class="field">
+            <label for="cvc">CVC</label>
+            <input type="text" id="cvc" name="cvc" value="{{ values.cvc or '' }}"
+                   inputmode="numeric" placeholder="123" autocomplete="cc-csc"
+                   {% if errors.cvc %}aria-invalid="true" aria-describedby="err-cvc"{% endif %}>
+            {% if errors.cvc %}<span class="error-text" id="err-cvc" role="alert">
+              {{ errors.cvc }}</span>{% endif %}
+          </div>
+        </div>
+
+        <label class="check" style="margin:10px 0">
+          <input type="checkbox" name="terms" {% if values.terms %}checked{% endif %}
+                 {% if errors.terms %}aria-invalid="true"
+                 aria-describedby="err-terms"{% endif %}>
+          <span>I accept the <a href="/terms">terms of service
+            v{{ content.terms_version }}</a>{% if totals.has_beef %}.
+            One share per household per drop; no resale; no order splitting.{% endif %}.</span>
+        </label>
+        {% if errors.terms %}<span class="error-text" id="err-terms" role="alert">
+          {{ errors.terms }}</span>{% endif %}
+      </section>
+    </div>
+
+    <aside class="summary-rail" aria-label="Order summary">
+      <div class="panel">
+        <h2 style="margin-top:0">You are paying</h2>
+        <div class="totals">
+          {% for line in totals.lines %}
+          <div class="row"><span>{{ line.name }}</span>
+            <span class="num">{{ line.line_total|money }}</span></div>
+          {% endfor %}
+          {% if totals.has_beef and totals.packing_total %}
+          <div class="row"><span>Packing choices</span>
+            <span class="num">{{ totals.packing_total|money }}</span></div>
+          {% endif %}
+          <div class="row"><span>Delivery</span>
+            <span class="num">{{ totals.delivery_fee|money }}</span></div>
+          {% if totals.has_beef %}<div class="row saving"><span>Under the shelf</span>
+            <span class="num">{{ totals.savings|money }}</span></div>
+          {% endif %}
+          <div class="row grand"><span>Total</span>
+            <span class="num">{{ totals.total|money }}</span></div>
+        </div>
+        {% if totals.has_beef %}<p class="hint">{{ content.tax_note }}</p>
+        {% else %}<p class="hint">Tax is not calculated in this demo checkout.</p>{% endif %}
+        <button class="btn grass block" type="submit"
+                style="margin-top:10px">Place the order</button>
+        <p class="hint" style="margin-top:10px">By placing this order you
+          accept the terms linked above. The market figures behind every
+          savings number are stored with your receipt.</p>
+      </div>
+    </aside>
+  </div>
+</form>
+
+<script>(function(){
+  var address = document.getElementById('delivery-address');
+  var deliveryWin = document.getElementById('delivery-windows');
+  var inputs = address.querySelectorAll('input, select, textarea');
+  function set(delivery){
+    if(delivery){
+      address.style.display=''; deliveryWin.style.display='';
+      inputs.forEach(function(i){i.disabled=false;});
+    } else {
+      address.style.display='none'; deliveryWin.style.display='none';
+      inputs.forEach(function(i){i.disabled=true;});
+    }
+  }
+  document.querySelectorAll('input[name="fulfillment"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      set(r.value === 'delivery');
+    });
+  });
+  set(document.querySelector('input[name="fulfillment"]:checked').value === 'delivery');
+})();</script>
+
+<section aria-labelledby="trust-head" style="margin-top:20px">
+  <h2 id="trust-head" class="sr-only">Why buy here</h2>
+  {% include "_trust.html" %}
+</section>
+{% endblock %}

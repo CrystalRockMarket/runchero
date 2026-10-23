@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Where our prices come from{% endblock %}
+{% block description %}Every market number on this site comes from a named
+  public USDA or BLS feed. Here is the source, the date, and the math behind
+  each one.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Where our numbers come from</h1>
+  <p>No mystery meat, and no mystery math. Every shelf comparison on this site
+    traces back to a public feed, a date, and a cut of the formula you can
+    check yourself.</p>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">The short version</h2>
+  <div class="source-flow">
+    <div class="flow-step">
+      <img src="/static/img/icons/depot@4x.png" alt="" width="40" height="40">
+      <strong>Public feed</strong>
+      <span>USDA or BLS publishes a price.</span>
+    </div>
+    <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+    <div class="flow-step">
+      <img src="/static/img/icons/archive@4x.png" alt="" width="40" height="40">
+      <strong>We store it</strong>
+      <span>Kept with source, region, and observed date.</span>
+    </div>
+    <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+    <div class="flow-step">
+      <img src="/static/img/icons/tag@4x.png" alt="" width="40" height="40">
+      <strong>We apply the rule</strong>
+      <span>Base price is the benchmark minus our set margin.</span>
+    </div>
+    <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+    <div class="flow-step">
+      <img src="/static/img/icons/check@4x.png" alt="" width="40" height="40">
+      <strong>You see both</strong>
+      <span>The shelf number and ours, side by side.</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-head">
+  <h2>The three feeds</h2>
+  <p>All three are free, public, and require no account or key.</p>
+</div>
+<div class="grid3">
+  {% for feed in feeds %}
+  <div class="panel source-card">
+    <div class="source-head">
+      <img src="/static/img/icons/{{ feed.icon }}@4x.png" alt=""
+           width="34" height="34">
+      <div>
+        <span class="source-name">{{ feed.name }}</span>
+        <span class="source-cadence">{{ feed.cadence }}</span>
+      </div>
+    </div>
+    <h3>{{ feed.title }}</h3>
+    <p>{{ feed.what }}</p>
+    <p class="hint">{{ feed.detail }}</p>
+    <p><a class="source-link" href="{{ feed.url }}" rel="noopener">{{ feed.link }} &rarr;</a></p>
+    <p class="source-unit">{{ feed.unit }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid2" style="margin-top:16px">
+  <div class="panel">
+    <h2 style="margin-top:0">The pricing rule, in plain text</h2>
+    <p>Our base price for a cut is the latest published benchmark for that
+      cut, less a fixed margin. The default margin is set in the shop admin,
+      and it applies to the base cut price only.</p>
+    <ol class="steps">
+      <li><strong>Benchmark.</strong> The newest observation for the cut's
+        series, whatever its source.</li>
+      <li><strong>Base price.</strong> Benchmark &times; (1 &minus; margin),
+        then floored to the nearest cent ending in 9. The default margin is
+        20&percnt;, and that last step can add a few tenths of a point to the
+        discount, never take any away.</li>
+      <li><strong>Savings badge.</strong> Benchmark &minus; base price. It
+        describes the cut before packing options, never after.</li>
+    </ol>
+    <p class="hint">Packing, wrapping, and gift options are priced on their own
+      line. They are not folded into the comparison, because a grocery shelf
+      price does not include them either.</p>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">How fresh, and how honest</h2>
+    <ul class="ticks">
+      <li><strong>Every figure carries its date.</strong> The shop shows the
+        day the price was observed, not the day we fetched it.</li>
+      <li><strong>Stale is labeled stale.</strong> Anything older than
+        {{ stale_days }} days is marked as such. We would rather show an old
+        number with a warning than quietly quote it as current.</li>
+      <li><strong>Feeds fail quietly.</strong> If a source is unreachable, the
+        last good value stays live with its original date. No number is
+        invented or interpolated.</li>
+      <li><strong>Orders snapshot the market.</strong> The receipt stores the
+        figures you saw at checkout, so a later refresh cannot rewrite a past
+        order.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="panel paper" style="margin-top:16px">
+  <h2 style="margin-top:0;color:var(--ink)">What we never do</h2>
+  <div class="grid2">
+    <ul class="ticks" style="color:var(--ink)">
+      <li>No scraping chain-store websites or delivery apps.</li>
+      <li>No paid price aggregators, and no prices behind a login.</li>
+      <li>No &ldquo;market price&rdquo; without a source and a date.</li>
+    </ul>
+    <ul class="ticks" style="color:var(--ink)">
+      <li>No invented local prices. Hand-entered store prices carry the store
+        name, the date, and a note.</li>
+      <li>No blending two sources into one number and calling it USDA.</li>
+      <li>No changing a published figure to make a comparison look better.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section-head">
+  <h2>Every series we track</h2>
+  <p>This is the whole list. Each row is a feed we read and store.</p>
+</div>
+<div class="table-wrap">
+  <table class="data">
+    <caption>Series currently held in the market table.</caption>
+    <thead>
+      <tr><th>Source</th><th>Series</th><th>Region</th><th>Series key</th></tr>
+    </thead>
+    <tbody>
+      {% for row in series %}
+      <tr>
+        <td>{{ row.source }}</td>
+        <td>{{ row.label }}</td>
+        <td>{{ row.region }}</td>
+        <td><code class="series-key">{{ row.key }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid2" style="margin-top:16px">
+  <div class="panel">
+    <h2 style="margin-top:0">What is ours, not the market's</h2>
+    <p>Plenty of what you see here does not come from a federal feed at all.
+      It is ours, and it lives in this shop's own database:</p>
+    <ul class="ticks">
+      <li>Herd, cut sheet, and availability &mdash; what we actually have.</li>
+      <li>Orders, packing choices, pickup and delivery windows.</li>
+      <li>Price changes made in the admin console, each with an audit trail
+        and the ability to revert.</li>
+      <li>Hand-entered local store prices, kept separate from the federal
+        figures.</li>
+    </ul>
+    <p class="hint">The shop database is a local SQLite file. Order receipts
+      keep their own copy of the market snapshot they were priced against.</p>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Spot something wrong?</h2>
+    <p>If a number looks off, tell us which page and which row. We will
+      re-pull the feed, and if the figure was wrong we will correct it and
+      say so in the price audit log.</p>
+    <p><a class="btn" href="mailto:{{ content.contact_email }}">Email {{ content.contact_email }}</a></p>
+    <p class="hint">The raw public reports are linked above. You are welcome
+      to check our arithmetic against them. That is the point.</p>
+  </div>
+</div>
+
+<p class="hint" style="margin-top:18px">Last verified against the upstream
+  reports by the shop's daily fetch job. See also
+  <a href="/market-prices">the live market table</a>.</p>
+{% endblock %}

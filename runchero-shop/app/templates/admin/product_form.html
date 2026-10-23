@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}Edit product{% else %}New product{% endif %}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<h1>{% if product %}Edit product{% else %}New product{% endif %}</h1>
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/products" aria-current="page">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<form method="post" enctype="multipart/form-data"
+      action="{% if product %}/admin/products/{{ product.id }}/edit{% else %}/admin/products/new{% endif %}">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <div class="field">
+    <label for="store_slug">Store</label>
+    {% if product %}
+    <input type="hidden" id="store_slug" name="store_slug" value="{{ store_slug }}">
+    <p class="hint">{{ store.name }}</p>
+    {% else %}
+    <select id="store_slug" name="store_slug">
+      {% for st in stores %}
+      <option value="{{ st.slug }}" {% if (product and product.store_slug == st.slug) or (not product and st.slug == store_slug) %}selected{% endif %}>{{ st.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="slug">Slug</label>
+      <input type="text" id="slug" name="slug" required value="{{ product.slug if product else '' }}"></div>
+    <div class="field"><label for="name">Name</label>
+      <input type="text" id="name" name="name" required value="{{ product.name if product else '' }}"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="kind">Kind</label>
+      <select id="kind" name="kind">
+        {% for k in ("item","meal","veg") %}
+        <option value="{{ k }}" {% if product and product.kind == k %}selected{% endif %}>{{ k }}</option>
+        {% endfor %}
+      </select></div>
+    <div class="field"><label for="unit">Unit</label>
+      <input type="text" id="unit" name="unit" value="{{ product.unit if product else 'each' }}" placeholder="each / lb / jar"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="price">Price</label>
+      <input type="number" id="price" name="price" step="0.01" value="{{ product.price if product else 0 }}"></div>
+    <div class="field"><label for="compare_at">Compare at</label>
+      <input type="number" id="compare_at" name="compare_at" step="0.01" value="{{ product.compare_at if product else 0 }}"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="compare_brand">Comparison brand</label>
+      <input type="text" id="compare_brand" name="compare_brand" value="{{ product.compare_brand if product else '' }}"></div>
+    <div class="field"><label for="compare_size">Comparable package / portion</label>
+      <input type="text" id="compare_size" name="compare_size" value="{{ product.compare_size if product else '' }}"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="compare_url">Comparison source URL</label>
+      <input type="url" id="compare_url" name="compare_url" value="{{ product.compare_url if product else '' }}"></div>
+    <div class="field"><label for="compare_observed_at">Price checked</label>
+      <input type="date" id="compare_observed_at" name="compare_observed_at" value="{{ product.compare_observed_at if product else '' }}"></div>
+  </div>
+  <div class="field-row two">
+    <div class="field"><label for="unit_lbs">Unit lbs</label>
+      <input type="number" id="unit_lbs" name="unit_lbs" step="0.01" value="{{ product.unit_lbs if product else 0 }}"></div>
+    <div class="field"><label for="stock">Stock</label>
+      <input type="number" id="stock" name="stock" step="0.01" value="{{ product.stock if product else 0 }}"></div>
+  </div>
+  <div class="field"><label for="blurb">Blurb</label>
+    <textarea id="blurb" name="blurb" rows="3">{{ product.blurb if product else '' }}</textarea></div>
+  <div class="field"><label for="serving">Serving</label>
+    <input type="text" id="serving" name="serving" value="{{ product.serving if product else '' }}"></div>
+  <div class="field"><label for="tags">Tags</label>
+    <input type="text" id="tags" name="tags" value="{{ product.tags if product else '' }}"></div>
+  <div class="field"><label for="icon">Pixel icon name</label>
+    <input type="text" id="icon" name="icon" value="{{ product.icon if product else 'jar' }}">
+    <p class="hint">Used until a product photo is uploaded. Example: jar, carrot, corn, droplet, box.</p></div>
+  <div class="field"><label for="sort_order">Sort order</label>
+    <input type="number" id="sort_order" name="sort_order" value="{{ product.sort_order if product else 0 }}"></div>
+  <div class="field"><label for="image">Image (upload)</label>
+    <input type="file" id="image" name="image" accept="image/*">
+    {% if product and product.image %}<p class="hint">Current: <img src="{{ product.image }}" alt="" width="48" height="48"></p>{% endif %}</div>
+  <label class="opt"><input type="checkbox" name="featured" {% if product and product.featured %}checked{% endif %}> Featured</label>
+  <label class="opt"><input type="checkbox" name="active" {% if (not product) or product.active %}checked{% endif %}> Active</label>
+  <button class="btn grass block" type="submit" style="margin-top:12px">{% if product %}Save changes{% else %}Create product{% endif %}</button>
+</form>
+{% endblock %}

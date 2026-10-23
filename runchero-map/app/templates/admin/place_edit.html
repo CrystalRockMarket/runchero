@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<h1>{{ title }}</h1>
+<form method="post" action="{% if place %}/admin/place/{{ place.id }}{% else %}/admin/places/new{% endif %}">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <p><label>Slug <input name="slug" value="{{ place.slug if place else '' }}" {% if place %}readonly{% endif %} required></label></p>
+  <p><label>Name <input name="name" value="{{ place.name if place else '' }}" required></label></p>
+  <p><label>Category
+    <select name="category_id">
+      <option value="">—</option>
+      {% for c in categories %}<option value="{{ c.id }}" {% if place and place.category_id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select></label></p>
+  <p><label>Kind <input name="kind" value="{{ place.kind if place else 'building' }}"></label></p>
+  <p><label>Short desc <input name="short_desc" value="{{ place.short_desc if place else '' }}" style="width:100%"></label></p>
+  <p><label>Year built <input name="year_built" value="{{ place.year_built if place else '' }}"></label></p>
+  <p><label>Construction <textarea name="construction" style="width:100%">{{ place.construction if place else '' }}</textarea></label></p>
+  <p><label>Dimensions <input name="dimensions" value="{{ place.dimensions if place else '' }}"></label></p>
+  <p><label>Area (acres) <input name="area_acres" type="number" step="0.01" value="{{ place.area_acres if place else 0 }}"></label></p>
+  <p><label>Status <input name="status" value="{{ place.status if place else 'active' }}"></label></p>
+  <p><label>Notes <textarea name="notes" style="width:100%">{{ place.notes if place else '' }}</textarea></label></p>
+  <p><label><input type="checkbox" name="hidden" value="1" {% if place and place.hidden %}checked{% endif %}> Hidden</label></p>
+
+  <h2>Specs</h2>
+  {% if place %}
+  <ul>
+  {% for s in place.specs %}<li>{{ s.key }}: {{ s.value }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <p>Add spec: <input name="spec_key" placeholder="key"> <input name="spec_value" placeholder="value"></p>
+  <p style="font-size:12px;color:#5b6474">Specs are added one at a time on save; repeat to add more. (Existing specs shown above.)</p>
+
+  <h2>Photos</h2>
+  {% if place %}
+  {% for ph in place.photos %}<div><img src="{{ ph.path }}" style="max-width:200px"> <span>{{ ph.caption }}</span></div>{% endfor %}
+  {% endif %}
+  <p>New photo path: <input name="new_photo_path" placeholder="photos/main-barn/exterior.jpg"></p>
+  <p>Caption: <input name="new_photo_caption"></p>
+
+  <h2>Records</h2>
+  {% if place %}
+  {% for r in place.records %}<div class="record"><b>{{ r.kind }}</b> {{ r.occurred_on }} — {{ r.title }}<br>{{ r.body }}</div>{% endfor %}
+  {% endif %}
+  <p>New record title: <input name="new_record_title"></p>
+  <p>Kind: <select name="new_record_kind"><option>note</option><option>construction</option><option>maintenance</option><option>event</option><option>inspection</option></select></p>
+  <p>Date: <input name="new_record_date" type="date"></p>
+  <p>Body: <textarea name="new_record_body" style="width:100%"></textarea></p>
+
+  <h2>Shape (polygon coords JSON)</h2>
+  <p><textarea name="shape_coords" style="width:100%;height:120px">{% if place and place.shapes %}{{ place.shapes[0].coords }}{% endif %}</textarea></p>
+  <p style="font-size:12px;color:#5b6474">JSON array of [x,y] points in map pixel space ({{ content.map_width }}x{{ content.map_height }}).</p>
+
+  <p><button type="submit">Save</button> <a href="/admin/places">Cancel</a></p>
+</form>
+{% endblock %}

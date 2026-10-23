@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="account-head">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Profile</h1>
+    <p class="hint">Name, email, and phone. Changing your email asks for your
+      current password.</p>
+  </div>
+</div>
+
+{% include "_account_nav.html" %}
+
+<div class="panel" style="max-width:560px">
+  <form method="post" action="/account/profile" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="field">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" value="{{ values.name }}"
+             autocomplete="name" required>
+      {% if errors.name %}<p class="error-text" role="alert">{{ errors.name }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" value="{{ values.email }}"
+             autocomplete="email" required>
+      {% if errors.email %}<p class="error-text" role="alert">{{ errors.email }}</p>{% endif %}
+      <p class="hint">Changing this moves your order history with you; orders
+        are matched by account and by email.</p>
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone" value="{{ values.phone }}"
+             autocomplete="tel">
+      {% if errors.phone %}<p class="error-text" role="alert">{{ errors.phone }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="current_password">Current password</label>
+      <input type="password" id="current_password" name="current_password"
+             autocomplete="current-password">
+      {% if errors.current_password %}<p class="error-text" role="alert">{{ errors.current_password }}</p>{% endif %}
+      <p class="hint">Only needed if you are changing your email address.</p>
+    </div>
+
+    <button class="btn grass" type="submit">Save profile</button>
+  </form>
+</div>
+{% endblock %}

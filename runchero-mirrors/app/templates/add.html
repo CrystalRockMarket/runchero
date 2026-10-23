@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Add a site{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/download.png" alt=""> Guided walkthrough - add a site to save</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Find the site you want to save</h3>
+        <p class="muted">Just know the web address (URL) of the site. Examples: <code>https://example.com</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Enter the details below</h3>
+        <p class="muted">Give it a friendly name so it's easy to find later. You can add a short note about why you want to save it.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Hit Start and watch it download</h3>
+        <p class="muted">When you click Start, HTTrack will begin copying the site. It goes slowly and carefully so the pages are saved properly. You can watch progress on the Dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-title"><img src="/static/img/icons/wrench.png" alt=""> Enter site details</div>
+  <form method="post" action="/add" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <label>
+      <span class="label">Website address (URL) <span class="req">*</span></span>
+      <input type="text" name="url" placeholder="https://example.com" required>
+      <span class="hint error-hint">Must start with http:// or https:// (we'll show a red error if missing).</span>
+    </label>
+    <label>
+      <span class="label">Friendly name for this site</span>
+      <input type="text" name="name" placeholder="e.g. Community Garden Guide">
+      <span class="hint">If left blank, we'll use the domain name.</span>
+    </label>
+    <label>
+      <span class="label">Your name (optional)</span>
+      <input type="text" name="submitter" placeholder="So others know who added it">
+    </label>
+    <label>
+      <span class="label">Short description (optional)</span>
+      <input type="text" name="description" placeholder="What is this site about?">
+    </label>
+    <label>
+      <span class="label">Scrape speed (how gentle to be)</span>
+      <select name="speed">
+        <option value="very-slow" selected>Very slow - safest for most sites (few pages per minute)</option>
+        <option value="slow">Slow - gentle (a few pages per minute)</option>
+        <option value="medium">Medium - still respectful but a bit faster</option>
+      </select>
+      <span class="hint">Default is very slow/gentle to avoid putting strain on sites.</span>
+    </label>
+    <label>
+      <span class="label">Notes for this depot entry (optional)</span>
+      <textarea name="notes" rows="4" placeholder="Any notes to help others find it..."></textarea>
+    </label>
+    <div class="form-actions">
+      <button class="btn primary large" type="submit"><img src="/static/img/icons/download.png" alt="" width="18" height="18"> Start downloading this site</button>
+      <a class="btn large" href="/"><img src="/static/img/icons/list.png" alt="" width="18" height="18"> Go to dashboard</a>
+    </div>
+    <p class="muted small">It may take a while depending on site size. Larger sites can take hours. That's normal - it's saving everything carefully.</p>
+  </form>
+</section>
+{% endblock %}

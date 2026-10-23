@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{% if current %}{{ current.name }} cuts{% else %}All cuts{% endif %}{% endblock %}
+{% block description %}{% if current %}Shop {{ current.name|lower }} cuts from Runchero Beef, priced against the latest USDA market average and cut to order.{% else %}Browse every cut of Kentucky-raised beef, each priced against the latest USDA market average. Sold by the pound, cut to order.{% endif %}{% endblock %}
+{% block body %}
+
+<div class="section-head" style="margin-top:8px">
+  <h1>{% if current %}{{ current.name }}{% else %}Every cut on the animal{% endif %}</h1>
+  <p>{{ cuts|length }} cuts priced against published market averages{% if sort != 'featured' %} &middot; sorted by {{ (sorts|selectattr('0', 'equalto', sort)|first)[1]|lower }}{% endif %}.</p>
+</div>
+
+<nav class="pill-row" aria-label="Cut categories">
+  <a class="pill" href="/shop{% if sort != 'featured' %}?sort={{ sort }}{% endif %}"
+     {% if not current and not tag %}aria-current="true"{% endif %}>All</a>
+  {% for primal in primals %}
+  <a class="pill" href="/shop/{{ primal.slug }}{% if sort != 'featured' %}?sort={{ sort }}{% endif %}"
+     {% if current and current.slug == primal.slug %}aria-current="true"{% endif %}>
+    {{ primal.name }}</a>
+  {% endfor %}
+</nav>
+
+{% if tag %}
+<p class="notice-strip">Filtered by <strong>{{ tag }}</strong>.
+  <a href="/shop">Clear &times;</a></p>
+{% endif %}
+
+<form class="panel shop-tools" method="get"
+      action="{% if current %}/shop/{{ current.slug }}{% else %}/shop{% endif %}"
+      role="search">
+  <div class="field-row two">
+    <div class="field" style="margin:0">
+      <label for="q">Search cuts</label>
+      <input type="search" id="q" name="q" value="{{ search or '' }}"
+             placeholder="ribeye, brisket, ground...">
+    </div>
+    <div class="field" style="margin:0">
+      <label for="sort">Sort by</label>
+      <select id="sort" name="sort">
+        {% for key, label in sorts %}
+        <option value="{{ key }}"{% if sort == key %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  {% if tag %}<input type="hidden" name="tag" value="{{ tag }}">{% endif %}
+  <div class="tools-actions">
+    <button class="btn" type="submit">Apply</button>
+    {% if sort != 'featured' or search or tag %}
+    <a class="btn ghost small"
+       href="{% if current %}/shop/{{ current.slug }}{% else %}/shop{% endif %}">Reset</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if not cuts %}
+<div class="panel paper">
+  <h2 style="color:var(--ink)">Nothing matched.</h2>
+  <p>Try the search box, or <a href="/shop">browse everything</a>.</p>
+</div>
+{% else %}
+<div class="product-grid">
+  {% for cut in cuts %}
+  {% set cmp = comparisons[cut.slug] %}
+  <article class="card">
+    <div class="thumb"><img src="/static/img/icons/{{ cut.icon }}@4x.png"
+      alt="" width="64" height="64" loading="lazy" decoding="async"></div>
+    <div class="body">
+      <h3><a class="card-link" href="/cut/{{ cut.slug }}">{{ cut.name }}</a></h3>
+      <p class="desc">{{ cut.serving }}</p>
+      {% if cmp and cmp.available and cmp.under %}
+      <div class="market">
+        <div class="mp-row"><span>Grocery avg</span><strong>${{ '%.2f'|format(cmp.value) }}/lb</strong></div>
+        <div class="mp-row"><span>Ours</span><strong>${{ '%.2f'|format(cmp.our_per_lb) }}/lb</strong></div>
+        <div class="mp-src">{{ cmp.source }} &middot; {{ cmp.observed_at|prettydate }}
+          {% if cmp.stale %} &middot; older data{% endif %}</div>
+      </div>
+      {% elif cmp and cmp.available %}
+      <div class="market stale">
+        <div class="mp-row"><span>Grocery avg</span><strong>${{ '%.2f'|format(cmp.value) }}/lb</strong></div>
+        <div class="mp-src">Our price does not beat the market average on this
+          one right now, so we are not claiming it does.</div>
+      </div>
+      {% endif %}
+      <div class="foot">
+        <span class="price">{{ cut.runchero_price|money }}
+          <small>{{ 'each' if cut.unit == 'each' else 'per lb' }}</small></span>
+        <form method="post" action="/cart/add" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="type" value="cut">
+          <input type="hidden" name="ref" value="{{ cut.id }}">
+          <input type="hidden" name="qty" value="1">
+          <input type="hidden" name="name" value="{{ cut.name }}">
+          <input type="hidden" name="next" value="/shop">
+          <button class="btn small grass" type="submit">Add</button>
+        </form>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

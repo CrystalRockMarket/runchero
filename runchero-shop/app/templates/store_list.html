@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ store.name }}{% endblock %}
+{% block description %}{{ store.tagline }} {{ store.name }} at Runchero:
+{{ store.description|truncate(120) }}{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>{{ store.name }}</h1>
+  <p class="lede">{{ store.description }}</p>
+</div>
+
+{% macro product_card(row) %}
+{% set p = row.product %}
+{% set v = row.default %}
+<article class="card">
+  <div class="thumb">
+    <a href="/{{ url_prefix }}/{{ p.slug }}" tabindex="-1" aria-hidden="true">
+      {% if p.image %}
+      <img src="{{ p.image }}" alt="" width="64" height="64" loading="lazy" decoding="async">
+      {% else %}
+      <img src="/static/img/icons/{{ p.icon or 'box' }}.png" alt="" width="64" height="64" loading="lazy" decoding="async">
+      {% endif %}
+    </a>
+  </div>
+  <div class="body">
+    <h3><a class="card-link" href="/{{ url_prefix }}/{{ p.slug }}">{{ p.name }}</a></h3>
+    <p class="desc">{{ p.blurb }}</p>
+    {% if p.serving %}<p class="desc"><strong>{{ p.serving }}</strong></p>{% endif %}
+    <div class="foot">
+      {% if v %}
+      <span class="price">{{ v.price|money }} <small>{{ v.size_label }}</small></span>
+      {% else %}
+      <span class="price">{{ p.price|money }} <small>{{ 'per ' ~ p.unit if p.unit != 'each' else 'each' }}</small></span>
+      {% endif %}
+      <a class="btn small" href="/{{ url_prefix }}/{{ p.slug }}">Details</a>
+    </div>
+    <form method="post" action="/cart/add" class="card-buy">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="type" value="product">
+      <input type="hidden" name="ref" value="{{ p.id }}">
+      <input type="hidden" name="name" value="{{ p.name }}">
+      <input type="hidden" name="next" value="/{{ url_prefix }}">
+      {% if row.variants %}
+      <select name="variant_id" aria-label="Size">
+        {% for opt in row.variants %}
+        <option value="{{ opt.id }}"{% if v and opt.id == v.id %} selected{% endif %}>{{ opt.size_label }} &middot; {{ opt.price|money }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <input type="number" name="qty" value="1" min="1" step="1" aria-label="Quantity">
+      <button class="btn small grass" type="submit">Add</button>
+    </form>
+  </div>
+</article>
+{% endmacro %}
+
+{% if not rows %}
+<div class="panel paper">
+  <h2 style="color:var(--ink)">Nothing on the shelf yet.</h2>
+  <p>Check back soon &mdash; new batches are listed as they are ready.</p>
+</div>
+{% elif store.slug == 'freeze-dried' %}
+{% set vegetables = rows|selectattr('product.kind', 'equalto', 'veg')|list %}
+{% set meals = rows|rejectattr('product.kind', 'equalto', 'veg')|list %}
+<section aria-labelledby="veg-head">
+  <div class="section-head"><h2 id="veg-head">Freeze-dried produce by the pound</h2>
+    <p>Farm-grown vegetables. Compare each item by package weight.</p></div>
+  <div class="grid3">
+  {% for row in vegetables %}
+  {{ product_card(row) }}
+  {% endfor %}
+  </div>
+</section>
+<section aria-labelledby="meal-head" style="margin-top:26px">
+  <div class="section-head"><h2 id="meal-head">Ready meals &amp; bulk lots</h2>
+    <p>Pre-portioned homemade meals. Add hot water; package counts are shown with each product.</p></div>
+  <div class="grid3">
+  {% for row in meals %}
+  {{ product_card(row) }}
+  {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="grid3">
+  {% for row in rows %}
+  {{ product_card(row) }}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

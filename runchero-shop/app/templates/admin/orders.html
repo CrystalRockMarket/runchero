@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Orders{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<nav class="adminbar" aria-label="Admin sections">
+  <a href="/admin">Overview</a>
+  <a href="/admin/pricing">Pricing console</a>
+  <a href="/admin/integrity">Claim integrity</a>
+  <a href="/admin/market">Market data</a>
+  <a href="/admin/orders" aria-current="page">Orders</a>
+  <a href="/admin/products">Products</a>
+  <a href="/admin/social">Social links</a>
+  <a href="/admin/access">Access</a>
+  <a href="/admin/events">Events</a>
+  <span style="flex:1"></span>
+  <form method="post" action="/admin/logout" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="btn small ghost" type="submit">Sign out</button>
+  </form>
+</nav>
+
+<div class="section-head" style="margin-top:4px">
+  <h1>Orders</h1>
+  <p>The last {{ orders|length }} placed, newest first.</p>
+</div>
+
+{% if not orders %}
+<div class="panel"><p class="hint">No orders yet.</p></div>
+{% else %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Code</th><th>Customer</th><th>How</th>
+      <th class="num">Total</th><th class="num">Saved</th>
+      <th>Payment</th><th>Status</th><th>Placed</th></tr></thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td><a href="/order/{{ order.code }}">{{ order.code }}</a></td>
+        <td>{{ order.customer_name }}<br><small>{{ order.email }}</small></td>
+        <td>{{ order.fulfillment }}{% if order.county %},
+          {{ order.county }}{% endif %}</td>
+        <td class="num">{{ order.total|money }}</td>
+        <td class="num">{{ order.savings_total|money }}</td>
+        <td>{{ order.payment_status }}</td>
+        <td>{{ order.status }}</td>
+        <td>{{ order.created_at|prettydatetime }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

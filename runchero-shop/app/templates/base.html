@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% set page_title = self.title() %}
+<title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
+<meta name="description" content="{% block description %}{{ site_tagline }} Raised in {{ site_locale }}, cut to order.{% endblock %}">
+<meta name="theme-color" content="#1b1b23">
+<link rel="canonical" href="{{ canonical_url }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site_name }}">
+<meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %} | {{ site_name }}">
+<meta property="og:description" content="{% block og_description %}{{ self.description() }}{% endblock %}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ og_image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ site_name }} — {{ site_tagline }}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% block twitter_title %}{{ self.title() }}{% endblock %} | {{ site_name }}">
+<meta name="twitter:description" content="{% block twitter_description %}{{ self.description() }}{% endblock %}">
+<meta name="twitter:image" content="{{ og_image }}">
+<link rel="stylesheet" href="/static/css/shop.css">
+<link rel="icon" href="/static/img/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/static/img/icons/favicon-64.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="/static/img/icons/favicon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+{% block head %}{% endblock %}
+</head>
+<body>
+{% macro store_icon(slug) %}{{ 'cow-mark' if slug == 'beef' else ('potion-green' if slug == 'fermentation' else 'box') }}{% endmacro %}
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<div class="wrap">
+  <header>
+    <div class="topbar" role="banner">
+      <div class="brand-row">
+        <details class="store-switch">
+          <summary class="store-switch__btn" aria-label="Change store">
+            <img class="ss-mark" src="/static/img/icons/{{ store_icon(store_slug) }}.png" alt="" width="50" height="40">
+            <span class="ss-text">
+              <span class="ss-name">{{ current_store.name if current_store else site_name }}</span>
+              <span class="ss-hint">Change stores <span class="ss-arrow" aria-hidden="true">&#9660;</span></span>
+            </span>
+          </summary>
+          <div class="store-switch__menu">
+            <p class="ss-menu-title">Switch store</p>
+            {% for s in all_stores %}
+            <a class="ss-item{% if s.slug == store_slug %} is-current{% endif %}"
+               href="{% if s.slug == 'beef' %}/{% else %}/{{ s.slug }}{% endif %}"
+               {% if s.slug == store_slug %}aria-current="true"{% endif %}>
+              <img src="/static/img/icons/{{ store_icon(s.slug) }}.png" alt="" width="28" height="28">
+              <span class="ss-item-text">
+                <span class="ss-item-name">{{ s.name }}</span>
+                <span class="ss-item-tag">{{ s.tagline }}</span>
+              </span>
+              {% if s.slug == store_slug %}<span class="ss-check" aria-hidden="true">&#10003;</span>{% endif %}
+            </a>
+            {% endfor %}
+          </div>
+        </details>
+        <nav class="mainnav" aria-label="Main">
+          <a class="nav-logo" href="/" {% if path == '/' %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/home.png" alt="" width="24" height="24">
+            <span>Home</span>
+          </a>
+          <a class="nav-logo" href="/shop" {% if path.startswith('/shop') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/salami.png" alt="" width="24" height="24">
+            <span>Shop</span>
+          </a>
+          <a class="nav-logo" href="/packages" {% if path.startswith('/packages') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/box.png" alt="" width="24" height="24">
+            <span>Packages</span>
+          </a>
+          <a class="nav-logo" href="/shares" {% if path.startswith('/shares') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/burger.png" alt="" width="24" height="24">
+            <span>Shares</span>
+          </a>
+          <a class="nav-logo" href="/campaigns" {% if path.startswith('/campaign') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/calendar.png" alt="" width="24" height="24">
+            <span>Drops</span>
+          </a>
+          <a class="nav-logo" href="/market-prices" {% if path.startswith('/market') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/droplet.png" alt="" width="24" height="24">
+            <span>Market</span>
+          </a>
+          <a class="nav-logo" href="/how-it-works" {% if path.startswith('/how') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/truck.png" alt="" width="24" height="24">
+            <span>How It Works</span>
+          </a>
+        </nav>
+      </div>
+      <div class="top-actions">
+        {% if customer %}
+        <a class="nav-logo" href="/account" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
+          <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
+          <span>Account</span>
+        </a>
+        {% else %}
+        <a class="nav-logo" href="/account/login" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
+          <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
+          <span>Sign in</span>
+        </a>
+        {% endif %}
+        <a class="nav-logo" href="/orders" {% if path.startswith('/orders') %}aria-current="page"{% endif %}>
+          <img src="/static/img/icons/list@4x.png" alt="" width="24" height="24">
+          <span>My Order</span>
+        </a>
+        <a class="cart-link" href="/cart">
+          <img src="/static/img/icons/cow@2x.png" alt="" width="20" height="20">
+          Cart <span class="count" id="cart-count">{{ cart_count|default(0) }}</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  {% if content.banner %}
+  <p class="ticker" role="note">{{ content.banner }}</p>
+  {% endif %}
+
+  {% include "_flashes.html" %}
+
+  <main id="main" tabindex="-1">
+    {% block body %}{% endblock %}
+  </main>
+</div>
+
+{% include "_footer.html" %}
+</body>
+</html>

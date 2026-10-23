@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.code }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Order {{ order.code }}</h1>
+  <p>Placed {{ order.created_at|prettydatetime }} &middot;
+    {{ order.payment_status|capitalize }}</p>
+</div>
+
+{% if order.payment_status == 'paid' %}
+<div class="alert ok" role="status">
+  <strong>Paid &mdash; demo.</strong> No payment was charged and this order
+  is not being fulfilled. The flow is the real one, so what you see is what a customer sees.
+</div>
+{% else %}
+<div class="alert warn" role="status">Payment status:
+  {{ order.payment_status }}.</div>
+{% endif %}
+
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">What you ordered</h2>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Item</th><th class="num">Qty</th>
+          <th class="num">Line</th><th class="num">Saved</th></tr></thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.name }}{% if item.note %}<br><small>{{ item.note }}</small>{% endif %}</td>
+            <td class="num">{{ item.qty|round(2) }}</td>
+            <td class="num">{{ item.line_total|money }}</td>
+            <td class="num">{% if item.savings %}{{ item.savings|money }}{% else %}-{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="3">{{ 'Beef subtotal' if has_beef else 'Items subtotal' }}</td><td class="num">{{ order.subtotal|money }}</td></tr>
+          {% if order.packing_total %}
+          <tr><td colspan="3">Packing choices</td>
+            <td class="num">{{ order.packing_total|money }}</td></tr>
+          {% endif %}
+          <tr><td colspan="3">Delivery</td>
+            <td class="num">{{ order.delivery_fee|money }}</td></tr>
+          <tr><td colspan="3">Total</td><td class="num">{{ order.total|money }}</td></tr>
+          {% if has_beef %}<tr><td colspan="3">Under the grocery shelf</td>
+            <td class="num">{{ order.savings_total|money }}</td></tr>{% endif %}
+        </tfoot>
+      </table>
+    </div>
+    {% if has_beef %}<p class="hint">{{ content.tax_note }} The market figures your savings
+      were measured against are stored with this receipt.</p>{% endif %}
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">
+      {% if order.fulfillment == 'pickup' %}Pickup{% else %}Delivery{% endif %}</h2>
+    {% if slot %}
+    <dl class="kv">
+      <dt>When</dt>
+      <dd>{{ slot.service_date|shortdate }},
+        {{ slot.window_start }}-{{ slot.window_end }}</dd>
+      <dt>Where</dt>
+      <dd>{% if order.fulfillment == 'pickup' %}
+        {{ content.pickup_name }}, {{ content.pickup_address }}{% else %}
+        {{ address.line1 }}{% if address.line2 %}, {{ address.line2 }}{% endif %},
+        {{ address.city }}, {{ address.state }} {{ address.zip }}
+        ({{ order.county }} County){% endif %}</dd>
+      <dt>Hours</dt><dd>{{ content.pickup_hours }}</dd>
+    </dl>
+    <p><a class="btn small" href="/order/{{ order.code }}.ics">
+      Add to your calendar</a></p>
+    <p class="hint">{{ content.pickup_instructions }}</p>
+    {% else %}
+    <p>Your slot details are on the way.</p>
+    {% endif %}
+    {% if packing_note %}
+    <h3>Packing</h3>
+    <ul style="padding-left:20px;font-size:14px;color:var(--silver)">
+      {% for choice in packing_note %}
+      <li>{{ choice.group_label }}: {{ choice.label }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <h3>Contact on the order</h3>
+    <dl class="kv">
+      <dt>Name</dt><dd>{{ order.customer_name }}</dd>
+      <dt>Phone</dt><dd>{{ order.phone }}</dd>
+      <dt>Email</dt><dd>{{ order.email }}</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="panel paper" style="margin-top:20px">
+  <h2 style="color:var(--ink);margin-top:0">Next</h2>
+  <ul class="timeline" style="color:var(--ink)">
+    <li><span class="when">Now</span> Keep this page: it is your receipt.
+      Demo mode sends no email, so print or save it if you want a copy.</li>
+    <li><span class="when">Before the drop</span> Add the window to your
+      calendar above so nothing sits in the cold.</li>
+    <li><span class="when">On the day</span>
+      {% if order.fulfillment == 'pickup' %}Park out front at
+      {{ content.pickup_name }} and text your code {{ order.code }}.{% else %}
+      The driver calls {{ order.phone }} before arriving.{% endif %}</li>
+  </ul>
+  <p><a class="btn" href="/shop">Buy again</a>
+     <a class="btn grass" href="/manage">Manage a subscription</a></p>
+</div>
+{% endblock %}

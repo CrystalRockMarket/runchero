@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Create an account{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}
+<div class="auth-shell">
+  <div class="panel">
+    <h1 style="margin-top:0">Create your account</h1>
+    <p class="hint">Save your address and preferences once. Every order after
+      that is a couple of clicks.</p>
+
+    <form method="post" action="/account/signup" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{ values.name or '' }}"
+               autocomplete="name" required>
+        {% if errors.name %}<p class="error-text" role="alert">{{ errors.name }}</p>{% endif %}
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email"
+               value="{{ values.email or '' }}" autocomplete="email" required>
+        {% if errors.email %}<p class="error-text" role="alert">{{ errors.email }}</p>{% endif %}
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone <span class="muted">(optional)</span></label>
+        <input type="tel" id="phone" name="phone" value="{{ values.phone or '' }}"
+               autocomplete="tel">
+        {% if errors.phone %}<p class="error-text" role="alert">{{ errors.phone }}</p>{% endif %}
+      </div>
+
+      <div class="field-row two">
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password"
+                 autocomplete="new-password" required>
+          {% if errors.password %}<p class="error-text" role="alert">{{ errors.password }}</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="password2">Repeat password</label>
+          <input type="password" id="password2" name="password2"
+                 autocomplete="new-password" required>
+          {% if errors.password2 %}<p class="error-text" role="alert">{{ errors.password2 }}</p>{% endif %}
+        </div>
+      </div>
+      <p class="hint">At least eight characters.</p>
+
+      <label class="check" style="margin-bottom:16px">
+        <input type="checkbox" name="market_updates"
+               {% if values.market_updates %}checked{% endif %}>
+        <span>Send me the occasional market note when the local price moves.</span>
+      </label>
+
+      <button class="btn grass block" type="submit">Create account</button>
+    </form>
+
+    <p class="auth-switch">Already have one?
+      <a href="/account/login">Sign in</a>.</p>
+    <p class="demo-note">Demo mode: no confirmation email is sent, so your
+      address is marked verified immediately. Nothing is charged or mailed.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Formulas - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/gearbox.png') }}" alt="">
+    FORMULA SHELF
+    <span class="count">{{ formulas|length }} of {{ total }}</span>
+  </h1>
+  <p class="small muted">
+    The arithmetic behind the work: what to measure, what to type in, and what
+    the answer comes out as. Every formula says what the symbols mean and gives
+    a worked example, so you can check it against a job you have already done.
+  </p>
+  <div class="callout tip mt">
+    <b>Quick calculators.</b> A calculator appears where the formula is a single,
+    clean equation with clear symbols. It is a convenience, not an authority:
+    double-check every result yourself, especially doses, loads, torque and
+    safety-critical settings.
+  </div>
+
+  <form action="/formulas" method="get" class="grid-2 mt">
+    <div class="field" style="margin:0">
+      <label for="q">SEARCH THE FORMULAS</label>
+      <input type="text" id="q" name="q" value="{{ query }}"
+             placeholder="e.g. seed rate, torque, hydration, milk">
+    </div>
+    <div class="field" style="margin:0">
+      <label for="topic">TOPIC</label>
+      <select id="topic" name="topic">
+        <option value="">All topics</option>
+        {% for row in topics %}
+        <option value="{{ row.slug }}" {{ 'selected' if topic == row.slug else '' }}>
+          {{ row.name }} ({{ counts.get(row.slug, 0) }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <button class="btn sun" type="submit">APPLY</button>
+      <a class="btn ghost" href="/formulas">RESET</a>
+    </div>
+  </form>
+</div>
+
+{% if quick %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/star.png') }}" alt="">
+    MOST USED
+    <span class="count">start here</span>
+  </div>
+  <p class="small muted">The sums people reach for most often, in rough order of how often they come up.</p>
+  <div class="chips mt">
+    {% for item in quick %}
+    <a class="chip blue" href="#formula-{{ item.slug }}">{{ item.name }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/list.png') }}" alt="">
+    SHELVES
+  </div>
+  <div class="chips">
+    <a class="chip {{ 'green' if not topic else '' }}"
+       href="/formulas">ALL ({{ total }})</a>
+    {% for row in topics %}
+    <a class="chip {{ 'green' if topic == row.slug else '' }}"
+       href="/formulas?topic={{ row.slug }}">{{ row.name|upper }}
+      ({{ counts.get(row.slug, 0) }})</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if formulas %}
+  {% for slug, items in grouped.items() %}
+  <div class="formula-group">
+    <h3>
+      <img src="{{ static_url('img/icons/gearbox.png') }}" alt="">
+      {{ topic_names.get(slug, slug|upper) }}
+      <span class="n">{{ items|length }} formulas</span>
+    </h3>
+    <div class="formulas">
+      {% for item in items %}
+      <div class="formula" id="formula-{{ item.slug }}">
+        <div class="fname">{{ item.name }}
+          {% if item.slug in common_slugs %}<span class="chip sun">MOST USED</span>{% endif %}
+        </div>
+        <div class="expr">{{ item.expression }}</div>
+        {% if item.symbols %}<div class="sym"><b>SYMBOLS</b> &middot; {{ item.symbols }}</div>{% endif %}
+        {% if item.units %}<div class="units">UNITS &middot; {{ item.units }}</div>{% endif %}
+        <div class="how"><b>HOW TO USE</b><br>{{ item.how_html|safe }}</div>
+        {% if item.example %}
+        <div class="ex"><b>EXAMPLE</b><br>{{ item.example_html|safe }}</div>
+        {% endif %}
+        {% if item.calculator %}
+        {% set calc = item.calculator %}
+        <div class="calc" data-calc data-calc-expr="{{ calc.expr|e }}"
+             data-calc-vars='{{ calc.vars|tojson }}'
+             data-calc-labels='{{ calc.labels|tojson }}'>
+          <div class="calc-title">
+            <span>QUICK CALCULATOR</span>
+            <span class="small muted">{{ calc.label }} = result</span>
+          </div>
+          <div class="calc-fields">
+            {% for name in calc.vars %}
+            <label>
+              <span class="calc-name">{{ name }}</span>
+              <span class="small muted">{{ calc.labels.get(name, name) }}</span>
+              <input type="number" step="any" inputmode="decimal"
+                     data-calc-var="{{ name }}"
+                     value="{{ calc.defaults.get(name, '') }}"
+                     placeholder="value">
+            </label>
+            {% endfor %}
+          </div>
+          <div class="calc-actions">
+            <button class="btn sun" type="button" data-calc-run>CALCULATE {{ calc.label|upper }}</button>
+            <output class="calc-out" data-calc-out>Enter values above.</output>
+          </div>
+          <p class="small muted calc-warning">Convenience only. Double-check the result against the worked example or a second method before you use it.</p>
+        </div>
+        {% endif %}
+        {% if item.tags %}
+        <div class="chips">
+          {% for tag in item.tags.split(',') %}
+          <span class="chip">{{ tag.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="empty">
+  No formula matches that filter.<br>
+  Try a plainer word - "torque" rather than "torque wrench calibration".
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_url('js/formula-calc.js') }}"></script>
+{% endblock %}

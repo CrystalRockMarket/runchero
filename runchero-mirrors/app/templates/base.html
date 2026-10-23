@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
+<meta name="description" content="{% block description %}{{ site_tagline }}{% endblock %}">
+<meta name="theme-color" content="#1b1b23">
+<link rel="stylesheet" href="/static/css/mirrors.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/static/img/icons/depot.png" alt="" width="42" height="42">
+      <span class="name">{{ site_name }}<small>{{ site_tagline }}</small></span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="nav">
+      <a href="/" {% if path == '/' or path == '/dashboard' %}aria-current="page"{% endif %}><img src="/static/img/icons/list.png" alt="" width="16" height="16"> Dashboard</a>
+      <a href="/working" {% if path == '/working' %}aria-current="page"{% endif %}><img src="/static/img/icons/truck.png" alt="" width="16" height="16"> Currently working</a>
+      <a href="/add" {% if path == '/add' %}aria-current="page"{% endif %}><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Add a site</a>
+      <a href="/browse" {% if path.startswith('/browse') or path.startswith('/mirror/') or path.startswith('/view/') %}aria-current="page"{% endif %}><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Browse saved sites</a>
+    </nav>
+    {% if site_badge %}<span class="badge">{{ site_badge }}</span>{% endif %}
+  </header>
+
+  {% include "_flashes.html" %}
+
+  <main id="main" tabindex="-1">
+    {% block body %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div>Runchero Mirrors · Pixel art style · Runs on your local network</div>
+  </footer>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

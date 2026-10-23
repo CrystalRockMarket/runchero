@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Kitchen - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a><span class="separator">/</span><span class="current">Kitchen</span>
+</nav>
+
+<section class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/jar.png') }}" alt="">
+    KITCHEN &amp; PRESERVING
+    <span class="count">{{ collections|length }} food shelves</span>
+  </h1>
+  <p class="muted small">
+    An index of the archive's cookery, preserving, dairy, butchery, baking and
+    fermentation sources. Shelves are grouped by food and by technique. Every
+    card opens a depot of real books; nothing here is a written recipe article.
+  </p>
+  <form action="/kitchen" method="get" class="home-search mt">
+    <input type="text" name="q" value="{{ query }}" aria-label="Filter kitchen shelves"
+           placeholder="Filter by food, technique, author...">
+    <select name="sort" aria-label="Sort kitchen shelves">
+      <option value="food" {{ 'selected' if sort == 'food' else '' }}>SORT: FOOD GROUP</option>
+      <option value="name" {{ 'selected' if sort == 'name' else '' }}>SORT: NAME</option>
+      <option value="sources" {{ 'selected' if sort == 'sources' else '' }}>SORT: MOST SOURCES</option>
+    </select>
+    <button class="btn sun" type="submit">FILTER KITCHEN</button>
+  </form>
+  <div class="chips mt">
+    <a class="chip" href="#cookbook-shelf">ALL COOKBOOKS</a>
+    <a class="chip blue" href="/search?q={{ query|urlencode }}">SEARCH CHAPTERS</a>
+    <a class="chip" href="/library/archive?cat=lib-kitchen">ARCHIVE SHELF</a>
+    <a class="chip green" href="/topic/preserving">PRESERVING</a>
+    <a class="chip green" href="/topic/fermenting">FERMENTING</a>
+  </div>
+</section>
+
+{% for group in groups %}
+  {% for sub in group.subgroups %}
+  <details class="panel mb index-group" id="kitchen-{{ sub.slug }}" {% if query %}open{% endif %}>
+    <summary class="index-summary">
+      <img src="{{ static_url('img/icons/' ~ (sub['items'][0].icon if sub['items'] else 'jar') ~ '.png') }}" alt="">
+      <span class="index-name">{{ sub.name|upper }}</span>
+      <span class="count">{{ sub['items']|length }} shelves</span>
+      <span class="index-arrow" aria-hidden="true">+</span>
+    </summary>
+    <div class="index-body">
+      <div class="cards depot-grid">
+        {% for item in sub['items'] %}
+        <div class="card depot-card">
+          <div class="chead">
+            <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+            <span class="chip green">{{ item.source_count }} sources</span>
+          </div>
+          <div class="card-title"><a href="/topic/{{ item.slug }}">{{ item.name }}</a></div>
+          <p class="small">{{ item.summary|truncate(110) }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+  {% endfor %}
+{% else %}
+<div class="empty">No kitchen shelves match that filter. Try a plainer word.</div>
+{% endfor %}
+
+<details class="panel mb index-group" id="cookbook-shelf">
+  <summary class="index-summary">
+    <img src="{{ static_url('img/icons/book.png') }}" alt="">
+    <span class="index-name">ALL COOKBOOKS</span>
+    <span class="count">{{ kitchen_books|length }} books</span>
+    <span class="index-arrow" aria-hidden="true">+</span>
+  </summary>
+  <div class="index-body">
+    <p class="small muted">
+      The complete local cookery shelf. Filter the list by title or author, then
+      open a record to read the book here.
+    </p>
+    <input class="mt" type="search" data-list-filter="cookbook-list"
+           aria-label="Filter the cookbook list"
+           placeholder="Filter cookbooks by title or author...">
+    <div class="kitchen-book-list mt" data-list="cookbook-list">
+      {% for book in kitchen_books %}
+      <a class="kitchen-book-row" data-filter-text="{{ (book.title ~ ' ' ~ book.author ~ ' ' ~ (book.year or ''))|lower }}"
+         href="/library/archive/{{ book.slug }}">
+        <span class="kitchen-book-title">{{ book.title }}</span>
+        <span class="kitchen-book-meta">{{ book.author or 'Unknown author' }}{% if book.year %} &middot; {{ book.year }}{% endif %}</span>
+        <span class="chip sun">{{ book.format }}</span>
+      </a>
+      {% else %}
+      <div class="empty">No cookbooks match that filter.</div>
+      {% endfor %}
+    </div>
+  </div>
+</details>
+{% endblock %}

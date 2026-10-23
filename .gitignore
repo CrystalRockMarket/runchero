@@ -1,0 +1,6 @@
+# Never back up this folder
+earth.love/
+**/earth.love/
+
+# temporary key export, not backed up
+ssh-key.pub

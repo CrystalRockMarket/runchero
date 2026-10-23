@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Search: {{ query }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/magnifier.png') }}" alt="">
+    SEARCH RESULTS
+    <span class="count">{{ collections|length + books|length + formulas|length }} hits</span>
+  </h1>
+  {% if query %}
+  <p class="small muted">Results for <b>{{ query }}</b> across depots, public-domain books and formula indexes.</p>
+  {% else %}
+  <p class="small muted">Type something in the search box above.</p>
+  {% endif %}
+
+  {% if query %}
+  <div class="tabs-sub">
+    <a href="/search?q={{ query|urlencode }}{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if not kinds or kinds|length > 1 else '' }}">EVERYTHING</a>
+    <a href="/search?q={{ query|urlencode }}&kind=collection{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['collection'] else '' }}">DEPOTS</a>
+    <a href="/search?q={{ query|urlencode }}&kind=book{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['book'] else '' }}">BOOKS</a>
+    <a href="/search?q={{ query|urlencode }}&kind=formula{% if source %}&source={{ source }}{% endif %}" class="{{ 'active' if kinds == ['formula'] else '' }}">FORMULAS</a>
+  </div>
+  <div class="chips mt">
+    <span class="small muted">SOURCE:</span>
+    <a class="chip {{ 'green' if not source else '' }}" href="/search?q={{ query|urlencode }}{% if kind %}&kind={{ kind }}{% endif %}">ALL</a>
+    <a class="chip {{ 'green' if source == 'book' else '' }}" href="/search?q={{ query|urlencode }}{% if kind %}&kind={{ kind }}{% endif %}&source=book">BOOKS</a>
+    <a class="chip {{ 'green' if source == 'manual' else '' }}" href="/search?q={{ query|urlencode }}{% if kind %}&kind={{ kind }}{% endif %}&source=manual">MANUALS</a>
+    <a class="chip {{ 'green' if source == 'archive' else '' }}" href="/search?q={{ query|urlencode }}{% if kind %}&kind={{ kind }}{% endif %}&source=archive">INTERNET ARCHIVE</a>
+    <a class="chip sun" href="/sources">SOURCE INDEX</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if collections %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/seedling.png') }}" alt="">
+    DEPOTS
+    <span class="count">{{ collections|length }}</span>
+  </div>
+  <div class="cards depot-grid">
+    {% for item in collections %}
+    <div class="card depot-card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+        <span class="chip">{{ item.group_name }}</span>
+      </div>
+      <div class="card-title"><a href="/{{ 'grow' if item.kind == 'crop' else ('animals' if item.kind == 'animal' else 'topic') }}/{{ item.slug }}">{{ item.name }}</a></div>
+      <p class="small">{{ item.summary|truncate(140) }}</p>
+      <div class="meta"><span>{{ item.source_count }} sources</span><span>{{ item.subgroup_name }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if books %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/archive.png') }}" alt="">
+    BOOKS
+    <span class="count">{{ books|length }}</span>
+  </div>
+  <div class="cards">
+    {% for book in books %}
+    <div class="card bookcard">
+      <img class="cover" src="{{ static_url('img/covers/' ~ book.slug ~ '.png') }}" alt="Cover of {{ book.title }}">
+      <div class="info">
+        <div class="card-title"><a href="/library/archive/{{ book.slug }}">{{ book.title }}</a></div>
+        <div class="small muted">{{ book.author }}{% if book.year %} &middot; {{ book.year }}{% endif %}</div>
+        <div class="small">{{ book.snip|safe }}</div>
+        <div class="chips">
+          <span class="prov prov-{{ 'manual' if book.format == 'MANUAL' else 'book' }}">{{ source_labels.get('manual' if book.format == 'MANUAL' else 'book', book.source|upper) }}</span>
+          <span class="chip sun">{{ book.format }}</span>
+          <span class="chip">{{ book.bytes|filesize }}</span>
+        </div>
+        {% if book.source_url %}
+        <a class="small" href="{{ book.source_url }}" target="_blank" rel="noopener noreferrer">Original source</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if formulas %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/gearbox.png') }}" alt="">
+    FORMULAS
+    <span class="count">{{ formulas|length }}</span>
+  </div>
+  <div class="stack" style="gap:12px">
+    {% for item in formulas %}
+    <div style="border:2px solid var(--paper2);border-left:6px solid var(--sun2);padding:10px 12px">
+      <div class="card-title">
+        <a href="/formulas#formula-{{ item.slug }}">{{ item.name }}</a>
+      </div>
+      <div class="small muted mb">
+        <span class="prov prov-{{ item.origin }}">{{ source_labels.get(item.origin, item.origin|upper) }}</span>
+        {{ item.topic }} &middot; {{ item.units }}
+      </div>
+      <div class="small">{{ item.excerpt_html|safe }}</div>
+      <div class="row mt">
+        <a class="btn ghost" href="/formulas#formula-{{ item.slug }}">OPEN</a>
+        <a class="btn ghost" href="/formulas?q={{ query|urlencode }}">THE WHOLE SHELF</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if query and not collections and not books and not formulas %}
+<div class="empty">
+  No records match "<b>{{ query }}</b>"{% if source %} with the <b>{{ source_labels.get(source, source) }}</b> source filter{% endif %}.<br>
+  Try a plainer word, or clear the source filter.
+</div>
+{% endif %}
+{% endblock %}

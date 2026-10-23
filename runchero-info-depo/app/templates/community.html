@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Community shelf - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+    COMMUNITY NOTES
+    <span class="count">{{ items|length }} notes</span>
+  </h1>
+  <p class="small muted">
+    Notes written on the farm. Each one is filed, tagged and cross-linked, so you can
+    jump from a symptom to the fix to the book that explains it.
+  </p>
+  <form action="/library/community" method="get" class="mt">
+    <div class="field" style="margin:0">
+      <label for="q">FILTER THE SHELF</label>
+      <input type="text" id="q" name="q" value="{{ query }}" placeholder="e.g. fencing, calving, ploughing">
+    </div>
+    <button class="btn sun mt" type="submit">FILTER</button>
+  </form>
+</div>
+
+{% for cat in library_categories %}
+{% set items = grouped.get(cat.slug, []) %}
+{% if items %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/' ~ cat.icon ~ '.png') }}" alt="">
+    {{ cat.name|upper }}
+    <span class="count">{{ items|length }}</span>
+  </div>
+  <p class="small muted">{{ cat.blurb }}</p>
+  <div class="cards">
+    {% for item in items %}
+    <div class="card">
+      <div class="chead">
+        <img src="{{ static_url('img/icons/' ~ (item.category_icon or cat.icon) ~ '.png') }}" alt="">
+        <span class="chip green">{{ item.difficulty }}</span>
+      </div>
+      <div class="card-title"><a href="/a/{{ item.slug }}">{{ item.title }}</a></div>
+      <p>{{ item.summary }}</p>
+      <div class="meta">
+        <span>{{ item.read_minutes }} min read</span>
+        <span>by {{ item.author }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if not items %}
+<div class="empty">Nothing on the shelf matches that filter.</div>
+{% endif %}
+{% endblock %}

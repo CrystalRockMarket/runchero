@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="panel mb">
+  <div class="article-head">
+    <div class="kicker">
+      <a href="/section/{{ article.category_slug }}">{{ article.category_name }}</a>
+      &middot; <span class="prov prov-{{ article.origin }}">{{ source_labels.get(article.origin, article.origin|upper) }}</span>
+    </div>
+    <h1>{{ article.title }}</h1>
+    <div class="byline">
+      <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+      <span>{{ 'AI-written by' if article.origin == 'ai-generated' else 'Compiled by' }} {{ article.author or 'site editors' }}</span>
+      <span>&middot; {{ article.read_minutes }} min read</span>
+      <span>&middot; updated {{ article.updated_at|prettydate }}</span>
+      {% if article.difficulty %}<span class="chip green">{{ article.difficulty }}</span>{% endif %}
+      {% if article.views %}<span>&middot; {{ article.views }} reads</span>{% endif %}
+    </div>
+  </div>
+
+  {% if article.summary %}
+  <div class="callout tip">
+    <strong>In short:</strong> {{ article.summary }}
+  </div>
+  {% endif %}
+
+  {% if vehicle %}
+  <div class="chips mb">
+    <span class="chip blue">
+      <img src="{{ static_url('img/icons/tractor.png') }}" alt="" style="width:14px;height:14px">
+      <a href="/vehicles/{{ vehicle.slug }}">{{ vehicle.make }} {{ vehicle.model }}</a>
+    </span>
+  </div>
+  {% endif %}
+
+  <div class="prose">
+    {{ body_html|safe }}
+  </div>
+
+  {% if article.tags %}
+  <div class="chips mt">
+    {% for tag in article.tags.split(',') %}
+    {% if tag.strip() %}<span class="chip"><a href="/search?q={{ tag.strip() }}">#{{ tag.strip() }}</a></span>{% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if read_only %}
+  <div class="callout mt">
+    <strong>Read-only demo.</strong> Editing and community submissions are switched off in this build.
+    The buttons are here so the layout is final - they will be wired up in the next phase.
+  </div>
+  {% endif %}
+</div>
+
+{% if related %}
+<div class="panel mb">
+  <div class="panel-title">
+    <img src="{{ static_url('img/icons/list.png') }}" alt="">
+    RELATED NOTES
+  </div>
+  <div class="cards">
+    {% for item in related %}
+    <div class="card">
+      <div class="chead"><img src="{{ static_url('img/icons/notes.png') }}" alt=""></div>
+      <div class="card-title"><a href="/a/{{ item.slug }}">{{ item.title }}</a></div>
+      <p>{{ item.summary|truncate(120) }}</p>
+      <div class="meta"><span>{{ item.category_name }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Cow drops{% endblock %}
+{% block description %}Whole-cow drops split between households. One butcher day, one cut sheet, and a fair share of Kentucky-raised beef for every freezer.{% endblock %}
+{% block body %}
+
+<div class="hero">
+  <div>
+    <h1>Cow drops</h1>
+    <p class="lede">One cow, several households, one butcher day. Each
+      household takes a share, gets its own cut sheet, and no single sale is
+      more than half the carcass.</p>
+  </div>
+  <div class="hero-art">
+    <img src="/static/img/icons/cow@4x.png" alt="" width="72" height="72">
+  </div>
+</div>
+
+{% if campaigns %}
+<div class="product-grid" id="drops" style="margin-top:18px">
+  {% for row in campaigns %}
+  {% set info = states.get(row.id) %}
+  <article class="card">
+    <div class="thumb"><img src="/static/img/icons/box@4x.png" alt=""
+      width="64" height="64"></div>
+    <div class="body">
+      <h3><a class="card-link" href="/campaign/{{ row.slug }}">{{ row.name }}</a></h3>
+      <p class="muted" style="font-size:14px">{{ row.blurb }}</p>
+      <p style="font-size:14px">
+        <strong>{{ info.joined }} of {{ info.target }}</strong> households in.
+        {% if info.drop_date %}Drop {{ info.drop_date|prettydate }}.{% endif %}
+      </p>
+      <div class="bar"><span style="width: {{ info.pct }}%"></span></div>
+      <div class="foot">
+        <span class="price">{{ info.share_price|money }}
+          <small>per household</small></span>
+        <a class="btn small" href="/campaign/{{ row.slug }}">
+          {% if info.open %}Join{% else %}Full{% endif %}</a>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="panel">No cow drops are open right now. A whole cow opens up a few
+  times a year, usually in the spring and again before the holidays.</p>
+{% endif %}
+
+<div class="section-head" style="margin-top:32px">
+  <h2>How cow drops work</h2>
+  <p>Everything you need to know before you reserve a share.</p>
+</div>
+
+{% include "_cow_drops_explainer.html" %}
+
+<p style="margin-top:20px;font-size:14px" class="muted">
+  Looking for a single share instead? The
+  <a href="/shares">share tiers</a> are always open.
+</p>
+
+{% endblock %}

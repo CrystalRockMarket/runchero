@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ place.name }}{% endblock %}
+{% block body %}
+<h1>{{ place.name }}</h1>
+<p class="meta">{{ place.category_name }} · {{ place.status }} {% if place.year_built %}· built {{ place.year_built }}{% endif %}</p>
+{% if place.short_desc %}<p>{{ place.short_desc }}</p>{% endif %}
+{% if place.construction %}<p><b>Construction:</b> {{ place.construction }}</p>{% endif %}
+{% if place.dimensions %}<p><b>Dimensions:</b> {{ place.dimensions }}</p>{% endif %}
+{% if place.area_acres %}<p><b>Area:</b> {{ place.area_acres }} ac</p>{% endif %}
+{% if place.notes %}<p>{{ place.notes }}</p>{% endif %}
+{% if place.specs %}
+<h2>Specs</h2><ul>{% for s in place.specs %}<li><b>{{ s.key }}:</b> {{ s.value }}</li>{% endfor %}</ul>
+{% endif %}
+{% if place.photos %}
+<h2>Photos</h2>{% for ph in place.photos %}<img src="{{ ph.path }}" alt="{{ ph.caption }}" style="max-width:100%"><p class="meta">{{ ph.caption }}</p>{% endfor %}
+{% endif %}
+{% if place.records %}
+<h2>Records</h2>{% for r in place.records %}<div class="record"><b>{{ r.kind }}</b> {{ r.occurred_on }} — {{ r.title }}<br>{{ r.body }}</div>{% endfor %}
+{% endif %}
+<p><a href="/">← Back to map</a></p>
+{% endblock %}
