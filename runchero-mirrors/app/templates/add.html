@@ -1,73 +1,183 @@
 {% extends "base.html" %}
 {% block title %}Add a site{% endblock %}
 {% block body %}
+<section class="panel page-head">
+  <div>
+    <div class="panel-title"><img src="/static/img/icons/download.png" alt=""> Save a website, step by step</div>
+    <p class="lead">You only need the website address. The depot does the rest.</p>
+  </div>
+</section>
+
 <section class="panel">
-  <div class="panel-title"><img src="/static/img/icons/download.png" alt=""> Guided walkthrough - add a site to save</div>
   <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body">
-        <h3>Find the site you want to save</h3>
-        <p class="muted">Just know the web address (URL) of the site. Examples: <code>https://example.com</code></p>
+        <h3>Find the site you want to keep</h3>
+        <p>Open the website in another tab and copy its address from the top of the browser. It will look like <code>https://example.com</code>.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        <h3>Enter the details below</h3>
-        <p class="muted">Give it a friendly name so it's easy to find later. You can add a short note about why you want to save it.</p>
+        <h3>Paste it below</h3>
+        <p>Give it a friendly name if you like. That is the name everyone will see in the saved sites list.</p>
       </div>
     </div>
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-body">
-        <h3>Hit Start and watch it download</h3>
-        <p class="muted">When you click Start, HTTrack will begin copying the site. It goes slowly and carefully so the pages are saved properly. You can watch progress on the Dashboard.</p>
+        <h3>Press Save this website</h3>
+        <p>The copy starts right away and moves slowly on purpose. You can watch the page count climb in the <strong>Currently working</strong> tab.</p>
       </div>
     </div>
   </div>
 </section>
 
 <section class="panel">
-  <div class="panel-title"><img src="/static/img/icons/wrench.png" alt=""> Enter site details</div>
-  <form method="post" action="/add" class="form">
+  <div class="panel-title"><img src="/static/img/icons/wrench.png" alt=""> Website details</div>
+
+  {% if errors.form %}
+  <div class="form-error-box" role="alert">
+    <img src="/static/img/icons/x.png" alt="" width="16" height="16">
+    {{ errors.form }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/add" class="form" id="add-form" novalidate>
     <input type="hidden" name="_csrf" value="{{ csrf }}">
-    <label>
+
+    <label class="field">
       <span class="label">Website address (URL) <span class="req">*</span></span>
-      <input type="text" name="url" placeholder="https://example.com" required>
-      <span class="hint error-hint">Must start with http:// or https:// (we'll show a red error if missing).</span>
+      <input type="text" name="url" id="url" placeholder="https://example.com"
+             value="{{ values.get('url', '') }}" autocomplete="url" required
+             class="{% if errors.url %}is-invalid{% endif %}"
+             aria-describedby="url-hint url-error">
+      <span class="hint" id="url-hint">Include the <strong>http://</strong> or <strong>https://</strong> part.</span>
+      <span class="field-error" id="url-error" role="alert">{% if errors.url %}{{ errors.url }}{% endif %}</span>
     </label>
-    <label>
-      <span class="label">Friendly name for this site</span>
-      <input type="text" name="name" placeholder="e.g. Community Garden Guide">
-      <span class="hint">If left blank, we'll use the domain name.</span>
-    </label>
-    <label>
-      <span class="label">Your name (optional)</span>
-      <input type="text" name="submitter" placeholder="So others know who added it">
-    </label>
-    <label>
-      <span class="label">Short description (optional)</span>
-      <input type="text" name="description" placeholder="What is this site about?">
-    </label>
-    <label>
-      <span class="label">Scrape speed (how gentle to be)</span>
-      <select name="speed">
-        <option value="very-slow" selected>Very slow - safest for most sites (few pages per minute)</option>
-        <option value="slow">Slow - gentle (a few pages per minute)</option>
-        <option value="medium">Medium - still respectful but a bit faster</option>
-      </select>
-      <span class="hint">Default is very slow/gentle to avoid putting strain on sites.</span>
-    </label>
-    <label>
-      <span class="label">Notes for this depot entry (optional)</span>
-      <textarea name="notes" rows="4" placeholder="Any notes to help others find it..."></textarea>
-    </label>
-    <div class="form-actions">
-      <button class="btn primary large" type="submit"><img src="/static/img/icons/download.png" alt="" width="18" height="18"> Start downloading this site</button>
-      <a class="btn large" href="/"><img src="/static/img/icons/list.png" alt="" width="18" height="18"> Go to dashboard</a>
+
+    {% if duplicate %}
+    <div class="duplicate-box">
+      <p>“{{ duplicate.name }}” is already in the depot with the status <strong>{{ duplicate.status }}</strong>.</p>
+      <div class="actions">
+        {% if duplicate.status == 'completed' %}
+        <a class="btn small primary" href="/mirror/{{ duplicate.slug }}/">Open the saved copy</a>
+        {% else %}
+        <a class="btn small" href="/working">See it in Currently working</a>
+        {% endif %}
+      </div>
     </div>
-    <p class="muted small">It may take a while depending on site size. Larger sites can take hours. That's normal - it's saving everything carefully.</p>
+    {% endif %}
+
+    <label class="field">
+      <span class="label">Friendly name <span class="optional">optional</span></span>
+      <input type="text" name="name" placeholder="e.g. Community Garden Guide"
+             value="{{ values.get('name', '') }}" maxlength="120"
+             class="{% if errors.name %}is-invalid{% endif %}">
+      <span class="hint">Leave it blank and we will use the website's name.</span>
+      {% if errors.name %}<span class="field-error">{{ errors.name }}</span>{% endif %}
+    </label>
+
+    <label class="field">
+      <span class="label">Your name <span class="optional">optional</span></span>
+      <input type="text" name="submitter" placeholder="So neighbours know who saved it"
+             value="{{ values.get('submitter', '') }}" maxlength="80"
+             class="{% if errors.submitter %}is-invalid{% endif %}">
+      {% if errors.submitter %}<span class="field-error">{{ errors.submitter }}</span>{% endif %}
+    </label>
+
+    <label class="field">
+      <span class="label">What is this site about? <span class="optional">optional</span></span>
+      <input type="text" name="description" placeholder="A short sentence for the saved sites list"
+             value="{{ values.get('description', '') }}" maxlength="300"
+             class="{% if errors.description %}is-invalid{% endif %}">
+      {% if errors.description %}<span class="field-error">{{ errors.description }}</span>{% endif %}
+    </label>
+
+    <fieldset class="field speed-field">
+      <legend class="label">How gently should we copy it?</legend>
+      <div class="speed-options">
+        {% for key, profile in speed_profiles.items() %}
+        <label class="speed-option">
+          <input type="radio" name="speed" value="{{ key }}"
+                 {% if values.get('speed', default_speed) == key %}checked{% endif %}>
+          <span class="speed-body">
+            <span class="speed-name">{{ profile.label }}{% if key == default_speed %} · recommended{% endif %}</span>
+            <span class="speed-desc">{{ profile.description }}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      <span class="hint">The default is slow on purpose. It is kinder to the website and makes a more complete copy.</span>
+    </fieldset>
+
+    <label class="field">
+      <span class="label">Notes for the depot <span class="optional">optional</span></span>
+      <textarea name="notes" rows="3" maxlength="2000"
+                placeholder="Anything the next person should know about this site">{{ values.get('notes', '') }}</textarea>
+      {% if errors.notes %}<span class="field-error">{{ errors.notes }}</span>{% endif %}
+    </label>
+
+    <div class="form-actions">
+      <button class="btn primary large" type="submit" id="submit-btn">
+        <img src="/static/img/icons/download.png" alt="" width="18" height="18"> Save this website
+      </button>
+      <a class="btn large" href="/working">Cancel</a>
+    </div>
+    <p class="hint">Large sites can take hours. That is normal: the depot is saving every reachable page carefully.</p>
   </form>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('add-form');
+  var url = document.getElementById('url');
+  var error = document.getElementById('url-error');
+  function validate() {
+    var value = url.value.trim();
+    if (!value) {
+      show('Please enter the website address.');
+      return false;
+    }
+    if (!/^https?:\/\//i.test(value)) {
+      show('Please start the address with http:// or https://.');
+      return false;
+    }
+    try {
+      var parsed = new URL(value);
+      if (!parsed.hostname) { show('That address is missing a website name.'); return false; }
+    } catch (e) {
+      show('That does not look like a valid web address.');
+      return false;
+    }
+    clear();
+    return true;
+  }
+  function show(message) {
+    error.textContent = message;
+    url.classList.add('is-invalid');
+    url.setAttribute('aria-invalid', 'true');
+    url.focus();
+  }
+  function clear() {
+    error.textContent = '';
+    url.classList.remove('is-invalid');
+    url.removeAttribute('aria-invalid');
+  }
+  url.addEventListener('input', function () {
+    if (url.value.trim()) { clear(); }
+  });
+  form.addEventListener('submit', function (event) {
+    if (!validate()) {
+      event.preventDefault();
+      return;
+    }
+    var button = document.getElementById('submit-btn');
+    button.disabled = true;
+    button.innerHTML = 'Starting the copy…';
+  });
+})();
+</script>
 {% endblock %}

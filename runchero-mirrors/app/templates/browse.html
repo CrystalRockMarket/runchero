@@ -1,30 +1,78 @@
 {% extends "base.html" %}
-{% block title %}Browse saved sites{% endblock %}
+{% block title %}Saved sites{% endblock %}
 {% block body %}
-<section class="panel">
-  <div class="panel-title"><img src="/static/img/icons/book.png" alt=""> Browse finished mirrors</div>
-  <p class="muted">These sites have finished downloading and are saved for offline browsing on the local network.</p>
+<section class="panel page-head">
+  <div>
+    <div class="panel-title"><img src="/static/img/icons/book.png" alt=""> Saved sites</div>
+    <p class="lead">Every completed copy in the depot. These pages live on the local network, so they keep working even when the internet does not.</p>
+  </div>
+  <a class="btn primary" href="/add"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Save a website</a>
 </section>
 
+{% if completed %}
 <section class="panel">
-  {% if completed %}
-  <div class="cards">
+  <div class="browse-tools">
+    <label class="search">
+      <span class="visually-hidden">Search saved sites</span>
+      <input type="search" id="site-search" placeholder="Search by name or address…" autocomplete="off">
+    </label>
+    <span class="count-pill">{{ completed|length }} site{% if completed|length != 1 %}s{% endif %}</span>
+  </div>
+
+  <div class="cards" id="site-cards">
     {% for m in completed %}
-    <article class="card">
-      <div class="card-title"><img src="/static/img/icons/archive.png" alt=""> {{ m.name }}</div>
-      <p class="muted small break">{{ m.url }}</p>
-      {% if m.description %}<p>{{ m.description }}</p>{% endif %}
-      {% if m.notes %}<p class="note"><strong>Notes:</strong> {{ m.notes }}</p>{% endif %}
-      <p class="muted small">Pages: {{ m.pages_saved }} · Files: {{ m.files_saved }} · Finished: {{ m.finished_at }}</p>
-      <div class="card-actions">
-        <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Browse this site</a>
-        <a class="btn" href="{{ m.url }}" target="_blank" rel="noopener"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Original site</a>
+    <article class="card site-card" data-search="{{ (m.name ~ ' ' ~ m.url ~ ' ' ~ (m.description or ''))|lower }}">
+      <div class="card-kicker">Saved {{ m.finished_at|prettydate }}</div>
+      <h3 class="card-title"><img src="/static/img/icons/archive.png" alt=""> {{ m.name }}</h3>
+      <p class="source break">{{ m.url }}</p>
+      {% if m.description %}<p class="card-desc">{{ m.description }}</p>{% endif %}
+      <div class="card-stats">
+        <span><strong>{{ m.pages_saved }}</strong> pages</span>
+        <span><strong>{{ m.files_saved }}</strong> files</span>
+        <span><strong>{{ m.bytes_saved|filesize }}</strong></span>
       </div>
+      <div class="card-meta">
+        <span>{{ speed_profiles.get(m.speed, {}).get('label', m.speed) }}</span>
+        {% if m.submitter_name %}<span>Saved by {{ m.submitter_name }}</span>{% endif %}
+        <span>{{ m.started_at|duration(m.finished_at) }}</span>
+      </div>
+      <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
     </article>
     {% endfor %}
   </div>
-  {% else %}
-  <p class="muted">No completed mirrors yet. Go to <a href="/add">Add a site</a> to start one, or check the <a href="/">Dashboard</a>.</p>
-  {% endif %}
+  <div class="empty" id="no-results" hidden>
+    <img src="/static/img/icons/book.png" alt="" width="36" height="36">
+    <p>No saved site matches that search.</p>
+  </div>
 </section>
+{% else %}
+<section class="panel">
+  <div class="empty big">
+    <img src="/static/img/icons/archive.png" alt="" width="52" height="52">
+    <h2>The shelves are empty</h2>
+    <p>Once a website finishes copying, its saved copy will appear here for everyone.</p>
+    <a class="btn primary large" href="/add"><img src="/static/img/icons/download.png" alt="" width="18" height="18"> Save the first website</a>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var input = document.getElementById('site-search');
+  if (!input) return;
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.site-card'));
+  var none = document.getElementById('no-results');
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    var shown = 0;
+    cards.forEach(function (card) {
+      var match = !q || card.getAttribute('data-search').indexOf(q) !== -1;
+      card.hidden = !match;
+      if (match) shown++;
+    });
+    none.hidden = shown !== 0;
+  });
+})();
+</script>
 {% endblock %}

@@ -24,7 +24,9 @@
 {% if variants %}
 <div class="panel" style="margin-top:16px">
   <h2 style="margin-top:0">Choose a size</h2>
-  <p class="hint">Bigger pails cost less per pound &mdash; the unit price drops with size.</p>
+  {% if variants|length > 1 %}
+  <p class="hint">Bigger sizes cost less per pound &mdash; the unit price drops with size.</p>
+  {% endif %}
   <form method="post" action="/cart/add" id="size-form">
     <input type="hidden" name="_csrf" value="{{ csrf }}">
     <input type="hidden" name="type" value="product">
@@ -97,7 +99,7 @@
       </div>
       <div class="body">
         <h3><a class="card-link" href="/{{ url_prefix }}/{{ p.slug }}">{{ p.name }}</a></h3>
-        <p class="blurb">{{ p.blurb }}</p>
+        <p class="desc">{{ p.blurb }}</p>
         <div class="foot">
           <span class="price">{{ p.price|money }} <small>{{ 'per ' ~ p.unit if p.unit != 'each' else 'each' }}</small></span>
           <a class="btn small grass" href="/{{ url_prefix }}/{{ p.slug }}">Details</a>

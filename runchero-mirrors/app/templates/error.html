@@ -1,9 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Error{% endblock %}
+{% block title %}{{ code }} error{% endblock %}
 {% block body %}
-<section class="panel">
-  <div class="panel-title"><img src="/static/img/icons/x.png" alt=""> {{ code }} - Something went wrong</div>
+<section class="panel narrow">
+  <div class="panel-title"><img src="/static/img/icons/x.png" alt=""> {{ code }} · something went wrong</div>
   <p>{{ message }}</p>
-  <p><a class="btn" href="/"><img src="/static/img/icons/home.png" alt="" width="16" height="16"> Back to dashboard</a></p>
+  <div class="actions">
+    <a class="btn primary" href="/"><img src="/static/img/icons/home.png" alt="" width="16" height="16"> Back to the dashboard</a>
+    <a class="btn" href="/working"><img src="/static/img/icons/truck.png" alt="" width="16" height="16"> Currently working</a>
+  </div>
 </section>
 {% endblock %}

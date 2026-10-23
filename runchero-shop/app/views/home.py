@@ -18,11 +18,11 @@ def register(add) -> None:
 
 #: The six ways people actually think about buying beef, kept low on the page.
 ENTRIES = [
-    ("shop?tag=steak", "Steak Night", "Ribeyes, strips, filets", "cow"),
-    ("shop?primal=ground", "Ground Beef", "Burgers, tacos, chili", "cow"),
-    ("shop?tag=roast", "Slow Cooker", "Roasts for the family", "calendar"),
-    ("shop?tag=smoker", "Smoker Cuts", "Brisket, ribs, tri-tip", "cow"),
-    ("shares", "Fill the Freezer", "Bulk packs and cow shares", "download"),
+    ("shop?tag=steak", "Steak Night", "Ribeyes, strips, filets", "salami"),
+    ("shop?primal=ground", "Ground Beef", "Burgers, tacos, chili", "burger"),
+    ("shop?tag=roast", "Slow Cooker", "Roasts for the family", "hotdog"),
+    ("shop?tag=smoker", "Smoker Cuts", "Brisket, ribs, tri-tip", "salami"),
+    ("shares", "Fill the Freezer", "Bulk packs and cow shares", "crate"),
     ("packages", "Packages", "Curated bundles and deals", "box"),
 ]
 

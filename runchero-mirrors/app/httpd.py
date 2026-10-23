@@ -8,30 +8,23 @@ import re
 import signal
 import sys
 import threading
-import time
 import traceback
+from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from . import config, db, views
-from .web import Request
+from .services import httrack
+from .web import FilePayload, Request
 
 ROUTES: list[tuple[str, re.Pattern[str], object]] = []
 STATIC_ROOT = config.STATIC_DIR.resolve()
 _THREAD_LOCAL = threading.local()
 
 
-def route(pattern: str, method: str = "GET"):
-    compiled = re.compile(pattern)
-
-    def decorator(func):
-        ROUTES.append((method, compiled, func))
-        return func
-    return decorator
-
-
 def _local():
+    """One database connection per request thread."""
     conn = getattr(_THREAD_LOCAL, "conn", None)
     if conn is None:
         conn = db.connect()
@@ -55,10 +48,13 @@ class MirrorHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         self._dispatch("POST")
 
+    # -- routing ---------------------------------------------------------
     def _dispatch(self, method: str) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path) or "/"
-        if len(path) > 1 and path.endswith("/"):
+        # App routes tolerate a trailing slash. Mirror URLs must keep it so
+        # relative links in the saved pages resolve the same way as the original.
+        if len(path) > 1 and path.endswith("/") and not path.startswith("/mirror/"):
             path = path.rstrip("/") or "/"
         query = {k: ",".join(v) for k, v in parse_qs(parsed.query).items()}
 
@@ -67,7 +63,7 @@ class MirrorHandler(BaseHTTPRequestHandler):
             return
 
         body = b""
-        if method in ("POST",):
+        if method == "POST":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
@@ -77,8 +73,8 @@ class MirrorHandler(BaseHTTPRequestHandler):
                 body = self.rfile.read(length)
 
         req = None
+        conn = _local()
         try:
-            conn = _local()
             for verb, pattern, handler in ROUTES:
                 if verb != method and not (verb == "GET" and method == "HEAD"):
                     continue
@@ -98,11 +94,11 @@ class MirrorHandler(BaseHTTPRequestHandler):
                 return
             if method == "HEAD":
                 self._send(404, "text/plain; charset=utf-8", "")
-            else:
-                if req is None:
-                    req = Request(method, path, query, self.headers, body, {})
-                    req.load_session()
-                self._send_result(views.not_found(conn, req), req)
+                return
+            if req is None:
+                req = Request(method, path, query, self.headers, body, {})
+                req.load_session()
+            self._send_result(views.not_found(conn, req), req)
         except BrokenPipeError:
             pass
         except Exception:
@@ -118,8 +114,9 @@ class MirrorHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
 
+    # -- responses -------------------------------------------------------
     def _send_result(self, result, req: Request) -> None:
-        extra = {}
+        extra: dict[str, str] = {}
         content_type = "text/html; charset=utf-8"
         status = 200
         body = result
@@ -128,18 +125,20 @@ class MirrorHandler(BaseHTTPRequestHandler):
                 status, headers, body = result
                 if isinstance(headers, dict):
                     extra = dict(headers)
+                    if "Content-Type" in extra:
+                        content_type = extra.pop("Content-Type")
                 else:
                     content_type = headers
             elif len(result) == 2:
                 status, body = result
         cookies = list(req.set_cookies) if req is not None else []
-        if "Set-Cookie" in extra and len(cookies) > 1:
-            extra.pop("Set-Cookie")
-            self._send(status, content_type, body, extra=extra, cookies=cookies)
+        if isinstance(body, FilePayload):
+            self._send_file(body, status, extra, cookies)
             return
-        self._send(status, content_type, body, extra=extra)
+        self._send(status, content_type, body, extra=extra, cookies=cookies)
 
-    def _send(self, status: int, content_type: str, body, extra=None, cookies=None) -> None:
+    def _send(self, status: int, content_type: str, body,
+              extra=None, cookies=None) -> None:
         if isinstance(body, str):
             payload = body.encode("utf-8")
         elif isinstance(body, (bytes, bytearray)):
@@ -160,6 +159,69 @@ class MirrorHandler(BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(payload)
 
+    def _send_file(self, payload: FilePayload, status: int = 200,
+                   extra: dict[str, str] | None = None,
+                   cookies: list[str] | None = None) -> None:
+        try:
+            stat = payload.path.stat()
+        except OSError:
+            self._send(404, "text/plain; charset=utf-8", "File not found\n")
+            return
+        total = stat.st_size
+        start, end = 0, max(0, total - 1)
+        range_header = self.headers.get("Range") or ""
+        partial = False
+        match = re.match(r"bytes=(\d*)-(\d*)$", range_header.strip())
+        if match and total:
+            left, right = match.groups()
+            if left:
+                start = int(left)
+                end = int(right) if right else total - 1
+            elif right:
+                length = int(right)
+                start = max(0, total - length)
+                end = total - 1
+            if start > end or start >= total:
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{total}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            end = min(end, total - 1)
+            partial = True
+        length = max(0, end - start + 1) if total else 0
+        self.send_response(206 if partial else status)
+        self.send_header("Content-Type", payload.content_type)
+        self.send_header("Content-Length", str(length))
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Last-Modified", formatdate(stat.st_mtime, usegmt=True))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "same-origin")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        if partial:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+        for key, value in (extra or {}).items():
+            if key.lower() == "content-type":
+                continue
+            self.send_header(key, value)
+        for cookie in (cookies or []):
+            self.send_header("Set-Cookie", cookie)
+        self.end_headers()
+        if self.command == "HEAD":
+            return
+        try:
+            with open(payload.path, "rb") as handle:
+                handle.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = handle.read(min(64 * 1024, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def _serve_static(self, relative: str) -> None:
         target = (STATIC_ROOT / relative).resolve()
         try:
@@ -172,7 +234,9 @@ class MirrorHandler(BaseHTTPRequestHandler):
             return
         guessed, _ = mimetypes.guess_type(str(target))
         content_type = guessed or "application/octet-stream"
-        if content_type.startswith("text/") or content_type in ("application/javascript", "application/json", "application/manifest+json"):
+        if content_type.startswith("text/") or content_type in (
+            "application/javascript", "application/json", "application/manifest+json",
+        ):
             content_type += "; charset=utf-8"
         cache = "public, max-age=604800" if target.suffix not in (".html",) else "no-cache"
         self._send(200, content_type, target.read_bytes(), extra={"Cache-Control": cache})
@@ -221,10 +285,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"cannot bind {args.host}:{args.port}: {exc}", file=sys.stderr)
         return 1
 
+    conn = db.connect()
+    db.init_db(conn)
+    try:
+        httrack.recover(conn)
+    finally:
+        conn.close()
+    httrack.ensure_worker()
+
     try:
         config.PID_PATH.parent.mkdir(parents=True, exist_ok=True)
         config.PID_PATH.write_text(f"{os.getpid()}\n")
-    except Exception:
+    except OSError:
         pass
 
     def shutdown(*_):
@@ -237,11 +309,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         server.serve_forever(poll_interval=0.2)
     finally:
+        httrack.shutdown()
         server.server_close()
         try:
             if config.PID_PATH.exists():
                 config.PID_PATH.unlink()
-        except Exception:
+        except OSError:
             pass
     return 0
 

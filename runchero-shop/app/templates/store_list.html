@@ -25,6 +25,15 @@
     <h3><a class="card-link" href="/{{ url_prefix }}/{{ p.slug }}">{{ p.name }}</a></h3>
     <p class="desc">{{ p.blurb }}</p>
     {% if p.serving %}<p class="desc"><strong>{{ p.serving }}</strong></p>{% endif %}
+    {% if p.compare_at %}
+    <div class="market{% if p.price >= p.compare_at %} stale{% endif %}">
+      <div class="mp-row"><span>Reference</span><strong>{{ p.compare_at|money }}{{ '/lb' if p.unit == 'lb' else ' / ' ~ p.unit }}</strong></div>
+      {% if p.price < p.compare_at %}
+      <div class="mp-row"><span>Ours</span><strong>{{ p.price|money }}{{ '/lb' if p.unit == 'lb' else ' / ' ~ p.unit }}</strong></div>
+      {% endif %}
+      <div class="mp-src">{{ p.compare_brand or 'Published listing' }}{% if p.price >= p.compare_at %} &middot; no saving claimed{% endif %}</div>
+    </div>
+    {% endif %}
     <div class="foot">
       {% if v %}
       <span class="price">{{ v.price|money }} <small>{{ v.size_label }}</small></span>

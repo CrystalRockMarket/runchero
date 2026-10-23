@@ -1,52 +1,93 @@
 {% extends "base.html" %}
 {% block title %}Currently working{% endblock %}
 {% block body %}
-<section class="panel">
-  <div class="panel-title"><img src="/static/img/icons/truck.png" alt=""> Currently working</div>
-  <p class="muted">Sites that are actively downloading right now. Shows running time and saved pages/files as they progress.</p>
-  <div class="actions">
-    <a class="btn" href="/"><img src="/static/img/icons/list.png" alt="" width="16" height="16"> Back to dashboard</a>
-    <a class="btn" href="/add"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Add another site</a>
+<section class="panel page-head">
+  <div>
+    <div class="panel-title"><img src="/static/img/icons/truck.png" alt=""> Currently working</div>
+    <p class="lead">Every site being copied right now, plus anything waiting its turn. This page refreshes on its own.</p>
   </div>
+  <a class="btn primary" href="/add"><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Save another site</a>
 </section>
 
-<section class="panel">
-  {% if running %}
-  <table class="table">
-    <thead><tr><th>Site</th><th>URL</th><th>Status/Time</th><th>Progress</th><th>Actions</th></tr></thead>
-    <tbody>
-    {% for m in running %}
-    <tr>
-      <td><strong>{{ m.name }}</strong><br><span class="muted small">{{ m.slug }}</span>{% if m.description %}<br><span class="small">{{ m.description }}</span>{% endif %}</td>
-      <td class="small break">{{ m.url }}</td>
-      <td>{{ m.status }}{% if m.duration %} · {{ m.duration }}{% endif %}</td>
-      <td>{{ m.pages_saved }} pages / {{ m.files_saved }} files</td>
-      <td>
-        {% if m.status == 'queued' %}
-        <form method="post" action="/start/{{ m.id }}" style="display:inline">
-          <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn small primary"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Start</button>
-        </form>
-        {% endif %}
-        {% if m.status == 'running' %}
-        <form method="post" action="/stop/{{ m.id }}" style="display:inline">
-          <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn small"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Stop/Pause</button>
-        </form>
-        {% endif %}
-        <a class="btn small" href="/api/mirror/{{ m.id }}/logs" target="_blank"><img src="/static/img/icons/list.png" alt="" width="14" height="14"> View logs</a>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="muted">Nothing is downloading right now.</p>
-  {% endif %}
+<section class="stat-row small">
+  <div class="stat-card"><span class="stat-num">{{ counts.running }}</span><span class="stat-label">Downloading</span></div>
+  <div class="stat-card"><span class="stat-num">{{ counts.paused }}</span><span class="stat-label">Paused</span></div>
+  <div class="stat-card"><span class="stat-num">{{ counts.queued }}</span><span class="stat-label">Waiting</span></div>
+  <div class="stat-card"><span class="stat-num">{{ counts.completed }}</span><span class="stat-label">Finished</span></div>
 </section>
+
+{% if active %}
+<section class="job-list">
+  {% for m in active %}
+  <article class="job panel">
+    <div class="job-head">
+      <div>
+        <h2>{{ m.name }} <span class="status {{ m.status }}">{{ m.status }}</span></h2>
+        <p class="source break">{{ m.url }}</p>
+        {% if m.submitter_name %}<p class="muted small">Added by {{ m.submitter_name }}</p>{% endif %}
+      </div>
+      <div class="job-buttons">
+        {% if m.status == 'running' %}
+        <form method="post" action="/pause/{{ m.id }}">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small" type="submit"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Pause</button>
+        </form>
+        {% elif m.status == 'paused' %}
+        <form method="post" action="/resume/{{ m.id }}">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small primary" type="submit"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Resume</button>
+        </form>
+        {% elif m.status == 'queued' or m.status == 'starting' %}
+        <form method="post" action="/start/{{ m.id }}">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small" type="submit"><img src="/static/img/icons/list.png" alt="" width="14" height="14"> Waiting…</button>
+        </form>
+        {% endif %}
+        <form method="post" action="/stop/{{ m.id }}" onsubmit="return confirm('Stop saving this site? The partial copy will not be shown in Saved sites.');">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Stop</button>
+        </form>
+        <a class="btn small" href="/logs/{{ m.id }}"><img src="/static/img/icons/notes.png" alt="" width="14" height="14"> Log</a>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress {{ m.status }}">
+        <span></span>
+      </div>
+      <div class="progress-label">
+        {% if m.status == 'running' %}Copying pages, one at a time…{% elif m.status == 'paused' %}Paused by the community{% elif m.status == 'queued' %}Waiting for the current download to finish{% else %}Getting ready…{% endif %}
+      </div>
+    </div>
+
+    <div class="job-stats">
+      <div class="job-stat"><span class="k">Running for</span><span class="v">{{ m.started_at|duration(m.finished_at) }}</span></div>
+      <div class="job-stat"><span class="k">Pages saved</span><span class="v">{{ m.pages_saved }}</span></div>
+      <div class="job-stat"><span class="k">Files saved</span><span class="v">{{ m.files_saved }}</span></div>
+      <div class="job-stat"><span class="k">Data saved</span><span class="v">{{ m.bytes_saved|filesize }}</span></div>
+      <div class="job-stat"><span class="k">Current speed</span><span class="v">{{ m.rate_bps|filesize }}/s</span></div>
+      <div class="job-stat"><span class="k">Pages per minute</span><span class="v">{{ m.pages_per_minute }}</span></div>
+      <div class="job-stat"><span class="k">Pace</span><span class="v">{{ speed_profiles.get(m.speed, {}).get('label', m.speed) }}</span></div>
+      <div class="job-stat"><span class="k">Last activity</span><span class="v">{{ m.last_activity|prettydatetime if m.last_activity else 'Starting…' }}</span></div>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<section class="panel">
+  <div class="empty big">
+    <img src="/static/img/icons/truck.png" alt="" width="52" height="52">
+    <h2>All quiet in the depot</h2>
+    <p>Nothing is downloading right now.</p>
+    <a class="btn primary large" href="/add"><img src="/static/img/icons/download.png" alt="" width="18" height="18"> Save a website</a>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
-setTimeout(function(){ location.reload(); }, 8000);
+  if (document.querySelector('.job')) {
+    setTimeout(function () { location.reload(); }, 5000);
+  }
 </script>
 {% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Copy log · {{ mirror.name }}{% endblock %}
+{% block body %}
+<section class="panel page-head">
+  <div>
+    <div class="panel-title"><img src="/static/img/icons/notes.png" alt=""> Copy log</div>
+    <h1 class="log-title">{{ mirror.name }} <span class="status {{ mirror.status }}">{{ mirror.status }}</span></h1>
+    <p class="source break">{{ mirror.url }}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/working"><img src="/static/img/icons/truck.png" alt="" width="16" height="16"> Currently working</a>
+    {% if mirror.status == 'completed' %}
+    <a class="btn primary" href="/mirror/{{ mirror.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="log-meta">
+    <span>Pace: <strong>{{ speed_profiles.get(mirror.speed, {}).get('label', mirror.speed) }}</strong></span>
+    <span>Pages: <strong>{{ mirror.pages_saved }}</strong></span>
+    <span>Files: <strong>{{ mirror.files_saved }}</strong></span>
+    <span>Data: <strong>{{ mirror.bytes_saved|filesize }}</strong></span>
+    <span>Started: <strong>{{ mirror.started_at|prettydatetime }}</strong></span>
+  </div>
+  {% if mirror.error_log %}
+  <div class="form-error-box" role="alert">
+    <img src="/static/img/icons/x.png" alt="" width="16" height="16">
+    {{ mirror.error_log }}
+  </div>
+  {% endif %}
+  {% if lines %}
+  <pre class="log" aria-label="HTTrack log output">{% for line in lines %}{{ line }}
+{% endfor %}</pre>
+  {% else %}
+  <div class="empty">
+    <img src="/static/img/icons/notes.png" alt="" width="36" height="36">
+    <p>The log is still empty. HTTrack writes to it as soon as the copy begins.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+{% if mirror.status in ('queued', 'starting', 'running', 'paused') %}
+<script>setTimeout(function () { location.reload(); }, 5000);</script>
+{% endif %}
+{% endblock %}

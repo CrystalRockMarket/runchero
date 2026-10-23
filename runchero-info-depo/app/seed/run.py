@@ -245,7 +245,11 @@ def seed_manuals(conn, category_ids) -> int:
         text = raw.decode("utf-8", errors="replace") if raw else ""
         digest = hashlib.sha256(raw).hexdigest() if raw else ""
         coverage = ", ".join(v.replace("ford-", "Ford ") for v in item["vehicles"])
-        summary = item["summary"]
+        summary = item.get("summary") or (
+            f"Factory service manual for {item['title']}. OCR text from a "
+            "public-domain Internet Archive scan; open the original PDF for "
+            "photographs, diagrams and exact specifications."
+        )
         if coverage:
             summary += f" Covers {coverage}."
         conn.execute(
@@ -260,12 +264,14 @@ def seed_manuals(conn, category_ids) -> int:
             "summary=excluded.summary, source=excluded.source, source_url=excluded.source_url, "
             "license=excluded.license, motif=excluded.motif, base=excluded.base, "
             "accent=excluded.accent, theme=excluded.theme",
-            (item["slug"], item["title"], item["author"], "Ford Motor Company",
+            (item["slug"], item["title"], item["author"],
+             item.get("publisher", item["author"]),
              item["year"], "en", category_id, "MANUAL",
              estimate_pages(text) if text else None, len(raw), digest,
              f"books/{item['file']}", summary, "Internet Archive", item["pdf"],
-             "Public Domain Mark 1.0 (Internet Archive)", "tractor", "sky2", "sun",
-             "manuals"),
+             item.get("license", "Public Domain Mark 1.0 (Internet Archive)"),
+             item.get("motif", "tractor"), item.get("base", "sky2"),
+             item.get("accent", "sun"), "manuals"),
         )
         book_id = db.scalar(conn, "SELECT id FROM books WHERE slug = ?", (item["slug"],))
         conn.execute("DELETE FROM book_vehicles WHERE book_id = ?", (book_id,))
@@ -339,13 +345,14 @@ def seed_sources(conn) -> int:
     # Factory manuals: one source record per scan, then citations to the book
     # record, every model it covers, the Ford tractor guide and the manuals shelf.
     for item in manual_data.MANUALS:
+        license_label = item.get("license", "Public Domain Mark 1.0 (Internet Archive)")
         source = {
             "slug": f"manual-{item['slug']}",
             "title": item["title"],
             "author": item["author"],
             "kind": "manual",
             "url": item["pdf"],
-            "license": "Public Domain Mark 1.0",
+            "license": license_label.replace(" (Internet Archive)", ""),
             "book_slug": item["slug"],
             "note": "Factory scan from the Internet Archive. Read the OCR text "
                     "in the local library or open the PDF for photographs and diagrams.",
@@ -357,8 +364,12 @@ def seed_sources(conn) -> int:
             _cite(conn, "vehicle", vehicle_slug, source_id, "manual",
                   "Factory manual covering this model",
                   "Use the scan for exact settings, torques and part numbers.")
-        _cite(conn, "hub", "ford-tractors", source_id, "manual",
-              "Factory manual for Ford tractors", "")
+        hub_slug = item.get("hub")
+        if not hub_slug and item["slug"].startswith("ford-manual-"):
+            hub_slug = "ford-tractors"
+        if hub_slug:
+            _cite(conn, "hub", hub_slug, source_id, "manual",
+                  "Factory manual for Ford tractors", "")
         _cite(conn, "category", "lib-manuals", source_id, "manual",
               "Manuals shelf", "")
         _cite(conn, "page", "library-manuals", source_id, "manual",
@@ -613,7 +624,7 @@ def main(argv: list[str] | None = None) -> int:
           f"{shelved} books on the shelves")
 
     manual_count = seed_manuals(conn, category_ids)
-    print(f"  {manual_count} Ford manuals on the manuals shelf")
+    print(f"  {manual_count} manuals on the manuals shelf")
     seed_sources(conn)
     print("  provenance records written")
 
@@ -622,7 +633,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.skip_sections:
         print("indexing book chapters...")
-        from .sections import index_all
+        from ..sections import index_all
         section_books, section_count = index_all(
             conn, force=args.force_sections,
             progress=lambda book, n: None)
