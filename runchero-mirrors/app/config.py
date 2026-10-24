@@ -18,7 +18,7 @@ SITE_TAGLINE = os.environ.get(
     "RMM_SITE_TAGLINE", "Save the websites our community relies on."
 )
 SITE_BADGE = os.environ.get("RMM_BADGE", "COMMUNITY DEPOT")
-SITE_VERSION = "0.2.0"
+SITE_VERSION = "0.3.0"
 
 DATA_DIR = Path(os.environ.get("RMM_DATA_DIR", "/home/barn/data")).resolve()
 DB_PATH = Path(os.environ.get("RMM_DB_PATH", str(DATA_DIR / "runchero-mirrors.db")))

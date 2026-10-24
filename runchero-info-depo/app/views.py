@@ -33,6 +33,8 @@ NAV = [
     {"slug": "farm", "label": "Farm", "icon": "wheat", "href": "/topic/farm"},
     {"slug": "kitchen", "label": "Kitchen", "icon": "jar", "href": "/kitchen"},
     {"slug": "workshop", "label": "Workshop", "icon": "wrench", "href": "/topic/workshop"},
+    {"slug": "formulas", "label": "Formulas", "icon": "notes", "href": "/formulas"},
+    {"slug": "conversions", "label": "Conversions", "icon": "clock", "href": "/conversions"},
     {"slug": "vehicles", "label": "Equipment", "icon": "tractor", "href": "/vehicles"},
     {"slug": "library", "label": "Library", "icon": "book", "href": "/library"},
     {"slug": "sources", "label": "Sources", "icon": "info", "href": "/sources"},
@@ -806,14 +808,20 @@ def reader(conn: sqlite3.Connection, slug: str, **kwargs) -> str:
         truncated=truncated, page_sources=page_sources))
 
 
-def sources(conn: sqlite3.Connection, **_) -> str:
+def sources(conn: sqlite3.Connection, **kwargs) -> str:
     counts = db.source_kind_counts(conn)
+    kind = (kwargs.get("kind", "") or "").strip()
+    if kind not in counts:
+        kind = ""
+    where = "WHERE s.kind = ? " if kind else ""
+    params = (kind,) if kind else ()
     items = db.rows(conn,
                     "SELECT s.*, COUNT(c.id) n FROM sources s "
                     "LEFT JOIN citations c ON c.source_id=s.id "
-                    "GROUP BY s.id ORDER BY s.kind, s.title")
+                    f"{where}GROUP BY s.id ORDER BY s.kind, s.title", params)
     return web.render("sources.html", **base_context(
-        conn, active="sources", source_counts=counts, items=items,
+        conn, active="sources", source_counts=counts, source_total=sum(counts.values()),
+        active_kind=kind, items=items,
         page_sources=db.sources_for(conn, "page", "sources")))
 
 

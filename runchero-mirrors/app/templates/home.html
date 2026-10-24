@@ -71,7 +71,14 @@
         <span><strong>{{ m.files_saved }}</strong> files</span>
         <span><strong>{{ m.bytes_saved|filesize }}</strong></span>
       </div>
-      <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
+      <div class="card-actions">
+        <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
+        <a class="btn" href="/rerun/{{ m.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="16" height="16"> Rerun</a>
+        <form method="post" action="/remove/{{ m.id }}" onsubmit="return confirm('Delete this saved copy and its files? This cannot be undone.');">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="16" height="16"> Remove</button>
+        </form>
+      </div>
     </article>
     {% endfor %}
   </div>
@@ -97,9 +104,10 @@
       </div>
       <div class="active-side actions">
         <a class="btn small" href="/logs/{{ m.id }}"><img src="/static/img/icons/notes.png" alt="" width="14" height="14"> Log</a>
-        <form method="post" action="/retry/{{ m.id }}">
+        <a class="btn small" href="/rerun/{{ m.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="14" height="14"> Rerun</a>
+        <form method="post" action="/remove/{{ m.id }}" onsubmit="return confirm('Delete this stopped copy and its files? This cannot be undone.');">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn small" type="submit"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Retry</button>
+          <button class="btn small danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Remove</button>
         </form>
       </div>
     </article>

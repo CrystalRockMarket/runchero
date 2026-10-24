@@ -229,6 +229,11 @@ def main() -> int:
     check("top menu carries sign in and cart inline",
           "Sign in" in mainnav and "Cart" in mainnav
           and "My Order" not in body and 'class="top-actions"' not in body)
+    nav = re.search(r'<nav class="mainnav".*?</nav>', home_page, re.S)
+    beefnav = nav.group(0) if nav else ""
+    check("beef nav keeps its own links",
+          all(f'href="{path}"' in beefnav for path in
+              ("/packages", "/shares", "/campaigns", "/market-prices")))
     status, bulk = get("/fermentation/bulk")
     check("fermentation bulk page prices 25/50/100 lb lots",
           status == 200 and "25 lb" in bulk and "50 lb" in bulk

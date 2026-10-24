@@ -50,13 +50,11 @@
       </div>
     </div>
 
-    <div class="progress-wrap">
-      <div class="progress {{ m.status }}">
-        <span></span>
-      </div>
-      <div class="progress-label">
-        {% if m.status == 'running' %}Copying pages, one at a time…{% elif m.status == 'paused' %}Paused by the community{% elif m.status == 'queued' %}Waiting for the current download to finish{% else %}Getting ready…{% endif %}
-      </div>
+    <div class="activity-note {{ m.status }}">
+      <img src="/static/img/icons/clock.png" alt="" width="18" height="18">
+      <span>
+        {% if m.status == 'running' %}Saving pages one at a time. How long it takes depends on the website, so the depot cannot give a reliable finish time.{% elif m.status == 'paused' %}Paused. The saved pages stay in place until you resume or stop.{% elif m.status == 'queued' %}Waiting for the current download to finish.{% else %}Getting ready to start.{% endif %}
+      </span>
     </div>
 
     <div class="job-stats">

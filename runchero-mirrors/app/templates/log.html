@@ -12,6 +12,13 @@
     {% if mirror.status == 'completed' %}
     <a class="btn primary" href="/mirror/{{ mirror.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
     {% endif %}
+    {% if mirror.status in ('completed', 'failed', 'cancelled') %}
+    <a class="btn" href="/rerun/{{ mirror.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="16" height="16"> Rerun</a>
+    <form method="post" action="/remove/{{ mirror.id }}" onsubmit="return confirm('Delete this saved copy and its files? This cannot be undone.');">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="16" height="16"> Remove</button>
+    </form>
+    {% endif %}
   </div>
 </section>
 
@@ -22,6 +29,13 @@
     <span>Files: <strong>{{ mirror.files_saved }}</strong></span>
     <span>Data: <strong>{{ mirror.bytes_saved|filesize }}</strong></span>
     <span>Started: <strong>{{ mirror.started_at|prettydatetime }}</strong></span>
+  </div>
+  <div class="log-meta">
+    <span>Depth: <strong>{{ option_summary.depth }}</strong></span>
+    <span>Rate: <strong>{{ option_summary.rate }}</strong></span>
+    <span>Connections: <strong>{{ option_summary.sockets }}</strong></span>
+    <span>Size cap: <strong>{{ option_summary.max_size }}</strong></span>
+    <span>Time cap: <strong>{{ option_summary.max_time }}</strong></span>
   </div>
   {% if mirror.error_log %}
   <div class="form-error-box" role="alert">

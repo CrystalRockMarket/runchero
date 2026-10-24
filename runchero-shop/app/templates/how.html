@@ -102,7 +102,7 @@
       shelf life when sealed and stored as directed.{% endif %}</p>
   </div>
   <div class="panel">
-    <h2 style="margin-top:0">3. Jars, bottles, and bulk lots</h2>
+    <h2 style="margin-top:0">3. {% if store_slug == 'fermentation' %}Jars, bottles, and bulk lots{% else %}Bags, pouches, and larger sizes{% endif %}</h2>
     <p>{% if store_slug == 'fermentation' %}Retail jars and bottles are
       stocked for pickup. Bulk lots of 25, 50, and 100 lb are made to order;
       lead times run from one week for tempeh to six months for miso.

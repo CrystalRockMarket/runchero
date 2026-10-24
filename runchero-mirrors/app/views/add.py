@@ -3,19 +3,29 @@ from __future__ import annotations
 
 import ipaddress
 import re
+import shutil
+from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
-from .. import config, db
+from .. import config, crawl_options, db
 from ..services import httrack
 from ..web import render
 from . import flash, page_context, redirect
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
+_ACTIVE_STATUSES = ("queued", "starting", "running", "paused")
+_ADVANCED_ERRORS = {
+    "depth", "rate_kbps", "max_size_mb", "max_hours", "sockets",
+    "timeout", "retries", "robots", "scope",
+}
 
 
 def register(add):
     add("GET", re.compile(r"^/add$"), walkthrough)
     add("POST", re.compile(r"^/add$"), add_submit)
+    add("GET", re.compile(r"^/rerun/(?P<id>\d+)$"), rerun_form)
+    add("POST", re.compile(r"^/rerun/(?P<id>\d+)$"), rerun_submit)
+    add("POST", re.compile(r"^/remove/(?P<id>\d+)$"), remove_mirror)
     add("POST", re.compile(r"^/start/(?P<id>\d+)$"), start_job)
     add("POST", re.compile(r"^/pause/(?P<id>\d+)$"), pause_job)
     add("POST", re.compile(r"^/resume/(?P<id>\d+)$"), resume_job)
@@ -76,80 +86,91 @@ def _validate_url(raw: str) -> tuple[str | None, str | None]:
     return normalized, None
 
 
-def _duplicate(conn, normalized: str, raw: str):
-    def key(value: str) -> str:
-        try:
-            p = urlparse(value)
-            path = (p.path or "/").rstrip("/") or "/"
-            if not p.hostname:
-                return value.lower()
-            host = p.hostname.lower()
-            try:
-                port = p.port
-            except ValueError:
-                port = None
-            if port:
-                host += f":{port}"
-            return f"{host}{path}?{p.query}"
-        except Exception:
-            return value.lower()
+def _url_key(value: str):
+    try:
+        parsed = urlparse(value)
+        port = parsed.port
+    except ValueError:
+        return value.lower()
+    scheme = parsed.scheme.lower()
+    host = (parsed.hostname or "").lower()
+    if port and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443)):
+        host = f"{host}:{port}"
+    return (scheme, host, parsed.path or "/", parsed.query)
 
-    wanted = key(normalized)
+
+def _duplicate(conn, normalized: str):
+    wanted = _url_key(normalized)
     rows = db.rows(
         conn,
         "SELECT id, name, slug, url, status FROM mirrors "
-        "WHERE status IN ('queued','starting','running','paused','completed') "
-        "ORDER BY id DESC",
+        "ORDER BY CASE status "
+        "WHEN 'running' THEN 0 WHEN 'paused' THEN 1 WHEN 'starting' THEN 2 "
+        "WHEN 'queued' THEN 3 WHEN 'completed' THEN 4 ELSE 5 END, id DESC",
     )
     for row in rows:
-        if key(row["url"]) == wanted or key(raw) == wanted:
+        if _url_key(row["url"]) == wanted:
             return row
     return None
 
 
-def _render_add(conn, req, *, errors=None, values=None, status=200, duplicate=None):
-    values = values or {}
+def _active_tab(errors) -> str:
+    return "advanced" if any(key in errors for key in _ADVANCED_ERRORS) else "basic"
+
+
+def _render_add(
+    conn, req, *, errors=None, values=None, status=200, duplicate=None,
+    mode="add", mirror=None,
+):
+    errors = errors or {}
+    values = values or crawl_options.form_values(config.DEFAULT_SPEED)
+    speed = values.get("speed") or config.DEFAULT_SPEED
+    raw_options = mirror["options_json"] if mirror else None
+    action = f"/rerun/{mirror['id']}" if mirror else "/add"
     ctx = page_context(
         conn,
         req,
-        title="Add a site",
-        errors=errors or {},
+        title="Rerun a site" if mirror else "Add a site",
+        errors=errors,
         values=values,
         duplicate=duplicate,
+        mode=mode,
+        mirror=mirror,
+        action=action,
+        active_tab=_active_tab(errors),
+        advanced_defaults=crawl_options.summary(speed, raw_options),
     )
     return status, "text/html; charset=utf-8", render("add.html", **ctx)
 
 
 def walkthrough(conn, req, **_):
-    default = {"speed": config.DEFAULT_SPEED}
-    return _render_add(conn, req, values=default)
+    return _render_add(conn, req, values={"speed": config.DEFAULT_SPEED})
 
 
 def add_submit(conn, req, **_):
+    form = req.form
     if not req.csrf_ok():
         return _render_add(
             conn, req,
             errors={"form": "Your form session expired. Please try submitting again."},
-            values=req.form,
+            values=form,
             status=400,
         )
 
-    form = req.form
+    options, option_values, option_errors = crawl_options.parse_form(form)
     values = {
         "url": (form.get("url") or "").strip(),
         "name": (form.get("name") or "").strip(),
         "submitter": (form.get("submitter") or "").strip(),
         "description": (form.get("description") or "").strip(),
         "notes": (form.get("notes") or "").strip(),
-        "speed": (form.get("speed") or config.DEFAULT_SPEED).strip().lower(),
+        **option_values,
     }
-    errors: dict[str, str] = {}
+    errors: dict[str, str] = dict(option_errors)
 
     normalized, url_error = _validate_url(values["url"])
     if url_error:
         errors["url"] = url_error
-    if values["speed"] not in config.CRAWL_PROFILES:
-        values["speed"] = config.DEFAULT_SPEED
     if len(values["name"]) > 120:
         errors["name"] = "Please use a shorter name (120 characters or fewer)."
     if len(values["submitter"]) > 80:
@@ -174,10 +195,13 @@ def add_submit(conn, req, **_):
         errors["form"] = "The download queue is full right now. Please try again later."
 
     duplicate = None
+    save_anyway = form.get("confirm_duplicate") == "1"
     if normalized and not errors:
-        duplicate = _duplicate(conn, normalized, values["url"])
-        if duplicate:
-            errors["url"] = f"This site is already in the depot as “{duplicate['name']}”."
+        duplicate = _duplicate(conn, normalized)
+        if duplicate and not save_anyway:
+            return _render_add(
+                conn, req, values=values, duplicate=duplicate, status=200,
+            )
 
     if errors:
         return _render_add(
@@ -196,18 +220,123 @@ def add_submit(conn, req, **_):
     output_dir = str(config.MIRRORS_ROOT / slug)
     cursor = conn.execute(
         "INSERT INTO mirrors(slug, name, url, description, submitter_name, notes, "
-        "status, dir_name, output_dir, speed, created_at, updated_at) "
-        "VALUES(?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, datetime('now'), datetime('now'))",
+        "status, dir_name, output_dir, speed, options_json, created_at, updated_at) "
+        "VALUES(?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?, datetime('now'), datetime('now'))",
         (
             slug, name, normalized, values["description"], values["submitter"],
             values["notes"], slug, output_dir, values["speed"],
+            crawl_options.dump(options),
         ),
     )
     conn.commit()
     mirror_id = cursor.lastrowid
     httrack.enqueue(conn, int(mirror_id))
-    flash(req, f"Added “{name}”. It is starting now and will appear below.", "ok")
+    message = f"Added “{name}”. It is starting now and will appear below."
+    if duplicate and save_anyway:
+        message = f"Added another copy of “{name}”."
+    flash(req, message, "ok")
     return redirect("/working")
+
+
+def _rerunnable(row) -> bool:
+    return row is not None and row["status"] in ("completed", "failed", "cancelled")
+
+
+def rerun_form(conn, req, id, **_):
+    row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (int(id),))
+    if not row:
+        return _action_redirect(req, "That site was not found.", "error")
+    if not _rerunnable(row):
+        return _action_redirect(
+            req, "That site is still working. Pause or stop it before rerunning.",
+            "error",
+        )
+    values = crawl_options.form_values(row["speed"], row["options_json"], rerun=True)
+    return _render_add(
+        conn, req, values=values, mode="rerun", mirror=dict(row),
+    )
+
+
+def rerun_submit(conn, req, id, **_):
+    if not req.csrf_ok():
+        return _action_redirect(req, "Security check failed. Please try again.", "error")
+    mirror_id = int(id)
+    row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
+    if not row:
+        return _action_redirect(req, "That site was not found.", "error")
+    if not _rerunnable(row):
+        return _action_redirect(
+            req, "That site is still working. Pause or stop it before rerunning.",
+            "error",
+        )
+
+    options, values, errors = crawl_options.parse_form(req.form, rerun=True)
+    if errors:
+        return _render_add(
+            conn, req, errors=errors, values=values, status=400,
+            mode="rerun", mirror=dict(row),
+        )
+
+    ok, message = httrack.rerun(
+        conn, mirror_id, values["speed"], crawl_options.dump(options),
+    )
+    if ok:
+        message = f"Queued “{row['name']}” again with the new settings."
+    return _action_redirect(req, message, "ok" if ok else "error")
+
+
+def _delete_saved_files(row) -> tuple[bool, str]:
+    root = config.MIRRORS_ROOT.resolve()
+    outdir = Path(row["output_dir"])
+    folders = [
+        outdir,
+        config.MIRRORS_ROOT / ".cache" / row["slug"],
+    ]
+    files = [config.MIRRORS_ROOT / ".cache" / f"{row['slug']}.log"]
+
+    targets: list[Path] = []
+    for target in folders + files:
+        try:
+            resolved = target.resolve()
+            resolved.relative_to(root)
+        except (OSError, ValueError):
+            return False, "The saved files are outside the depot folder. Nothing was deleted."
+        if resolved == root:
+            return False, "The saved folder is not safe to delete. Nothing was deleted."
+        targets.append(target)
+
+    try:
+        for target in targets:
+            if target.is_symlink():
+                target.unlink()
+            elif target.is_dir():
+                shutil.rmtree(target)
+            elif target.exists():
+                target.unlink()
+    except OSError as exc:
+        return False, f"Could not delete every saved file: {exc}"
+    return True, ""
+
+
+def remove_mirror(conn, req, id, **_):
+    if not req.csrf_ok():
+        return _action_redirect(req, "Security check failed. Please try again.", "error")
+    mirror_id = int(id)
+    row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
+    if not row:
+        return _action_redirect(req, "That site was not found.", "error")
+    if row["status"] in _ACTIVE_STATUSES:
+        return _action_redirect(
+            req, "Stop that download before removing it.", "error",
+        )
+
+    ok, message = _delete_saved_files(row)
+    if not ok:
+        return _action_redirect(req, message, "error")
+    conn.execute("DELETE FROM mirrors WHERE id=?", (mirror_id,))
+    conn.commit()
+    flash(req, f"Removed “{row['name']}” and its saved files.", "ok")
+    return redirect("/browse" if row["status"] == "completed" else "/")
 
 
 def _action_redirect(req, message, level="ok", location="/working"):
@@ -268,9 +397,21 @@ def retry_job(conn, req, id, **_):
 
 
 def view_log(conn, req, id, **_):
-    row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (int(id),))
+    row = db.one(
+        conn,
+        "SELECT m.*, COALESCE(s.pages_saved,0) pages_saved, "
+        "COALESCE(s.files_saved,0) files_saved, COALESCE(s.bytes_saved,0) bytes_saved "
+        "FROM mirrors m LEFT JOIN mirror_stats s ON s.mirror_id=m.id WHERE m.id=?",
+        (int(id),),
+    )
     if not row:
         return 404, "text/html; charset=utf-8", "not found"
     lines = httrack.read_log(row).splitlines()[-300:]
-    ctx = page_context(conn, req, title="Download log", mirror=dict(row), lines=lines)
+    ctx = page_context(
+        conn, req,
+        title="Download log",
+        mirror=dict(row),
+        lines=lines,
+        option_summary=crawl_options.summary(row["speed"], row["options_json"]),
+    )
     return 200, "text/html; charset=utf-8", render("log.html", **ctx)

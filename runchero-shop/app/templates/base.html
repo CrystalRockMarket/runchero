@@ -62,10 +62,12 @@
           </div>
         </details>
         <nav class="mainnav" aria-label="Main">
+          {% if store_slug == 'beef' %}
           <a class="nav-logo" href="/" {% if path == '/' %}aria-current="page"{% endif %}>
             <img src="/static/img/icons/home.png" alt="" width="24" height="24">
             <span>Home</span>
           </a>
+          {% endif %}
           {% set shop_path = '/shop' if store_slug == 'beef' else '/' ~ store_slug %}
           {% set on_shop = path == shop_path or (path.startswith(shop_path ~ '/') and path not in [shop_path ~ '/bulk', shop_path ~ '/how-it-works']) %}
           <a class="nav-logo" href="{{ shop_path }}" {% if on_shop %}aria-current="page"{% endif %}>
@@ -123,7 +125,7 @@
   </header>
 
   {% if content.banner %}
-  <p class="ticker" role="note">{{ content.banner }}</p>
+  <p class="ticker" role="note">{% if store_slug == 'beef' %}{{ content.banner }}{% else %}Demo shop. No card is charged and no product is shipped.{% endif %}</p>
   {% endif %}
 
   {% include "_flashes.html" %}

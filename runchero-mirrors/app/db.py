@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import config
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -73,6 +73,7 @@ _MIGRATIONS = (
     ("mirrors", "entry_path", "TEXT NOT NULL DEFAULT ''"),
     ("mirrors", "serve_root", "TEXT NOT NULL DEFAULT ''"),
     ("mirrors", "last_activity", "TEXT"),
+    ("mirrors", "options_json", "TEXT NOT NULL DEFAULT '{}'"),
     ("mirror_stats", "rate_bps", "INTEGER NOT NULL DEFAULT 0"),
 )
 

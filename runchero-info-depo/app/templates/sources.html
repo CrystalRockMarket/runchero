@@ -24,11 +24,16 @@
     <span class="small">A scanned service, parts or operator manual, linked to the Internet Archive scan.</span>
   </div>
   <div class="chips mt">
-    {% for kind, count in source_counts.items() %}
-    <span class="chip">{{ source_labels.get(kind, kind|upper) }} &middot; {{ count }}</span>
+    <a class="chip {{ 'sun' if not active_kind else '' }}" href="/sources"{% if not active_kind %} aria-current="page"{% endif %}>ALL SOURCES &middot; {{ source_total }}</a>
+    {% for item_kind, count in source_counts.items() %}
+    <a class="chip {{ 'sun' if active_kind == item_kind else '' }}" href="/sources?kind={{ item_kind }}"{% if active_kind == item_kind %} aria-current="page"{% endif %}>{{ source_labels.get(item_kind, item_kind|upper) }} &middot; {{ count }}</a>
     {% endfor %}
-    <a class="chip sun" href="/library/archive">BROWSE ALL BOOKS</a>
+    <a class="chip green" href="/library/archive">BROWSE ALL BOOKS</a>
   </div>
+  {% if active_kind %}
+  <p class="small mt">Showing only <b>{{ source_labels.get(active_kind, active_kind|upper) }}</b> records.
+    <a href="/sources">Show all types</a>.</p>
+  {% endif %}
 </div>
 
 <div class="panel mb">

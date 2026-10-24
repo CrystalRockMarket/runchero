@@ -5,8 +5,9 @@ it with HTTrack, and the finished copy stays readable on the local network even
 when the internet does not.
 
 Built for non-technical users: a plain-language walkthrough, a live **Currently
-working** page with pause/resume/stop, polite default crawl speeds, and a
-pixel-art Runchero interface.
+working** page with pause/resume/stop, polite default crawl speeds, optional
+advanced limits, reruns that can keep existing files, and a pixel-art Runchero
+interface.
 
 ## Quick start
 
@@ -30,15 +31,21 @@ system-wide install or sudo. To use a system HTTrack instead, set
 ## How it works
 
 1. **Add a site** (`/add`) - Enter an `http://` or `https://` address, optionally
-   add a friendly name and note, and choose a crawl pace. The form checks the URL
-   and shows red error text when it is missing a protocol or is already saved.
+   add a friendly name and note, and choose a crawl pace. If the exact address is
+   already in the depot, the page shows the saved copy but still allows another
+   copy. The **Advanced settings** tab can override depth, rate, connections,
+   size/time caps, timeout, retries, robots policy, and link scope.
 2. **Watch it work** (`/working`) - Shows the active crawl plus anything queued.
    Pages, files, bytes, speed, elapsed time, and last activity update every few
-   seconds. Pause freezes the HTTrack process; Resume continues it; Stop discards
-   the partial copy from the browse list.
+   seconds. There is no reliable finish-time estimate because it depends on the
+   remote site. Pause freezes the HTTrack process; Resume continues it; Stop
+   discards the partial copy from the browse list.
 3. **Browse saved copies** (`/browse`) - Completed mirrors open at
    `/mirror/<slug>/`. Links, images, CSS, fonts, and other files are served from
-   the saved copy, not the live internet.
+   the saved copy, not the live internet. Each card also offers **Rerun** and
+   **Remove**. Rerun can keep the existing files and continue at a greater depth
+   to fill in missing pages; Remove deletes the files and their database record.
+   Rerun and Remove are also available from the log page and dashboard.
 
 The default pace is deliberately **Very slow** (12 KB/s, 2-5 pages per minute on
 most sites). Slower is kinder to the remote server and produces a more complete
@@ -73,7 +80,10 @@ trusted network set `RMM_ALLOW_PRIVATE_HOSTS=1`.
 | Medium | 50 KB/s | 6 | 2 | 1.5 GB |
 
 One crawl runs at a time; up to 20 jobs can wait in the queue. Each crawl has a
-12-hour ceiling (10 hours for Medium). A retry starts from a clean copy.
+12-hour ceiling (10 hours for Medium). The Advanced settings tab can override any
+of these limits. A rerun keeps the existing files by default and uses HTTrack's
+continue mode so newly discovered pages can be added; uncheck **Keep the files
+already saved** to start over from a clean copy.
 
 ## Notes and troubleshooting
 
@@ -81,7 +91,10 @@ One crawl runs at a time; up to 20 jobs can wait in the queue. Each crawl has a
   `sudo ufw allow 8090/tcp` (an administrator is needed). Check with
   `./tools/mirrors.sh status`.
 - **App will not start:** read `/home/barn/logs/runchero-mirrors.log`. A crash left
-  mid-download is marked failed on the next start; use **Retry** on the dashboard.
+  mid-download is marked failed on the next start; use **Rerun** on the dashboard.
+- **A site saves too few pages:** open **Rerun**, raise **Link depth**, leave
+  **Keep the files already saved** checked, and run it again. The existing copy is
+  kept while HTTrack fills in missing pages.
 - **A site saves no pages:** verify the address opens in a browser and does not
   block automated visitors. HTTrack's log is linked from the Currently working
   page.

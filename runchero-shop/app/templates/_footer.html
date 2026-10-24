@@ -43,7 +43,9 @@
         {% endif %}
         <li><a href="/cart">Your cart</a></li>
         <li><a href="/orders">Look up an order</a></li>
+        {% if store_slug == 'beef' %}
         <li><a href="/manage">Manage a subscription</a></li>
+        {% endif %}
         <li><a href="/contact">Contact</a></li>
       </ul>
     </div>
@@ -57,9 +59,15 @@
   </ul>
   {% endif %}
   <p style="margin-top:16px;font-size:13px">
+    {% if store_slug == 'beef' %}
     {{ site_badge }} build {{ site_version }}. Prices compare against published
     USDA market averages; every figure carries its source and date.
     <a href="/data-sources">Where our numbers come from</a>.
+    {% else %}
+    {{ site_badge }} build {{ site_version }}. Small-batch co-op goods, packed
+    for pickup at {{ content.pickup_name }}; every comparison carries its
+    source and date.
+    {% endif %}
   </p>
   <p class="footer-admin">
     <a class="btn small ghost" href="/admin/login">Admin login</a>

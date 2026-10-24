@@ -36,7 +36,14 @@
         {% if m.submitter_name %}<span>Saved by {{ m.submitter_name }}</span>{% endif %}
         <span>{{ m.started_at|duration(m.finished_at) }}</span>
       </div>
-      <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
+      <div class="card-actions">
+        <a class="btn primary" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
+        <a class="btn" href="/rerun/{{ m.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="16" height="16"> Rerun</a>
+        <form method="post" action="/remove/{{ m.id }}" onsubmit="return confirm('Delete this saved copy and its files? This cannot be undone.');">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="16" height="16"> Remove</button>
+        </form>
+      </div>
     </article>
     {% endfor %}
   </div>

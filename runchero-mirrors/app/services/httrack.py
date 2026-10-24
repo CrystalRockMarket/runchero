@@ -13,7 +13,7 @@ import traceback
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from .. import config, db
+from .. import config, crawl_options, db
 
 _lock = threading.Lock()
 _active: dict[int, subprocess.Popen] = {}
@@ -310,7 +310,16 @@ def _queue_loop() -> None:
                     )
                     conn.commit()
                     if claimed.rowcount == 1:
-                        start_process(conn, row)
+                        try:
+                            start_process(conn, row)
+                        except Exception as exc:
+                            traceback.print_exc()
+                            conn.execute(
+                                "UPDATE mirrors SET status='failed', pid=NULL, updated_at=?, "
+                                "error_log=? WHERE id=? AND status='starting'",
+                                (_now(), f"Could not start the crawl: {exc}", row["id"]),
+                            )
+                            conn.commit()
         except Exception:
             traceback.print_exc()
         finally:
@@ -338,27 +347,29 @@ def start_process(conn, row) -> bool:
         return False
 
     speed = row["speed"] or config.DEFAULT_SPEED
-    options = config.profile(speed)
+    options = crawl_options.resolve(speed, row["options_json"])
+    keep_existing = bool(options["keep_existing"])
     outdir = _mirror_dir(row)
     cache = _cache_dir(row)
     logfile = log_path(row)
 
-    # A retry starts from a clean copy. Completed mirrors are never re-run.
-    for folder in (outdir, cache):
-        try:
-            if folder.exists():
-                shutil.rmtree(folder)
-        except OSError as exc:
-            conn.execute(
-                "UPDATE mirrors SET status='failed', updated_at=?, error_log=? WHERE id=?",
-                (_now(), f"Could not prepare the mirror folder: {exc}", mirror_id),
-            )
-            conn.commit()
-            return False
+    if not keep_existing:
+        for folder in (outdir, cache):
+            try:
+                if folder.exists():
+                    shutil.rmtree(folder)
+            except OSError as exc:
+                conn.execute(
+                    "UPDATE mirrors SET status='failed', updated_at=?, error_log=? WHERE id=?",
+                    (_now(), f"Could not prepare the mirror folder: {exc}", mirror_id),
+                )
+                conn.commit()
+                return False
     outdir.mkdir(parents=True, exist_ok=True)
     cache.mkdir(parents=True, exist_ok=True)
     logfile.parent.mkdir(parents=True, exist_ok=True)
 
+    scope = "--stay-on-same-domain" if options["scope"] == "domain" else "--stay-on-same-address"
     cmd = [
         config.HTTRACK_BIN,
         row["url"],
@@ -368,17 +379,19 @@ def start_process(conn, row) -> bool:
         f"--depth={int(options['depth'])}",
         f"--max-size={int(options['max_bytes'])}",
         f"--max-time={int(options['max_seconds'])}",
-        "--timeout=30",
-        "--retries=2",
+        f"--timeout={int(options['timeout'])}",
+        f"--retries={int(options['retries'])}",
         "--connection-per-second=1",
-        "--robots=2",
+        f"--robots={int(options['robots'])}",
         "--near",
-        "--stay-on-same-address",
+        scope,
         f"--user-agent={config.USER_AGENT}",
         "--quiet",
         "--display=1",
         "-I0",
     ]
+    if keep_existing:
+        cmd.insert(2, "--continue")
     env = os.environ.copy()
     if config.HTTRACK_LIB:
         env["LD_LIBRARY_PATH"] = config.HTTRACK_LIB + ":" + env.get("LD_LIBRARY_PATH", "")
@@ -408,7 +421,16 @@ def start_process(conn, row) -> bool:
     try:
         log_handle = open(logfile, "wb")
         log_handle.write(f"Runchero Mirrors crawl started {started} UTC\n".encode())
-        log_handle.write(f"Source: {row['url']}\nSpeed: {speed} ({options['label']})\n\n".encode())
+        log_handle.write(
+            (
+                f"Source: {row['url']}\n"
+                f"Speed: {speed} · depth {options['depth']} · "
+                f"{max(1, round(options['rate'] / 1000))} KB/s · "
+                f"{options['sockets']} connection(s)\n"
+                f"Limits: {options['max_bytes'] / 1_000_000:g} MB, "
+                f"{options['max_seconds'] / 3600:g} hours · scope {options['scope']}\n\n"
+            ).encode()
+        )
         log_handle.flush()
         proc = subprocess.Popen(
             cmd,
@@ -625,6 +647,26 @@ def retry(conn, mirror_id: int) -> bool:
     conn.commit()
     ensure_worker()
     return True
+
+
+def rerun(conn, mirror_id: int, speed: str, options_json: str) -> tuple[bool, str]:
+    row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
+    if not row:
+        return False, "That mirror was not found."
+    if row["status"] not in ("completed", "failed", "cancelled"):
+        return False, "That site is still working. Stop it before rerunning."
+    changed = conn.execute(
+        "UPDATE mirrors SET status='queued', speed=?, options_json=?, pid=NULL, "
+        "cancel_requested=0, entry_path='', serve_root='', started_at=NULL, "
+        "finished_at=NULL, last_activity=NULL, error_log='', updated_at=? "
+        "WHERE id=? AND status IN ('completed','failed','cancelled')",
+        (speed, options_json, _now(), mirror_id),
+    )
+    conn.commit()
+    if changed.rowcount != 1:
+        return False, "That mirror changed before it could be rerun. Please try again."
+    ensure_worker()
+    return True, "Queued for another try."
 
 
 def pause(conn, mirror_id: int) -> tuple[bool, str]:
