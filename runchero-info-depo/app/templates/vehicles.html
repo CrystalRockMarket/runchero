@@ -28,7 +28,7 @@
     <article class="card equipment-type-card">
       <h3 class="panel-title">
         <img src="{{ static_url('img/icons/' ~ equipment_kind_icons.get(kind, 'tractor') ~ '.png') }}" alt="">
-        {{ equipment_kind_labels.get(kind, kind|replace('-', ' ')|title)|upper }}
+        <span class="panel-title-text">{{ equipment_kind_labels.get(kind, kind|replace('-', ' ')|title)|upper }}</span>
         <span class="count">{{ makes.values()|map('length')|sum }} records</span>
       </h3>
       <p>{{ equipment_kind_descriptions.get(kind, 'Browse records by manufacturer and model.') }}</p>

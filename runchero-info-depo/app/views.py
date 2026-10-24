@@ -65,7 +65,7 @@ ROLE_ORDER = {role: index for index, role in enumerate(ROLE_LABELS)}
 
 EQUIPMENT_KIND_LABELS = {
     "tractor": "Tractors",
-    "machine": "Implements & field machines",
+    "machine": "Implements",
     "atv": "ATVs & quads",
     "chainsaw": "Chainsaws",
     "mower": "Mowers",

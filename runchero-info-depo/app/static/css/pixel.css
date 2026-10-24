@@ -955,8 +955,16 @@ select:focus-visible, textarea:focus-visible, summary:focus-visible {
 .card > .panel-title { margin: -12px -12px 2px; }
 
 .equipment-types { display: grid; grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); gap: 14px; }
-.equipment-type-card { min-height: 150px; }
-.equipment-type-card .type-link { align-self: flex-start; margin-top: auto; }
+.equipment-type-card { min-height: 150px; min-width: 0; }
+.equipment-type-card .panel-title { align-items: flex-start; overflow-wrap: anywhere; }
+.equipment-type-card .panel-title .count { margin-left: auto; }
+.equipment-type-card .type-link {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: auto;
+  white-space: normal;
+  text-align: left;
+}
 .equipment-brand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .equipment-brand-card { min-width: 0; }
 .equipment-brand-card .card-title, .equipment-model-card .card-title { margin: 0; }
