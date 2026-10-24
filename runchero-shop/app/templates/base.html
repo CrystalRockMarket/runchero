@@ -66,8 +66,9 @@
             <img src="/static/img/icons/home.png" alt="" width="24" height="24">
             <span>Home</span>
           </a>
-          <a class="nav-logo" href="/shop" {% if path.startswith('/shop') %}aria-current="page"{% endif %}>
-            <img src="/static/img/icons/salami.png" alt="" width="24" height="24">
+          {% set shop_path = '/shop' if store_slug == 'beef' else '/' ~ store_slug %}
+          <a class="nav-logo" href="{{ shop_path }}" {% if path == shop_path or path.startswith(shop_path ~ '/') %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/{{ 'salami' if store_slug == 'beef' else 'crate' }}.png" alt="" width="24" height="24">
             <span>Shop</span>
           </a>
           <a class="nav-logo" href="/packages" {% if path.startswith('/packages') %}aria-current="page"{% endif %}>
