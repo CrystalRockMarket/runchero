@@ -1,7 +1,6 @@
 """View registry and shared response helpers."""
 from __future__ import annotations
 
-from .. import web
 from ..web import Request, render
 
 

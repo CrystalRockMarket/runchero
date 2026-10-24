@@ -68,7 +68,7 @@ def _validate_url(raw: str) -> tuple[str | None, str | None]:
     if not config.ALLOW_PRIVATE_HOSTS and _is_private_host(host):
         return None, "That address points to a private or local network location. Please use a public website."
     scheme = parsed.scheme.lower()
-    netloc = host.lower()
+    netloc = f"[{host.lower()}]" if ":" in host else host.lower()
     if port and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443)):
         netloc += f":{port}"
     path = parsed.path or "/"
@@ -81,7 +81,16 @@ def _duplicate(conn, normalized: str, raw: str):
         try:
             p = urlparse(value)
             path = (p.path or "/").rstrip("/") or "/"
-            return f"{p.hostname.lower()}{path}?{p.query}" if p.hostname else value.lower()
+            if not p.hostname:
+                return value.lower()
+            host = p.hostname.lower()
+            try:
+                port = p.port
+            except ValueError:
+                port = None
+            if port:
+                host += f":{port}"
+            return f"{host}{path}?{p.query}"
         except Exception:
             return value.lower()
 
@@ -158,7 +167,8 @@ def add_submit(conn, req, **_):
 
     active = db.scalar(
         conn,
-        "SELECT COUNT(*) FROM mirrors WHERE status IN ('queued','starting','running')",
+        "SELECT COUNT(*) FROM mirrors "
+        "WHERE status IN ('queued','starting','running','paused')",
     ) or 0
     if active >= config.MAX_QUEUE:
         errors["form"] = "The download queue is full right now. Please try again later."
@@ -261,10 +271,6 @@ def view_log(conn, req, id, **_):
     row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (int(id),))
     if not row:
         return 404, "text/html; charset=utf-8", "not found"
-    path = httrack.log_path(row)
-    try:
-        lines = path.read_text("utf-8", errors="replace").splitlines()[-300:]
-    except OSError:
-        lines = []
+    lines = httrack.read_log(row).splitlines()[-300:]
     ctx = page_context(conn, req, title="Download log", mirror=dict(row), lines=lines)
     return 200, "text/html; charset=utf-8", render("log.html", **ctx)

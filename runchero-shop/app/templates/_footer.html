@@ -1,9 +1,10 @@
 <footer class="footer">
   <div class="cols">
     <div>
-      <h3>{{ site_name }}</h3>
-      <p>{{ site_tagline }} Prepared by independent co-op producers in
-        {{ site_locale }}. Order for pickup at {{ content.pickup_name }}.</p>
+      <h3>{{ current_store.name if current_store else site_name }}</h3>
+      <p>{{ current_store.tagline if current_store else site_tagline }}
+        Prepared by independent co-op producers in {{ site_locale }}. Order
+        for pickup at {{ content.pickup_name }}.</p>
       <p>Pickup: {{ content.pickup_address }}<br>
         Hours: {{ content.pickup_hours }}</p>
       <p>{% if content.facebook_url %}<a href="{{ content.facebook_url }}" rel="noopener">Follow us on Facebook</a>{% endif %}
@@ -13,11 +14,20 @@
     <div>
       <h3>Shop</h3>
       <ul>
+        {% if store_slug == 'beef' %}
         <li><a href="/shop">All cuts</a></li>
         <li><a href="/packages">Packages &amp; deals</a></li>
         <li><a href="/shares">Cow shares</a></li>
         <li><a href="/market-prices">Market prices</a></li>
         <li><a href="/how-it-works">How it works</a></li>
+        {% else %}
+        <li><a href="/{{ store_slug }}">{{ current_store.name }}</a></li>
+        {% if store_slug == 'fermentation' %}
+        <li><a href="/fermentation/bulk">Bulk lots</a></li>
+        {% endif %}
+        <li><a href="/{{ store_slug }}/how-it-works">How it works</a></li>
+        <li><a href="/contact">Contact</a></li>
+        {% endif %}
       </ul>
     </div>
     <div>

@@ -196,6 +196,10 @@ def main() -> int:
     check("sitemap lists the data sources", "/data-sources" in body)
     check("sitemap lists co-op stores",
           "/fermentation" in body and "/freeze-dried" in body)
+    check("sitemap lists co-op bulk and how-it-works",
+          "/fermentation/bulk" in body
+          and "/fermentation/how-it-works" in body
+          and "/freeze-dried/how-it-works" in body)
     status, _ = get("/shop/not-a-cut-group")
     check("unknown cut group is a 404", status == 404, f"(status {status})")
     status, body = get("/market-prices")
@@ -213,6 +217,28 @@ def main() -> int:
           "facebook.com/runchero" not in body)
     status, body = get("/fermentation/kombucha-classic")
     check("kombucha item page", status == 200 and "16 oz bottle" in body)
+    status, body = get("/fermentation")
+    nav = re.search(r'<nav class="mainnav".*?</nav>', body, re.S)
+    mainnav = nav.group(0) if nav else ""
+    check("fermentation nav drops the beef-only links",
+          'href="/fermentation/bulk"' in mainnav
+          and 'href="/shares"' not in mainnav
+          and 'href="/packages"' not in mainnav
+          and 'href="/campaigns"' not in mainnav
+          and 'href="/market-prices"' not in mainnav)
+    check("top menu carries sign in and cart inline",
+          "Sign in" in mainnav and "Cart" in mainnav
+          and "My Order" not in body and 'class="top-actions"' not in body)
+    status, bulk = get("/fermentation/bulk")
+    check("fermentation bulk page prices 25/50/100 lb lots",
+          status == 200 and "25 lb" in bulk and "50 lb" in bulk
+          and "100 lb" in bulk and "made to order" in bulk.lower()
+          and "The Crea" in bulk and "Refrigerated" in bulk)
+    status, how = get("/fermentation/how-it-works")
+    check("fermentation how-it-works tells the local farm story",
+          status == 200 and "How Fermentation Station works" in how
+          and "community farm" in how and "downtown" in how
+          and "The Crea" in how)
     status, body = get("/freeze-dried")
     check("Runchero Freeze-Dried storefront", status == 200
           and "Runchero Freeze-Dried" in body
@@ -221,6 +247,13 @@ def main() -> int:
           and "Ready meals &amp; bulk lots" in body)
     check("freeze-dried storefront has meals and 100-pouch lots",
           "Homemade Curry Meal" in body and "100 pouches" in body)
+    nav = re.search(r'<nav class="mainnav".*?</nav>', body, re.S)
+    mainnav = nav.group(0) if nav else ""
+    check("freeze-dried nav drops the beef-only links",
+          'href="/shares"' not in mainnav
+          and 'href="/packages"' not in mainnav
+          and 'href="/campaigns"' not in mainnav
+          and 'href="/market-prices"' not in mainnav)
     status, body = get("/freeze-dried/fd-corn")
     check("freeze-dried comparison cites its package and source",
           status == 200 and "North Bay Trading" in body

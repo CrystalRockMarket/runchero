@@ -19,6 +19,24 @@ _lock = threading.Lock()
 _active: dict[int, subprocess.Popen] = {}
 _worker: threading.Thread | None = None
 
+PAGE_SUFFIXES = {
+    ".html", ".htm", ".xhtml", ".shtml",
+    ".php", ".asp", ".aspx", ".jsp", ".cgi", ".pl",
+}
+INDEX_NAMES = (
+    "index.html", "index.htm", "index.xhtml", "index.shtml",
+    "index.php", "index.asp", "index.aspx", "index.jsp",
+)
+
+
+def looks_like_html(path: Path) -> bool:
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(4096).lower()
+    except OSError:
+        return False
+    return any(marker in head for marker in (b"<html", b"<!doctype html", b"<head", b"<body"))
+
 
 # --------------------------------------------------------------------------
 # helpers
@@ -35,7 +53,8 @@ def _now() -> str:
 
 
 def _clock(value: float) -> str:
-    return dt.datetime.fromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
+    # Database timestamps are UTC; keep file mtimes in the same frame.
+    return dt.datetime.utcfromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _mirror_dir(row) -> Path:
@@ -74,6 +93,17 @@ def _pid_alive(pid: int | None) -> bool:
         return False
 
 
+def _pid_is_httrack(pid: int | None) -> bool:
+    """Guard against recycled PIDs when cleaning up after a restart."""
+    if not pid:
+        return False
+    try:
+        raw = Path(f"/proc/{int(pid)}/cmdline").read_bytes()
+    except OSError:
+        return False
+    return b"httrack" in raw.lower()
+
+
 def _scan_tree(root: Path) -> tuple[int, int, int, str | None]:
     """Return (pages, files, bytes, newest_file_time)."""
     pages = files = total = 0
@@ -97,7 +127,11 @@ def _scan_tree(root: Path) -> tuple[int, int, int, str | None]:
             total += stat.st_size
             if stat.st_mtime > (newest or 0):
                 newest = stat.st_mtime
-            if path.suffix.lower() in {".html", ".htm", ".xhtml"}:
+            # HTTrack writes unfinished pages as name.html.tmp and only renames
+            # them when the download is complete. Count those as pages now so
+            # the progress panel is honest during a crawl.
+            real_name = name[:-4] if name.lower().endswith(".tmp") else name
+            if Path(real_name).suffix.lower() in PAGE_SUFFIXES:
                 pages += 1
     return pages, files, total, _clock(newest) if newest else None
 
@@ -118,23 +152,26 @@ def _candidate_entries(root: Path, source_url: str) -> list[Path]:
     candidates: list[Path] = []
     for host_dir in hosts:
         if rel.endswith("/") or rel == "":
-            candidates.append(host_dir / rel / "index.html")
+            for index_name in INDEX_NAMES:
+                candidates.append(host_dir / rel / index_name)
         else:
             candidates.append(host_dir / rel)
-            candidates.append(host_dir / rel / "index.html")
+            for index_name in INDEX_NAMES:
+                candidates.append(host_dir / rel / index_name)
             candidates.append(host_dir / (rel + ".html"))
-    candidates.extend([
-        root / rel,
-        root / rel / "index.html",
-        root / (rel + ".html"),
-    ])
+    candidates.append(root / rel)
+    for index_name in INDEX_NAMES:
+        candidates.append(root / rel / index_name)
+    candidates.append(root / (rel + ".html"))
     for candidate in candidates:
         try:
             candidate = candidate.resolve()
             candidate.relative_to(root.resolve())
         except (OSError, ValueError):
             continue
-        if candidate.is_file() and candidate.suffix.lower() in {".html", ".htm", ".xhtml"}:
+        if candidate.is_file() and (
+            candidate.suffix.lower() in PAGE_SUFFIXES or looks_like_html(candidate)
+        ):
             found.append(candidate)
 
     if found:
@@ -148,7 +185,7 @@ def _candidate_entries(root: Path, source_url: str) -> list[Path]:
         ]
         for name in filenames:
             suffix = Path(name).suffix.lower()
-            if suffix in {".html", ".htm", ".xhtml"}:
+            if suffix in PAGE_SUFFIXES:
                 html_files.append(Path(dirpath) / name)
 
     def score(path: Path):
@@ -156,7 +193,7 @@ def _candidate_entries(root: Path, source_url: str) -> list[Path]:
             relative = path.relative_to(root)
         except ValueError:
             relative = path
-        index_rank = 0 if path.name.lower() in {"index.html", "index.htm"} else 1
+        index_rank = 0 if path.name.lower() in INDEX_NAMES else 1
         path_rank = 0
         if rel:
             if relative.as_posix().endswith(rel.rstrip("/") + "/index.html"):
@@ -183,9 +220,35 @@ def find_entry(root: Path, source_url: str) -> tuple[str, str]:
     return "", ""
 
 
+_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+_ANSI_OSC = re.compile(r"\x1b\][^\x07]*(?:\x07|\x1b\\)")
+
+
+def clean_log(text: str) -> str:
+    text = _ANSI_OSC.sub("", text)
+    text = _ANSI.sub("", text)
+    text = text.replace("\r", "\n")
+    lines = [line.rstrip() for line in text.splitlines()]
+    return "\n".join(line for line in lines if line.strip())
+
+
+def read_log(row, max_bytes: int = 400_000) -> str:
+    path = log_path(row)
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, 2)
+            size = handle.tell()
+            handle.seek(max(0, size - max_bytes))
+            data = handle.read()
+    except OSError:
+        return ""
+    return clean_log(data.decode("utf-8", "replace"))
+
+
 def _tail(path: Path, lines: int = 60) -> str:
     try:
-        data = path.read_text("utf-8", errors="replace").splitlines()
+        text = clean_log(path.read_text("utf-8", errors="replace"))
+        data = text.splitlines()
         return "\n".join(data[-lines:])[-12000:]
     except OSError:
         return ""
@@ -202,8 +265,9 @@ def recover(conn) -> None:
         "SELECT * FROM mirrors WHERE status IN ('running', 'paused', 'starting')",
     )
     for row in stale:
-        _kill_group(row["pid"], signal.SIGCONT)
-        _kill_group(row["pid"], signal.SIGTERM)
+        if _pid_is_httrack(row["pid"]):
+            _kill_group(row["pid"], signal.SIGCONT)
+            _kill_group(row["pid"], signal.SIGTERM)
         conn.execute(
             "UPDATE mirrors SET status='failed', pid=NULL, finished_at=?, "
             "updated_at=?, error_log=CASE WHEN error_log='' THEN ? ELSE error_log END "
@@ -233,7 +297,6 @@ def _queue_loop() -> None:
         try:
             if _active_count() < config.MAX_CONCURRENT:
                 conn = db.connect()
-                db.init_db(conn)
                 row = db.one(
                     conn,
                     "SELECT * FROM mirrors WHERE status='queued' "
@@ -261,6 +324,9 @@ def _queue_loop() -> None:
 
 def start_process(conn, row) -> bool:
     mirror_id = int(row["id"])
+    fresh = db.one(conn, "SELECT status, cancel_requested FROM mirrors WHERE id=?", (mirror_id,))
+    if not fresh or fresh["status"] != "starting" or fresh["cancel_requested"]:
+        return False
     if not available():
         conn.execute(
             "UPDATE mirrors SET status='failed', finished_at=?, updated_at=?, "
@@ -318,12 +384,16 @@ def start_process(conn, row) -> bool:
         env["LD_LIBRARY_PATH"] = config.HTTRACK_LIB + ":" + env.get("LD_LIBRARY_PATH", "")
 
     started = _now()
-    conn.execute(
-        "UPDATE mirrors SET status='running', pid=NULL, speed=?, started_at=?, "
-        "finished_at=NULL, cancel_requested=0, entry_path='', serve_root='', "
-        "last_activity=NULL, updated_at=?, error_log='' WHERE id=?",
+    prepared = conn.execute(
+        "UPDATE mirrors SET status='starting', pid=NULL, speed=?, started_at=?, "
+        "finished_at=NULL, entry_path='', serve_root='', "
+        "last_activity=NULL, updated_at=?, error_log='' "
+        "WHERE id=? AND status='starting' AND cancel_requested=0",
         (speed, started, started, mirror_id),
     )
+    conn.commit()
+    if prepared.rowcount != 1:
+        return False
     conn.execute(
         "INSERT INTO mirror_stats(mirror_id, pages_saved, files_saved, bytes_saved, "
         "links_processed, errors_count, rate_bps, updated_at) "
@@ -367,11 +437,26 @@ def start_process(conn, row) -> bool:
     except Exception:
         pass
 
-    conn.execute(
-        "UPDATE mirrors SET pid=?, updated_at=? WHERE id=?",
+    claimed = conn.execute(
+        "UPDATE mirrors SET status='running', pid=?, updated_at=? "
+        "WHERE id=? AND status='starting' AND cancel_requested=0",
         (proc.pid, _now(), mirror_id),
     )
     conn.commit()
+    if claimed.rowcount != 1:
+        _kill_group(proc.pid, signal.SIGCONT)
+        _kill_group(proc.pid, signal.SIGTERM)
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _kill_group(proc.pid, signal.SIGKILL)
+        conn.execute(
+            "UPDATE mirrors SET status='cancelled', pid=NULL, finished_at=?, updated_at=? "
+            "WHERE id=? AND status IN ('starting','running')",
+            (_now(), _now(), mirror_id),
+        )
+        conn.commit()
+        return False
     with _lock:
         _active[mirror_id] = proc
     watcher = threading.Thread(

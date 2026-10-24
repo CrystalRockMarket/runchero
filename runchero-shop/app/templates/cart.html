@@ -48,6 +48,8 @@
             <a href="/cut/{{ line.slug }}">{{ line.name }}</a>
             {% elif line.item_type == 'package' %}
             <a href="/package/{{ line.slug }}">{{ line.name }}</a>
+            {% elif line.item_type == 'product' %}
+            <a href="/{{ line.store_slug }}/{{ line.slug }}">{{ line.name }}</a>
             {% else %}
             <a href="/share/{{ line.slug }}">{{ line.name }}</a>
             {% endif %}

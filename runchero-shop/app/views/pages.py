@@ -12,6 +12,10 @@ from . import cart_count, canonical_url, page_context, redirect
 
 def register(add) -> None:
     add("GET", re.compile(r"^/how-it-works$"), how_it_works)
+    add("GET", re.compile(r"^/fermentation/how-it-works$"),
+        lambda c, r, **k: how_it_works(c, r, force_store="fermentation", **k))
+    add("GET", re.compile(r"^/freeze-dried/how-it-works$"),
+        lambda c, r, **k: how_it_works(c, r, force_store="freeze-dried", **k))
     add("GET", re.compile(r"^/market-prices$"), market_prices)
     add("GET", re.compile(r"^/data-sources$"), data_sources)
     add("GET", re.compile(r"^/terms$"), terms)
@@ -23,8 +27,9 @@ def register(add) -> None:
     add("GET", re.compile(r"^/sitemap\.xml$"), sitemap)
 
 
-def how_it_works(conn: db.sqlite3.Connection, req, **_):
-    context = page_context(conn, req, cart_count=cart_count(conn, req))
+def how_it_works(conn: db.sqlite3.Connection, req, force_store=None, **_):
+    context = page_context(conn, req, force_store=force_store,
+                           cart_count=cart_count(conn, req))
     return 200, "text/html; charset=utf-8", web.render("how.html", **context)
 
 
@@ -217,7 +222,10 @@ def sitemap(conn: db.sqlite3.Connection, req, **_):
         ("/policy", "0.4"),
         ("/contact", "0.4"),
         ("/fermentation", "0.8"),
+        ("/fermentation/bulk", "0.6"),
+        ("/fermentation/how-it-works", "0.5"),
         ("/freeze-dried", "0.8"),
+        ("/freeze-dried/how-it-works", "0.5"),
     ]
     for primal in catalog.primals(conn):
         urls.append((f"/shop/{primal['slug']}", "0.7"))

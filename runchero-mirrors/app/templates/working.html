@@ -37,11 +37,10 @@
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="btn small primary" type="submit"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Resume</button>
         </form>
-        {% elif m.status == 'queued' or m.status == 'starting' %}
-        <form method="post" action="/start/{{ m.id }}">
-          <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="btn small" type="submit"><img src="/static/img/icons/list.png" alt="" width="14" height="14"> Waiting…</button>
-        </form>
+        {% elif m.status == 'queued' %}
+        <span class="waiting-pill"><img src="/static/img/icons/clock.png" alt="" width="14" height="14"> Waiting its turn</span>
+        {% elif m.status == 'starting' %}
+        <span class="waiting-pill"><img src="/static/img/icons/gearbox.png" alt="" width="14" height="14"> Getting ready</span>
         {% endif %}
         <form method="post" action="/stop/{{ m.id }}" onsubmit="return confirm('Stop saving this site? The partial copy will not be shown in Saved sites.');">
           <input type="hidden" name="_csrf" value="{{ csrf }}">

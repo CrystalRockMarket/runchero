@@ -64,6 +64,8 @@ def stage_file(path: Path, source_url: str = "", license_info: str = "",
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(path)
+    if path.name.startswith(".") or path.name.lower().startswith("readme"):
+        raise ValueError("README and hidden files are not staged")
     
     title = detect_title(path)
     slug = slugify(title)
@@ -110,7 +112,9 @@ def scan_staging() -> list[dict]:
     
     staged = []
     for path in STAGING.iterdir():
-        if path.is_file() and path.suffix.lower() in ('.txt', '.pdf', '.md'):
+        if (path.is_file() and path.suffix.lower() in ('.txt', '.pdf', '.md')
+                and not path.name.startswith('.')
+                and not path.name.lower().startswith('readme')):
             try:
                 rec = stage_file(path)
                 staged.append(rec)
@@ -145,17 +149,21 @@ def integrate() -> int:
     if not recs:
         print("nothing staged")
         return 0
-    
+
     integrated = json.loads(INTEGRATED.read_text()) if INTEGRATED.exists() else []
     integrated_slugs = {i['slug'] for i in integrated}
-    
+
     new_recs = [r for r in recs if r['slug'] not in integrated_slugs]
     if not new_recs:
         print("all staged books already integrated")
         return 0
-    
+
     lines = []
+    integrated_now = []
     for rec in new_recs:
+        if rec.get('suffix') != '.txt':
+            print(f"kept for later (PDF support pending): {rec['slug']}")
+            continue
         title = rec['title'].replace("'", "\\'")
         author = rec.get('author', 'Unknown').replace("'", "\\'")
         slug = rec['slug']
@@ -166,7 +174,12 @@ def integrate() -> int:
         summary = f"Staged from {rec.get('original_path','unknown')}. Source: {source_url or 'see manifest'}. License: {license_info}."
         gid = 0
         lines.append(f"    ({gid}, {slug!r}, {title!r}, {author!r}, {cat!r}, {summary!r}, {motif!r}, 'sky', 'sky2', ''),")
-    
+        integrated_now.append(rec)
+
+    if not integrated_now:
+        print("no text files ready to integrate")
+        return 0
+
     out = ROOT / "app" / "seed" / "books_from_staged.py"
     content = f'''"""Books staged via tools/stage_books.py for later integration.
 
@@ -178,33 +191,16 @@ from __future__ import annotations
 
 BOOKS: list[tuple] = [
 ''' + '\n'.join(lines) + '\n]\n'
-    out.write_text(content)
-    
-    # also need to wire it into run.py if not already
-    run_py = ROOT / "app" / "seed" / "run.py"
-    run_content = run_py.read_text()
-    if 'books_from_staged' not in run_content:
-        run_content = run_content.replace(
-            'from . import books_from_download\n',
-            'from . import books_from_download\nfrom . import books_from_staged\n'
-        )
-        run_content = run_content.replace(
-            '*books_from_download.BOOKS]',
-            '*books_from_download.BOOKS, *books_from_staged.BOOKS]'
-        )
-        run_content = run_content.replace(
-            'or b in books_from_download.BOOKS\n',
-            'or b in books_from_download.BOOKS\n                     or b in books_from_staged.BOOKS\n'
-        )
-        run_py.write_text(run_content)
-    
-    for r in new_recs:
-        integrated.append(r)
-    INTEGRATED.write_text(json.dumps(integrated, indent=2))
-    
-    print(f"integrated {len(new_recs)} books into {out}")
-    print("run: python3 -m app.seed.run --all-books (or normal seed) to add them")
-    return len(new_recs)
+    tmp = out.with_suffix(".py.tmp")
+    tmp.write_text(content, encoding="utf-8")
+    tmp.replace(out)
+
+    integrated.extend(integrated_now)
+    INTEGRATED.write_text(json.dumps(integrated, indent=2), encoding="utf-8")
+
+    print(f"integrated {len(integrated_now)} books into {out}")
+    print("run: python3 -m app.seed.run --no-fetch to add them to the site")
+    return len(integrated_now)
 
 
 def main(argv=None):

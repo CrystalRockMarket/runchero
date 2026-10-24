@@ -76,36 +76,53 @@ def serve_mirror(conn, req, slug, path=None, **_):
     rel = _safe_relative(path)
     if "\x00" in rel:
         return 400, "text/html; charset=utf-8", "Bad request."
-    if not serve_root:
-        serve_root = "."
-    root_path = (base / serve_root).resolve()
+    if any(part.startswith(".") for part in rel.split("/") if part) or rel.split("/", 1)[0] == "hts-cache":
+        return 404, "text/html; charset=utf-8", "That saved page or file was not found."
+
+    # HTTrack saves a site as <mirror>/<host>/<original path>. Serve the host
+    # folder as the site root so root-relative links and relative links with
+    # "../" keep the same shape they had on the original site.
+    host_dir = "."
+    entry_rel = entry_path
+    if serve_root and serve_root not in ("", "."):
+        first = serve_root.split("/", 1)[0]
+        prefix = first + "/"
+        if entry_path.startswith(prefix):
+            host_dir = first
+            entry_rel = entry_path[len(prefix):]
+        elif entry_path != first:
+            host_dir = first
+            entry_rel = entry_path
+    site_root = (base / host_dir).resolve()
     try:
-        root_path.relative_to(base)
+        site_root.relative_to(base)
     except ValueError:
         return 403, "text/html; charset=utf-8", "Forbidden."
 
     if not rel:
-        target = (base / entry_path).resolve()
+        if not req.path.endswith("/"):
+            return 301, {"Location": quote(req.path + "/", safe="/")}, ""
+        if entry_rel in httrack.INDEX_NAMES:
+            target = (site_root / entry_rel).resolve()
+        else:
+            # Start the browser at the original page path, not the mirror root,
+            # so links such as "../" resolve inside the saved copy correctly.
+            if any(entry_rel.lower().endswith("/" + name) for name in httrack.INDEX_NAMES):
+                location = entry_rel.rsplit("/", 1)[0] + "/"
+            else:
+                location = entry_rel
+            return 302, {"Location": f"/mirror/{slug}/" + quote(location, safe="/")}, ""
     else:
-        target = (root_path / rel).resolve()
+        target = (site_root / rel).resolve()
         if not target.exists():
-            # Absolute links from a site saved under a subfolder should point at
-            # the site root, not the start folder. Also accept a mirror-root
-            # fallback for sites that were saved with a different layout.
-            fallbacks = []
-            host_dir = serve_root.split("/", 1)[0]
-            if host_dir and host_dir != ".":
-                fallbacks.append(base / host_dir / rel)
-            fallbacks.append(base / rel)
-            for fallback in fallbacks:
-                fallback = fallback.resolve()
-                try:
-                    fallback.relative_to(base)
-                except ValueError:
-                    continue
-                if fallback.exists():
-                    target = fallback
-                    break
+            # Unexpected layouts (or an entry at the mirror root) can still be
+            # served from the mirror root as a safe fallback.
+            fallback = (base / rel).resolve()
+            try:
+                fallback.relative_to(base)
+                target = fallback
+            except ValueError:
+                pass
 
     try:
         target.relative_to(base)
@@ -113,9 +130,9 @@ def serve_mirror(conn, req, slug, path=None, **_):
         return 403, "text/html; charset=utf-8", "Forbidden."
 
     if _looks_like_dir(target):
-        if rel and not rel.endswith("/") and not req.path.endswith("/"):
-            return 301, {"Location": quote(req.path + "/", safe="/%")}, ""
-        for candidate in ("index.html", "index.htm", "index.xhtml"):
+        if rel and not req.path.endswith("/"):
+            return 301, {"Location": quote(req.path + "/", safe="/")}, ""
+        for candidate in httrack.INDEX_NAMES:
             index = (target / candidate).resolve()
             if index.is_file():
                 target = index
@@ -123,12 +140,25 @@ def serve_mirror(conn, req, slug, path=None, **_):
         else:
             return 404, "text/html; charset=utf-8", "No index page in this folder."
 
+    try:
+        target.relative_to(base)
+    except ValueError:
+        return 403, "text/html; charset=utf-8", "Forbidden."
+
     if not target.exists() or not target.is_file():
         return 404, "text/html; charset=utf-8", "That saved page or file was not found."
 
     ctype, _encoding = mimetypes.guess_type(str(target))
-    if not ctype:
-        ctype = "text/html" if target.suffix.lower() in (".html", ".htm") else "application/octet-stream"
+    entry_file = (base / entry_path).resolve()
+    is_page = (
+        target == entry_file
+        or target.suffix.lower() in httrack.PAGE_SUFFIXES
+        or (ctype in (None, "application/octet-stream") and httrack.looks_like_html(target))
+    )
+    if is_page:
+        ctype = "text/html"
+    elif not ctype:
+        ctype = "application/octet-stream"
     if ctype.startswith("text/") or ctype in (
         "application/javascript", "application/json", "application/xml",
         "image/svg+xml",

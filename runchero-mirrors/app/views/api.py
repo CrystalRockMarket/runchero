@@ -42,8 +42,5 @@ def logs(conn, req, id, **_):
     row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (int(id),))
     if not row:
         return _json({"error": "not found"}, 404)
-    try:
-        text = httrack.log_path(row).read_text("utf-8", errors="replace")
-    except OSError:
-        text = ""
+    text = httrack.read_log(row)
     return _json({"id": row["id"], "name": row["name"], "log": text[-30000:]})

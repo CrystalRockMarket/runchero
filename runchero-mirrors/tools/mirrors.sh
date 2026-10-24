@@ -17,6 +17,25 @@ start() {
   done
   echo "failed to start; see $LOGFILE"; tail -10 "$LOGFILE"; return 1
 }
-stop() { if running; then kill "$(cat "$PIDFILE")" 2>/dev/null; sleep 0.5; echo "stopped"; else echo "not running"; fi; rm -f "$PIDFILE"; }
+stop() {
+  if running; then
+    local pid
+    pid="$(cat "$PIDFILE")"
+    kill "$pid" 2>/dev/null
+    for _ in $(seq 1 80); do
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 0.25
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -9 "$pid" 2>/dev/null
+      echo "forced stop"
+    else
+      echo "stopped"
+    fi
+  else
+    echo "not running"
+  fi
+  rm -f "$PIDFILE"
+}
 seed() { cd "$ROOT" || exit 1; python3 run.py --seed-only; }
 case "${1:-status}" in start) start ;; stop) stop ;; restart) stop; start ;; status) if running; then echo "running (pid $(cat "$PIDFILE")) on http://$HOST:$PORT"; else echo "not running"; fi ;; seed) seed ;; *) echo "usage: $0 {start|stop|restart|status|seed}"; exit 2 ;; esac

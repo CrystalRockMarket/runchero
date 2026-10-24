@@ -180,6 +180,7 @@ img[src*="/static/img/icons/"] { image-rendering: pixelated; }
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  flex: 1 1 auto;
 }
 .mainnav {
   display: flex;
@@ -269,24 +270,12 @@ img[src*="/static/img/icons/"] { image-rendering: pixelated; }
 .ss-item-tag { font-size: 11px; color: var(--silver); }
 .ss-check { margin-left: auto; color: var(--grass); font-weight: 800; }
 
-/* Account actions grouped as one fixed cluster at the top right. */
-.top-actions {
-  margin-left: auto;
+/* Account and cart sit inline at the end of the main menu. */
+.nav-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex: none;
-  flex-wrap: nowrap;
-  padding: 4px;
-  background: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: 6px;
-}
-.top-actions .nav-logo {
-  flex-direction: row;
   gap: 6px;
-  padding: 6px 8px;
-  white-space: nowrap;
+  margin-left: auto;
 }
 
 .cart-link {
@@ -324,6 +313,7 @@ img[src*="/static/img/icons/"] { image-rendering: pixelated; }
 /* ------------------------------------------------------------------- nav */
 .mainnav {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  flex: 1 1 auto; min-width: 0;
   background: var(--ink2);
   border: 3px solid var(--ink);
   border-top: 0;
@@ -880,6 +870,7 @@ table.data tfoot td { background: var(--ink); font-weight: 700; }
   .mainnav { gap: 10px; }
   .nav-logo { font-size: 10px; gap: 3px; padding: 4px 4px; }
   .nav-logo img { width: 20px; height: 20px; }
+  .nav-actions { margin-left: 0; gap: 4px; }
   .cart-link { font-size: 12px; padding: 3px 6px; }
   .cart-link img { width: 18px; height: 18px; }
 }

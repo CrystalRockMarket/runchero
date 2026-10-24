@@ -85,6 +85,7 @@ def take_flashes(req: Request) -> list[dict[str, str]]:
 
 
 def page_context(conn: db.sqlite3.Connection, req: Request | None = None,
+                 force_store: str | None = None,
                  **extra) -> dict[str, Any]:
     path = req.path if req else "/"
     context: dict[str, Any] = {
@@ -96,8 +97,9 @@ def page_context(conn: db.sqlite3.Connection, req: Request | None = None,
         "og_image": og_image_url(req),
         "customer": customers_service.current(conn, req),
     }
-    store_slug = ("fermentation" if path.startswith("/fermentation") else
-                  "freeze-dried" if path.startswith("/freeze-dried") else "beef")
+    store_slug = force_store or (
+        "fermentation" if path.startswith("/fermentation") else
+        "freeze-dried" if path.startswith("/freeze-dried") else "beef")
     context["store_slug"] = store_slug
     context["current_store"] = stores_service.get(conn, store_slug)
     context["all_stores"] = stores_service.all_stores(conn)

@@ -95,7 +95,8 @@
         <div class="source break">{{ m.url }}</div>
         {% if m.error_log %}<p class="error-text">{{ m.error_log.split('\n')[0] }}</p>{% endif %}
       </div>
-      <div class="active-side">
+      <div class="active-side actions">
+        <a class="btn small" href="/logs/{{ m.id }}"><img src="/static/img/icons/notes.png" alt="" width="14" height="14"> Log</a>
         <form method="post" action="/retry/{{ m.id }}">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="btn small" type="submit"><img src="/static/img/icons/download.png" alt="" width="14" height="14"> Retry</button>

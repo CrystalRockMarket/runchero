@@ -305,7 +305,7 @@ h3 { font-size: 12px; color: var(--cream); }
 .form-error-box, .duplicate-box {
   display: flex; align-items: flex-start; gap: 8px; padding: 12px; margin-bottom: 12px;
   border: 3px solid var(--tomato2); background: #fff0f0; color: var(--tomato2);
-  font-weight: 600; font-size: 15px;
+  font-weight: 600; font-size: 15px; white-space: pre-wrap;
 }
 .form-error-box img { flex: 0 0 16px; margin-top: 3px; }
 .duplicate-box { display: block; border-color: var(--sun2); background: var(--cream); color: var(--ink); }
@@ -317,7 +317,7 @@ h3 { font-size: 12px; color: var(--cream); }
   border: 2px solid var(--ink); padding: 10px; cursor: pointer;
 }
 .form .speed-option:has(input:checked) { background: var(--cream); outline: 3px solid var(--grass2); outline-offset: 1px; }
-.form .speed-option input { margin: 4px 0 0; width: 18px; height: 18px; flex: 0 0 auto; }
+.form .speed-option input { margin: 4px 0 0; width: 18px; height: 18px; padding: 0; flex: 0 0 auto; border: 0; box-shadow: none; accent-color: var(--grass2); }
 .speed-body { display: flex; flex-direction: column; gap: 3px; }
 .speed-name { font-family: var(--font-pixel); font-size: 9px; line-height: 1.6; color: var(--ink); }
 .speed-desc { font-size: 13px; line-height: 1.5; color: var(--ink2); }
@@ -356,3 +356,12 @@ pre.log {
   .progress span { animation: none; }
 }
 :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+.panel a:not(.btn) { color: var(--sky2); }
+.panel a:not(.btn):hover { color: var(--navy); }
+.panel .panel-title a:not(.btn) { color: inherit; }
+.waiting-pill {
+  display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-pixel);
+  font-size: 9px; padding: 8px 10px; background: var(--cream); border: 2px solid var(--ink);
+  color: var(--ink);
+}

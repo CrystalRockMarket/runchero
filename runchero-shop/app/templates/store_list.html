@@ -8,6 +8,14 @@
   <p class="lede">{{ store.description }}</p>
 </div>
 
+{% if store.slug == 'fermentation' %}
+<div class="notice-strip" role="status">
+  <strong>Buying in bulk?</strong>
+  <span>25, 50, and 100 lb lots are made to order.
+    <a href="/fermentation/bulk">See bulk prices and lead times</a>.</span>
+</div>
+{% endif %}
+
 {% macro product_card(row) %}
 {% set p = row.product %}
 {% set v = row.default %}
@@ -36,7 +44,7 @@
     {% endif %}
     <div class="foot">
       {% if v %}
-      <span class="price">{{ v.price|money }} <small>{{ v.size_label }}</small></span>
+      <span class="price" data-card-price><span data-price-val>{{ v.price|money }}</span> <small data-price-label>{{ v.size_label }}</small></span>
       {% else %}
       <span class="price">{{ p.price|money }} <small>{{ 'per ' ~ p.unit if p.unit != 'each' else 'each' }}</small></span>
       {% endif %}
@@ -51,7 +59,7 @@
       {% if row.variants %}
       <select name="variant_id" aria-label="Size">
         {% for opt in row.variants %}
-        <option value="{{ opt.id }}"{% if v and opt.id == v.id %} selected{% endif %}>{{ opt.size_label }} &middot; {{ opt.price|money }}</option>
+        <option value="{{ opt.id }}" data-price="{{ opt.price|money }}" data-label="{{ opt.size_label }}"{% if v and opt.id == v.id %} selected{% endif %}>{{ opt.size_label }} &middot; {{ opt.price|money }}</option>
         {% endfor %}
       </select>
       {% endif %}
@@ -95,4 +103,18 @@
   {% endfor %}
 </div>
 {% endif %}
+<script>
+(function () {
+  document.querySelectorAll('.card-buy select[name="variant_id"]').forEach(function (select) {
+    var price = select.closest('.card').querySelector('[data-card-price]');
+    if (!price) return;
+    select.addEventListener('change', function () {
+      var option = select.options[select.selectedIndex];
+      if (!option) return;
+      price.querySelector('[data-price-val]').textContent = option.dataset.price;
+      price.querySelector('[data-price-label]').textContent = option.dataset.label;
+    });
+  });
+})();
+</script>
 {% endblock %}

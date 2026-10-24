@@ -28,10 +28,8 @@ _env: Environment | None = None
 def secret() -> bytes:
     """A secret that survives restarts, so open forms keep working."""
     global _SECRET
-    try:
+    if _SECRET:
         return _SECRET
-    except NameError:
-        pass
     if config.SECRET_KEY:
         _SECRET = config.SECRET_KEY.encode("utf-8")
         return _SECRET
@@ -55,7 +53,7 @@ def secret() -> bytes:
     return _SECRET
 
 
-_SECRET: bytes = b""
+_SECRET: bytes | None = None
 
 
 def _sign(payload: bytes) -> str:
@@ -249,15 +247,22 @@ def filesize(value: int | float | None) -> str:
     return f"{value:.1f} TB"
 
 
-def prettydatetime(value: str | None) -> str:
+def _local(value: str | None) -> _dt.datetime | None:
     parsed = _parse_ts(value)
+    if not parsed:
+        return None
+    return parsed.replace(tzinfo=_dt.timezone.utc).astimezone()
+
+
+def prettydatetime(value: str | None) -> str:
+    parsed = _local(value)
     if not parsed:
         return "—"
     return parsed.strftime("%b %-d, %Y · %-I:%M %p")
 
 
 def prettydate(value: str | None) -> str:
-    parsed = _parse_ts(value)
+    parsed = _local(value)
     if not parsed:
         return "—"
     return parsed.strftime("%b %-d, %Y")

@@ -21,9 +21,14 @@ from app.pixel import draw, icons  # noqa: E402
 from app.seed import books as book_catalogue  # noqa: E402
 from app.seed import books_deep  # noqa: E402
 from app.seed import books_extra  # noqa: E402
+from app.seed import books_from_download  # noqa: E402
 from app.seed import manuals as manual_catalogue  # noqa: E402
 
 IMG = config.STATIC_DIR / "img"
+PACKS = ROOT / "assets" / "packs"
+HERO_SOURCE = PACKS / "tiny-farm" / "Sample.png"
+#: A wide slice of Kenney's Tiny Farm sample scene, used at native resolution.
+HERO_CROP = (256, 152, 576, 236)
 
 
 def build_icons() -> int:
@@ -50,7 +55,16 @@ def build_logo() -> None:
 
 
 def build_hero() -> None:
-    hero = draw.make_hero(width=320, height=84)
+    """Crop the downloaded Kenney Tiny Farm scene instead of drawing a new one."""
+    from PIL import Image
+
+    if not HERO_SOURCE.exists():
+        raise FileNotFoundError(
+            f"Missing Tiny Farm pack art: {HERO_SOURCE}. "
+            "Copy the CC0 pack into assets/packs/tiny-farm/."
+        )
+    with Image.open(HERO_SOURCE) as source:
+        hero = source.convert("RGBA").crop(HERO_CROP)
     draw.save(hero, IMG / "hero.png")
 
 
@@ -69,7 +83,8 @@ def build_covers(curated_only: bool = True) -> int:
     folder = IMG / "covers"
     folder.mkdir(parents=True, exist_ok=True)
     count = 0
-    for entry in [*book_catalogue.BOOKS, *books_extra.BOOKS, *books_deep.BOOKS]:
+    for entry in [*book_catalogue.BOOKS, *books_extra.BOOKS, *books_deep.BOOKS,
+                  *books_from_download.BOOKS]:
         _, slug, title, author, _cat, _summary, motif, base, accent, year = entry
         if curated_only and slug not in book_catalogue.CURATED:
             continue
@@ -89,9 +104,9 @@ def build_covers(curated_only: bool = True) -> int:
             title=item["title"],
             author=item["author"],
             year=str(item["year"] or ""),
-            base="sky2",
-            accent="sun",
-            motif="tractor",
+            base=item.get("base", "sky2"),
+            accent=item.get("accent", "sun"),
+            motif=item.get("motif", "tractor"),
             stamp="PD",
         )
         draw.save(cover, folder / f"{item['slug']}.png")

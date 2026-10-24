@@ -39,6 +39,18 @@ class MirrorHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         sys.stderr.write(f"[mirrors] {self.address_string()} {fmt % args}\n")
 
+    def finish(self) -> None:
+        try:
+            super().finish()
+        finally:
+            conn = getattr(_THREAD_LOCAL, "conn", None)
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                _THREAD_LOCAL.conn = None
+
     def do_GET(self) -> None:
         self._dispatch("GET")
 
@@ -82,7 +94,8 @@ class MirrorHandler(BaseHTTPRequestHandler):
                 if not match:
                     continue
                 kwargs = dict(match.groupdict())
-                kwargs.update(query)
+                for key, value in query.items():
+                    kwargs.setdefault(key, value)
                 req = Request(method, path, query, self.headers, body, kwargs)
                 req.load_session()
                 result = handler(conn, req, **kwargs)
@@ -135,6 +148,11 @@ class MirrorHandler(BaseHTTPRequestHandler):
         if isinstance(body, FilePayload):
             self._send_file(body, status, extra, cookies)
             return
+        if "Cache-Control" not in extra and (
+            content_type.startswith("text/html")
+            or content_type.startswith("application/json")
+        ):
+            extra["Cache-Control"] = "no-store"
         self._send(status, content_type, body, extra=extra, cookies=cookies)
 
     def _send(self, status: int, content_type: str, body,

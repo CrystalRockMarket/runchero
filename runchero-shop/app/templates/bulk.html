@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Bulk lots{% endblock %}
+{% block description %}Made-to-order 25, 50, and 100 lb lots of Fermentation Station sauerkraut, kimchi, kombucha, pickles, mustard, hot sauce, vinegar, miso, and tempeh. Priced by the lot, with lead times and pickup at The Crea.{% endblock %}
+{% block body %}
+<div class="section-head" style="margin-top:8px">
+  <h1>Bulk ferments, made to order</h1>
+  <p>25, 50, and 100 lb lots for kitchens, stores, and groups. We start your
+    batch after you reserve, so every lot is fresh and packed the way you
+    want it.</p>
+</div>
+
+<div class="notice-strip" role="status">
+  <strong>Made to order.</strong>
+  <span>Lead times run from <strong>1 week</strong> for tempeh to
+    <strong>6 months</strong> for miso. We confirm the batch date by email
+    before you pay.</span>
+</div>
+
+<div class="table-wrap">
+  <table class="data">
+    <caption>Bulk lots only &mdash; 25, 50, and 100 lb. Prices per lot, with
+      the effective price per pound underneath. Retail jars and bottles are
+      on the <a href="/fermentation">store page</a>.</caption>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="num">25 lb</th>
+        <th class="num">50 lb</th>
+        <th class="num">100 lb</th>
+        <th>Lead time</th>
+        <th>Pack &amp; hold</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td><strong>{{ item.product.name }}</strong></td>
+        {% for tier in item.tiers %}
+        <td class="num">
+          {{ tier.price|money }}<br>
+          <small>{{ tier.per_lb|money }}/lb &middot; save {{ tier.save_pct }}%</small>
+        </td>
+        {% endfor %}
+        <td>{{ item.info.lead }}<br><small>{{ item.info.lead_note }}</small></td>
+        <td>{{ item.info.pack }}<br><small>{{ item.info.hold }}</small></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid2" style="margin-top:22px">
+  {% for group in groups.values() %}
+  <div class="panel">
+    <h2 style="margin-top:0">{{ group.title }}</h2>
+    <p>{{ group.body }}</p>
+  </div>
+  {% endfor %}
+  <div class="panel">
+    <h2 style="margin-top:0">Storage before handoff</h2>
+    <p>Every bulk lot is kept cold or frozen at The Crea until you collect
+      it. Fermented vegetables, kombucha, and tempeh are refrigerated or
+      frozen; mustard, hot sauce, vinegar, and miso are held cool. Each
+      container is labeled with the item, net weight, pack date, and best-by
+      date, plus handling notes.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">Pickup &amp; local dropoff</h2>
+    <p><strong>Pickup:</strong> {{ content.pickup_name }},
+      {{ content.pickup_address }}, {{ content.pickup_hours }}. We stage bulk
+      lots the morning of your window.</p>
+    <p><strong>Dropoff:</strong> Wednesday and Saturday runs to
+      {{ content.delivery_counties|join(', ') }} counties. We confirm a
+      two-hour window; 100 lb lots need driveway or loading access.</p>
+  </div>
+</div>
+
+<div class="panel paper" style="margin-top:6px">
+  <h2 style="color:var(--ink);margin-top:0">Reserve a bulk lot</h2>
+  <p style="color:var(--ink)">Email the item, lot size, and whether you want
+    pickup at The Crea or local dropoff. We reply with the batch date, total,
+    and container details. Nothing is charged until you confirm.</p>
+  <p>
+    <a class="btn grass" href="mailto:{{ content.contact_email }}?subject=Fermentation%20bulk%20lot%20reservation">Email to reserve</a>
+    <a class="btn" href="/contact">Contact details</a>
+    <a class="btn ghost" href="/fermentation">Back to the store</a>
+  </p>
+</div>
+{% endblock %}

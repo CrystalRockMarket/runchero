@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 
 from .. import db, web
+from ..services import bulk as bulk_service
 from ..services import products as products_service
 from ..services import stores as stores_service
 from ..services import variants as variants_service
@@ -12,6 +13,8 @@ from . import cart_count, page_context, not_found
 
 def register(add) -> None:
     add("GET", re.compile(r"^/fermentation$"), lambda c, r, **k: store_list(c, r, "fermentation", **k))
+    add("GET", re.compile(r"^/fermentation/bulk$"),
+        lambda c, r, **k: store_bulk(c, r, "fermentation", **k))
     add("GET", re.compile(r"^/fermentation/(?P<slug>[a-z0-9-]+)$"),
         lambda c, r, slug, **k: store_detail(c, r, "fermentation", slug, **k))
     add("GET", re.compile(r"^/freeze-dried$"), lambda c, r, **k: store_list(c, r, "freeze-dried", **k))
@@ -41,6 +44,31 @@ def store_list(conn, req, store_slug, **_):
         conn, req, store=store, rows=rows, url_prefix=store_slug,
         cart_count=cart_count(conn, req), csrf=req.csrf_token())
     return 200, "text/html; charset=utf-8", web.render("store_list.html", **context)
+
+
+def store_bulk(conn, req, store_slug, **_):
+    store = _guard_store(conn, store_slug)
+    if store is None:
+        return not_found(conn, req, message="That store is not open.")
+    items = []
+    for product in products_service.list_for(conn, store_slug):
+        variants = variants_service.list_for_product(
+            conn, product["id"], active_only=True)
+        pint = variants[0] if variants else None
+        if pint is None or not pint["unit_lbs"]:
+            continue
+        info = bulk_service.info_for(product["slug"])
+        items.append({
+            "product": product,
+            "tiers": bulk_service.tiers_for(pint["price"], pint["unit_lbs"]),
+            "info": info,
+            "group_note": bulk_service.GROUP_NOTES.get(info["group"]),
+        })
+    context = page_context(
+        conn, req, store=store, items=items,
+        groups=bulk_service.GROUP_NOTES, url_prefix=store_slug,
+        cart_count=cart_count(conn, req))
+    return 200, "text/html; charset=utf-8", web.render("bulk.html", **context)
 
 
 def store_detail(conn, req, store_slug, slug, **_):

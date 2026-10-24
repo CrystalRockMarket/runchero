@@ -67,10 +67,12 @@
             <span>Home</span>
           </a>
           {% set shop_path = '/shop' if store_slug == 'beef' else '/' ~ store_slug %}
-          <a class="nav-logo" href="{{ shop_path }}" {% if path == shop_path or path.startswith(shop_path ~ '/') %}aria-current="page"{% endif %}>
-            <img src="/static/img/icons/{{ 'salami' if store_slug == 'beef' else 'crate' }}.png" alt="" width="24" height="24">
+          {% set on_shop = path == shop_path or (path.startswith(shop_path ~ '/') and path not in [shop_path ~ '/bulk', shop_path ~ '/how-it-works']) %}
+          <a class="nav-logo" href="{{ shop_path }}" {% if on_shop %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/{{ 'salami' if store_slug == 'beef' else ('jar' if store_slug == 'fermentation' else 'box') }}.png" alt="" width="24" height="24">
             <span>Shop</span>
           </a>
+          {% if store_slug == 'beef' %}
           <a class="nav-logo" href="/packages" {% if path.startswith('/packages') %}aria-current="page"{% endif %}>
             <img src="/static/img/icons/box.png" alt="" width="24" height="24">
             <span>Packages</span>
@@ -87,32 +89,35 @@
             <img src="/static/img/icons/droplet.png" alt="" width="24" height="24">
             <span>Market</span>
           </a>
-          <a class="nav-logo" href="/how-it-works" {% if path.startswith('/how') %}aria-current="page"{% endif %}>
-            <img src="/static/img/icons/truck.png" alt="" width="24" height="24">
+          {% elif store_slug == 'fermentation' %}
+          <a class="nav-logo" href="/fermentation/bulk" {% if path == '/fermentation/bulk' %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/crate.png" alt="" width="24" height="24">
+            <span>Bulk</span>
+          </a>
+          {% endif %}
+          {% set how_path = '/how-it-works' if store_slug == 'beef' else '/' ~ store_slug ~ '/how-it-works' %}
+          <a class="nav-logo" href="{{ how_path }}" {% if path == how_path %}aria-current="page"{% endif %}>
+            <img src="/static/img/icons/{{ 'truck' if store_slug == 'beef' else 'seedling' }}.png" alt="" width="24" height="24">
             <span>How It Works</span>
           </a>
+          <span class="nav-actions">
+            {% if customer %}
+            <a class="nav-logo" href="/account" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
+              <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
+              <span>Account</span>
+            </a>
+            {% else %}
+            <a class="nav-logo" href="/account/login" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
+              <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
+              <span>Sign in</span>
+            </a>
+            {% endif %}
+            <a class="cart-link" href="/cart">
+              <img src="/static/img/icons/{{ 'cow@2x' if store_slug == 'beef' else ('jar' if store_slug == 'fermentation' else 'box') }}.png" alt="" width="20" height="20">
+              Cart <span class="count" id="cart-count">{{ cart_count|default(0) }}</span>
+            </a>
+          </span>
         </nav>
-      </div>
-      <div class="top-actions">
-        {% if customer %}
-        <a class="nav-logo" href="/account" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
-          <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
-          <span>Account</span>
-        </a>
-        {% else %}
-        <a class="nav-logo" href="/account/login" {% if path.startswith('/account') %}aria-current="page"{% endif %}>
-          <img src="/static/img/icons/person@4x.png" alt="" width="24" height="24">
-          <span>Sign in</span>
-        </a>
-        {% endif %}
-        <a class="nav-logo" href="/orders" {% if path.startswith('/orders') %}aria-current="page"{% endif %}>
-          <img src="/static/img/icons/list@4x.png" alt="" width="24" height="24">
-          <span>My Order</span>
-        </a>
-        <a class="cart-link" href="/cart">
-          <img src="/static/img/icons/cow@2x.png" alt="" width="20" height="20">
-          Cart <span class="count" id="cart-count">{{ cart_count|default(0) }}</span>
-        </a>
       </div>
     </div>
   </header>

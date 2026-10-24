@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}How it works{% endblock %}
-{% block description %}How ordering, packing, pickup, and delivery work at Runchero Beef, from the pasture to your porch.{% endblock %}
+{% block title %}{% if store_slug == 'beef' %}How it works{% else %}How {{ current_store.name }} works{% endif %}{% endblock %}
+{% block description %}{% if store_slug == 'beef' %}How ordering, packing, pickup, and delivery work at Runchero Beef, from the pasture to your porch.{% else %}How {{ current_store.name }} grows on a local community farm, ferments in small batches at The Crea downtown, and sells locally in Shelbyville.{% endif %}{% endblock %}
 {% block body %}
+{% if store_slug == 'beef' %}
 <div class="section-head" style="margin-top:8px">
   <h1>How buying from us works</h1>
   <p>From the pasture to your porch, here is the whole path.</p>
@@ -58,4 +59,95 @@
     </div>
   </div>
 </div>
+
+<div class="panel" style="margin-top:22px">
+  <h2 style="margin-top:0">Also from the co-op: {{ content.pickup_name }}</h2>
+  <p>The co-op's ferments and freeze-dried goods start on a local community
+    farm and are made in small batches at our downtown location,
+    {{ content.pickup_name }}, {{ content.pickup_address }}. Retail jars and
+    bottles are stocked for pickup; 25, 50, and 100 lb bulk ferments are made
+    to order.</p>
+  <p><a class="btn" href="/fermentation">Shop Fermentation Station</a>
+    &nbsp;<a class="btn ghost" href="/fermentation/how-it-works">How the co-op
+    works</a></p>
+</div>
+{% else %}
+<div class="section-head" style="margin-top:8px">
+  <h1>How {{ current_store.name }} works</h1>
+  <p>{% if store_slug == 'fermentation' %}Grown on a local community farm.
+    Fermented in small batches at The Crea in downtown Shelbyville. Sold
+    locally, with bulk lots made to order.{% else %}Grown on a local community
+    farm. Freeze-dried in small batches at The Crea in downtown Shelbyville.
+    Sold locally, with larger sizes made to order.{% endif %}</p>
+</div>
+
+<div class="grid2">
+  <div class="panel">
+    <h2 style="margin-top:0">1. Grown on a local community farm</h2>
+    <p>{% if store_slug == 'fermentation' %}The cabbage, cucumbers, peppers,
+      ginger, garlic, and soybeans behind every jar and bottle come from a
+      local community farm.{% else %}The corn, peas, strawberries, apples,
+      mushrooms, spinach, peppers, green beans, broccoli, cauliflower, and
+      meal ingredients come from a local community farm.{% endif %} We name
+      the farm on the label and at the counter, and we buy the harvest close
+      to home.</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">2. Made at The Crea</h2>
+    <p>{% if store_slug == 'fermentation' %}We ferment, bottle, and pack at
+      our downtown location, The Crea, {{ content.pickup_address }}. Small
+      batches, real salt, and time &mdash; no shortcuts.{% else %}We
+      freeze-dry, pack, and label at our downtown location, The Crea,
+      {{ content.pickup_address }}. Small runs, no additives, and a 20+ year
+      shelf life when sealed and stored as directed.{% endif %}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">3. Jars, bottles, and bulk lots</h2>
+    <p>{% if store_slug == 'fermentation' %}Retail jars and bottles are
+      stocked for pickup. Bulk lots of 25, 50, and 100 lb are made to order;
+      lead times run from one week for tempeh to six months for miso.
+      <a href="/fermentation/bulk">See bulk prices and lead times</a>.{% else %}Retail bags and meal pouches are stocked for pickup. Larger sizes are
+      made to order; see each product for package sizes and prices.{% endif %}</p>
+  </div>
+  <div class="panel">
+    <h2 style="margin-top:0">4. Pickup or local dropoff</h2>
+    <p>Pickup at The Crea, {{ content.pickup_address }},
+      {{ content.pickup_hours }}. Local dropoff on the Wednesday and Saturday
+      routes to {{ content.delivery_counties|join(', ') }} counties. We keep
+      everything cold or frozen until handoff.</p>
+  </div>
+</div>
+
+<div class="panel paper" style="margin-top:6px">
+  <h2 style="color:var(--ink);margin-top:0">Good to know</h2>
+  <div class="grid2">
+    <div>
+      <ul style="color:var(--ink);padding-left:20px">
+        <li>Produced on a local community farm and sold locally at The Crea
+          in downtown Shelbyville.</li>
+        {% if store_slug == 'fermentation' %}
+        <li>Bulk lots are made to order &mdash; we start your batch after you
+          reserve.</li>
+        <li>Retail jars and bottles are stocked for same-week pickup.</li>
+        {% else %}
+        <li>Larger sizes are made to order; we confirm the batch date by
+          email.</li>
+        <li>Retail bags and meal pouches are stocked for same-week pickup.</li>
+        {% endif %}
+      </ul>
+    </div>
+    <div>
+      <ul style="color:var(--ink);padding-left:20px">
+        <li>{% if store_slug == 'fermentation' %}Lead times vary by item; the
+          bulk page lists each one.{% else %}Larger sizes are made to order;
+          lead time is confirmed by email.{% endif %}</li>
+        <li>Everything is kept refrigerated or frozen at The Crea.</li>
+        <li>Questions? <a href="/contact">Talk to us</a> before you order.
+          Workshops happen at The Crea too &mdash;
+          <a href="/events">see the calendar</a>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
