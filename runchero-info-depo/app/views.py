@@ -416,12 +416,21 @@ def collection_page(conn: sqlite3.Connection, slug: str, expected_kind: str = ""
     related = db.collection_related(conn, row)
     children = db.collection_children(conn, row)
     kind_slug = {"crop": "grow", "animal": "animals", "topic": "collections"}[row["kind"]]
-    if row["kind"] == "topic" and slug in ("farm", "kitchen", "workshop"):
-        kind_slug = slug
+    back_href = {"crop": "/grow", "animal": "/animals"}.get(row["kind"], "/collections")
+    back_label = {"crop": "Grow", "animal": "Animals"}.get(row["kind"], "Topics")
+    if row["kind"] == "topic":
+        group = row["group_slug"]
+        if group == "kitchen":
+            kind_slug, back_href, back_label = "kitchen", "/kitchen", "Kitchen"
+        elif group in SHELF_INDEXES:
+            kind_slug = group
+            back_href = SHELF_INDEXES[group]["href"]
+            back_label = SHELF_INDEXES[group]["short"]
     return web.render("collection.html", **base_context(
         conn, active=kind_slug, collection=row, books=books,
         shelves=ordered_shelves, role_labels=ROLE_LABELS,
         related=related, children=children,
+        back_href=back_href, back_label=back_label,
         page_sources=db.sources_for(conn, "collection", slug),
     ))
 
@@ -438,9 +447,9 @@ def old_section(conn: sqlite3.Connection, slug: str, **_) -> tuple[int, dict, st
         "farming": "/grow",
         "growing": "/grow",
         "animals": "/animals",
-        "kitchen": "/topic/kitchen",
-        "workshop": "/topic/workshop",
-        "survival": "/topic/survival",
+        "kitchen": "/kitchen",
+        "workshop": "/workshop",
+        "survival": "/survival",
         "vehicles": "/vehicles",
     }.get(slug, "/collections")
     return redirect(target)

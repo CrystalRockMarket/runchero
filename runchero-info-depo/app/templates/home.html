@@ -106,15 +106,17 @@
     THE REST OF THE DEPOT
   </div>
   <div class="grid-3">
+    {% set index_pages = {'farm': '/farm', 'kitchen': '/kitchen', 'workshop': '/workshop', 'survival': '/survival', 'home': '/home'} %}
     {% for group in topic_groups %}
+    {% set group_href = index_pages.get(group.slug, '/collections') %}
     <div class="card topic-card">
-      <div class="card-title">{{ group.name }}</div>
+      <div class="card-title"><a href="{{ group_href }}">{{ group.name }}</a></div>
       <div class="chips">
         {% for sub in group.subgroups[:6] %}
         <a class="chip green" href="/topic/{{ sub['items'][0].slug }}">{{ sub.name }} ({{ sub['items']|length }})</a>
         {% endfor %}
       </div>
-      <a class="btn ghost mt" href="/collections">OPEN TOPICS</a>
+      <a class="btn ghost mt" href="{{ group_href }}">{{ 'OPEN INDEX' if group.slug in index_pages else 'OPEN TOPICS' }}</a>
     </div>
     {% endfor %}
   </div>

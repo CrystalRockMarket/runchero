@@ -2,8 +2,7 @@
 {% block title %}{{ collection.name }} - {{ site_name }}{% endblock %}
 
 {% block content %}
-{% set back = '/grow' if collection.kind == 'crop' else ('/animals' if collection.kind == 'animal' else '/collections') %}
-{% set back_label = 'Grow' if collection.kind == 'crop' else ('Animals' if collection.kind == 'animal' else 'Topics') %}
+{% set back = back_href %}
 <nav class="breadcrumbs" aria-label="Breadcrumb">
   <a href="/">Home</a><span class="separator">/</span>
   <a href="{{ back }}">{{ back_label }}</a><span class="separator">/</span>

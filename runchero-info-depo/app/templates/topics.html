@@ -30,6 +30,7 @@
   {% endfor %}
 </div>
 
+{% set index_pages = {'farm': '/farm', 'kitchen': '/kitchen', 'workshop': '/workshop', 'survival': '/survival', 'home': '/home'} %}
 {% for group in groups %}
 <details class="panel mb index-group" id="topic-{{ group.slug }}" {% if query %}open{% endif %}>
   <summary class="index-summary">
@@ -39,6 +40,9 @@
     <span class="index-arrow" aria-hidden="true">+</span>
   </summary>
   <div class="index-body">
+    {% if group.slug in index_pages %}
+    <div class="chips mb"><a class="chip" href="{{ index_pages[group.slug] }}">OPEN {{ group.name|upper }} INDEX</a></div>
+    {% endif %}
     {% for sub in group.subgroups %}
     <h2 class="depot-subhead">{{ sub.name }} <span class="count">{{ sub['items']|length }}</span></h2>
     <div class="cards depot-grid">
