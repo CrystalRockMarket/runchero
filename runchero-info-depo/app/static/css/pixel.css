@@ -653,6 +653,10 @@ details.acc > summary:hover { background: var(--sun); }
 /* ---- sources and provenance -------------------------------------------- */
 .sources-panel { border-left: 6px solid var(--cyan); }
 .source-list { display: flex; flex-direction: column; gap: 10px; }
+.source-list.scroll { max-height: 72vh; overflow-y: auto; padding: 2px 8px 2px 2px; }
+.source-legend a.source-kind { text-decoration: none; }
+.panel .source-legend a.source-kind { color: var(--white); text-decoration: none; }
+.source-legend a.source-kind:hover { filter: brightness(1.12); }
 .source-row {
   background: var(--paper);
   color: var(--ink);

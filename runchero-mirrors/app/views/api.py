@@ -1,16 +1,20 @@
-"""Small JSON endpoints used for live status and logs."""
+"""Small JSON endpoints used for live status, logs, export, and health."""
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 
-from .. import db
+from .. import config, db
 from ..services import httrack
 
 
 def register(add):
     add("GET", re.compile(r"^/api/status$"), status)
     add("GET", re.compile(r"^/api/mirror/(?P<id>\d+)/logs$"), logs)
+    add("GET", re.compile(r"^/api/mirrors$"), mirrors)
+    add("GET", re.compile(r"^/api/health$"), health)
 
 
 def _json(payload, status=200):
@@ -44,3 +48,27 @@ def logs(conn, req, id, **_):
         return _json({"error": "not found"}, 404)
     text = httrack.read_log(row)
     return _json({"id": row["id"], "name": row["name"], "log": text[-30000:]})
+
+
+def mirrors(conn, req, **_):
+    rows = db.rows(
+        conn,
+        "SELECT m.id, m.slug, m.name, m.url, m.description, m.status, m.speed, "
+        "m.partial_copy, m.started_at, m.finished_at, m.last_activity, m.error_log, "
+        "COALESCE(s.pages_saved,0) pages_saved, COALESCE(s.files_saved,0) files_saved, "
+        "COALESCE(s.bytes_saved,0) bytes_saved, COALESCE(s.rate_bps,0) rate_bps "
+        "FROM mirrors m LEFT JOIN mirror_stats s ON s.mirror_id=m.id "
+        "ORDER BY m.updated_at DESC, m.id DESC",
+    )
+    return _json({"mirrors": [dict(r) for r in rows]})
+
+
+def health(conn, req, **_):
+    total, used, free = shutil.disk_usage(config.MIRRORS_ROOT)
+    running = db.scalar(conn, "SELECT COUNT(*) FROM mirrors WHERE status='running'") or 0
+    return _json({
+        "schema_version": db.SCHEMA_VERSION,
+        "httrack_available": httrack.available(),
+        "running": running,
+        "disk": {"total": total, "used": used, "free": free},
+    })

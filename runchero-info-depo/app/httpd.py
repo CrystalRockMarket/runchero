@@ -200,7 +200,7 @@ def register_routes() -> None:
     add(("GET", re.compile(r"^/(?:collections|topics)$"), views.topics))
     add(("GET", re.compile(r"^/section/(?P<slug>[a-z0-9-]+)$"), views.old_section))
     add(("GET", re.compile(r"^/a/(?P<slug>[a-z0-9-]+)$"), views.old_article))
-    add(("GET", re.compile(r"^/vehicles$"), views.vehicle_index))
+    add(("GET", re.compile(r"^/(?:vehicles|repair|equipment)$"), views.vehicle_index))
     add(("GET", re.compile(r"^/vehicles/(?P<slug>[a-z0-9-]+)$"), views.vehicle))
     add(("GET", re.compile(r"^/library$"), views.library))
     add(("GET", re.compile(r"^/library/archive$"), views.archive))

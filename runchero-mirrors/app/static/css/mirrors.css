@@ -395,3 +395,17 @@ pre.log {
   font-size: 9px; padding: 8px 10px; background: var(--cream); border: 2px solid var(--ink);
   color: var(--ink);
 }
+
+/* -- bulk actions ------------------------------------------------------ */
+.bulk-toolbar {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.bulk-toolbar select { font-family: var(--font-body); font-size: 13px; padding: 8px 10px; }
+.bulk-toolbar .count-pill { font-family: var(--font-pixel); font-size: 10px; }
+.bulk-row { cursor: pointer; border: 3px solid var(--ink2); box-shadow: var(--shadow-sm);
+            border-radius: 4px; padding: 10px; margin-bottom: 10px; background: var(--ink2); }
+.bulk-row:hover { border-color: var(--sky); background: var(--ink); }
+.bulk-row input[type="checkbox"] { margin-top: 2px; flex: 0 0 auto; }
+.card-inner .card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.card-inner .card-actions .btn { flex: 0 0 auto; }

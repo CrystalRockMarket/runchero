@@ -6,7 +6,7 @@
   <h1 class="panel-title">
     <img src="{{ static_url('img/icons/info.png') }}" alt="">
     SOURCES &amp; PROVENANCE
-    <span class="count">{{ items|length }} records</span>
+    <span class="count">{{ source_total }} records</span>
   </h1>
   <p class="small muted">
     The depot contains <b>no AI-written articles</b>. Its pages are
@@ -16,19 +16,20 @@
     original source URL, author and licence.
   </p>
   <div class="source-legend">
-    <span class="source-kind kind-ai-organized">AI-ORGANISED INDEX</span>
+    <a class="source-kind kind-ai-organized" href="/sources?kind=ai-organized#source-records">AI-ORGANISED INDEX &middot; {{ source_counts.get('ai-organized', 0) }}</a>
     <span class="small">A shelf, label or cross-link compiled by AI. It points at sources; it is not a source itself.</span>
-    <span class="source-kind kind-book">PUBLIC-DOMAIN BOOK</span>
+    <a class="source-kind kind-book" href="/sources?kind=book#source-records">PUBLIC-DOMAIN BOOK &middot; {{ source_counts.get('book', 0) }}</a>
     <span class="small">A book, report or bulletin in the archive, with a link to the original publication.</span>
-    <span class="source-kind kind-manual">FACTORY MANUAL</span>
+    <a class="source-kind kind-manual" href="/sources?kind=manual#source-records">FACTORY MANUAL &middot; {{ source_counts.get('manual', 0) }}</a>
     <span class="small">A scanned service, parts or operator manual, linked to the Internet Archive scan.</span>
   </div>
   <div class="chips mt">
     <a class="chip {{ 'sun' if not active_kind else '' }}" href="/sources"{% if not active_kind %} aria-current="page"{% endif %}>ALL SOURCES &middot; {{ source_total }}</a>
     {% for item_kind, count in source_counts.items() %}
-    <a class="chip {{ 'sun' if active_kind == item_kind else '' }}" href="/sources?kind={{ item_kind }}"{% if active_kind == item_kind %} aria-current="page"{% endif %}>{{ source_labels.get(item_kind, item_kind|upper) }} &middot; {{ count }}</a>
+    <a class="chip {{ 'sun' if active_kind == item_kind else '' }}" href="/sources?kind={{ item_kind }}#source-records"{% if active_kind == item_kind %} aria-current="page"{% endif %}>{{ source_labels.get(item_kind, item_kind|upper) }} &middot; {{ count }}</a>
     {% endfor %}
     <a class="chip green" href="/library/archive">BROWSE ALL BOOKS</a>
+    <a class="chip blue" href="/library/archive?format=MANUAL">BROWSE ALL MANUALS</a>
   </div>
   {% if active_kind %}
   <p class="small mt">Showing only <b>{{ source_labels.get(active_kind, active_kind|upper) }}</b> records.
@@ -36,16 +37,34 @@
   {% endif %}
 </div>
 
-<div class="panel mb">
+<div class="panel mb" id="source-records">
   <div class="panel-title">
     <img src="{{ static_url('img/icons/list.png') }}" alt="">
-    SOURCE RECORDS
+    {% if active_kind %}{{ source_labels.get(active_kind, active_kind|upper) }} RECORDS{% else %}SOURCE RECORDS{% endif %}
+    <span class="count">{{ result_count }} shown</span>
   </div>
   <p class="small muted">
     Each row is a real record behind an index. The citation count shows how many
-    depot shelves or equipment records point here.
+    depot shelves or equipment records point here. Search inside the selected
+    source type, or use the legend above to switch type.
   </p>
-  <div class="source-list">
+  <form action="/sources" method="get" class="grid-2 mt">
+    {% if active_kind %}<input type="hidden" name="kind" value="{{ active_kind }}">{% endif %}
+    <div class="field" style="margin:0">
+      <label for="source-q">SEARCH {{ source_labels.get(active_kind, 'ALL SOURCES') if active_kind else 'ALL SOURCES' }}</label>
+      <input type="text" id="source-q" name="q" value="{{ query }}"
+             placeholder="Title, author, licence, manual number...">
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <button class="btn sun" type="submit">SEARCH</button>
+      <a class="btn ghost" href="/sources{% if active_kind %}?kind={{ active_kind }}{% endif %}#source-records">RESET</a>
+    </div>
+  </form>
+  {% if query %}
+  <p class="small mt">Results for <b>{{ query }}</b>.
+    <a href="/sources{% if active_kind %}?kind={{ active_kind }}{% endif %}#source-records">Clear search</a>.</p>
+  {% endif %}
+  <div class="source-list scroll mt">
     {% for s in items %}
     <div class="source-row">
       <div class="source-head">
@@ -62,13 +81,21 @@
       {% if s.note %}<div class="small">{{ s.note }}</div>{% endif %}
       <div class="source-foot">
         {% if s.license %}<span class="small muted">Rights: {{ s.license }}</span>{% endif %}
-        {% if s.book_slug %}<a class="small" href="/library/archive/{{ s.book_slug }}">Open in the library</a>{% endif %}
+        {% if s.book_slug %}
+        <a class="small" href="/library/archive/{{ s.book_slug }}">Open in the library</a>
+        <a class="small" href="/read/{{ s.book_slug }}">Read here</a>
+        <a class="small" href="/download/{{ s.book_slug }}">Download text</a>
+        {% endif %}
         {% if s.url and s.url.startswith('http') %}<a class="small" href="{{ s.url }}" rel="noopener noreferrer" target="_blank">Open original</a>{% endif %}
       </div>
     </div>
     {% else %}
-    <div class="empty">No sources recorded yet. Run the seeder.</div>
+    <div class="empty">No sources match that search. Try a plainer word or clear the filter.</div>
     {% endfor %}
   </div>
+  <p class="small muted mt">
+    {{ result_count }} record{% if result_count != 1 %}s{% endif %} in this view.
+    {% if active_kind %}Switch to <a href="/sources">all source types</a> or pick another label above.{% endif %}
+  </p>
 </div>
 {% endblock %}

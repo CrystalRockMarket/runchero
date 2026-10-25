@@ -4,16 +4,16 @@
 {% block content %}
 {% set type_label = equipment_kind_labels.get(vehicle.kind, vehicle.kind|replace('-', ' ')|title) %}
 <nav class="breadcrumbs" aria-label="Breadcrumb">
-  <a href="/vehicles">Equipment</a><span class="separator">/</span>
-  <a href="/vehicles?type={{ vehicle.kind }}">{{ type_label|title }}</a><span class="separator">/</span>
-  <a href="/vehicles?type={{ vehicle.kind }}&make={{ vehicle.make|urlencode }}">{{ vehicle.make }}</a><span class="separator">/</span>
+  <a href="/repair">Repair &amp; equipment</a><span class="separator">/</span>
+  <a href="/repair?type={{ vehicle.kind }}">{{ type_label|title }}</a><span class="separator">/</span>
+  <a href="/repair?type={{ vehicle.kind }}&make={{ vehicle.make|urlencode }}">{{ vehicle.make }}</a><span class="separator">/</span>
   <span class="current">{{ vehicle.model }}</span>
 </nav>
 
 <section class="panel mb">
   <h2 class="panel-title">
     <img src="{{ static_url('img/icons/tractor.png') }}" alt="">
-    EQUIPMENT RECORD
+    REPAIR RECORD
     <span class="count">{{ type_label }}</span>
   </h2>
   <div class="equipment-overview">

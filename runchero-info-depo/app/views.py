@@ -11,7 +11,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-from . import calculators, config, db, md, web
+from . import calculators, config, db, equipment as equipment_data, md, web
 from .seed import collections as collection_data
 from .seed.content import TOPIC_MAP
 from .seed.formulas import COMMON as COMMON_FORMULAS
@@ -35,7 +35,7 @@ NAV = [
     {"slug": "workshop", "label": "Workshop", "icon": "wrench", "href": "/workshop"},
     {"slug": "formulas", "label": "Formulas", "icon": "notes", "href": "/formulas"},
     {"slug": "conversions", "label": "Conversions", "icon": "clock", "href": "/conversions"},
-    {"slug": "vehicles", "label": "Equipment", "icon": "tractor", "href": "/vehicles"},
+    {"slug": "vehicles", "label": "Repair", "icon": "tractor", "href": "/repair"},
     {"slug": "library", "label": "Library", "icon": "book", "href": "/library"},
     {"slug": "sources", "label": "Sources", "icon": "info", "href": "/sources"},
 ]
@@ -64,31 +64,13 @@ ROLE_LABELS = {
 ROLE_ORDER = {role: index for index, role in enumerate(ROLE_LABELS)}
 
 EQUIPMENT_KIND_LABELS = {
-    "tractor": "Tractors",
-    "machine": "Implements",
-    "atv": "ATVs & quads",
-    "chainsaw": "Chainsaws",
-    "mower": "Mowers",
-    "truck": "Trucks & transport",
-    "utv": "Utility vehicles",
+    slug: meta["label"] for slug, meta in equipment_data.KINDS.items()
 }
 EQUIPMENT_KIND_DESCRIPTIONS = {
-    "tractor": "Browse tractor manufacturers, model specifications and factory manuals.",
-    "machine": "Browse implements and powered machinery used for field and yard work.",
-    "atv": "Browse all-terrain vehicles and quads used around the farm.",
-    "chainsaw": "Browse chainsaws and small-engine equipment.",
-    "mower": "Browse mowers and grass-cutting equipment.",
-    "truck": "Browse road vehicles and transport equipment.",
-    "utv": "Browse utility vehicles and farm 4x4s.",
+    slug: meta["description"] for slug, meta in equipment_data.KINDS.items()
 }
 EQUIPMENT_KIND_ICONS = {
-    "tractor": "tractor",
-    "machine": "tool",
-    "atv": "truck",
-    "chainsaw": "saw",
-    "mower": "tool",
-    "truck": "truck",
-    "utv": "truck",
+    slug: meta["icon"] for slug, meta in equipment_data.KINDS.items()
 }
 
 
@@ -662,73 +644,143 @@ def article(conn: sqlite3.Connection, slug: str, **_) -> str:
     ))
 
 
+def _merge_brand_names(configured, used) -> list[str]:
+    names: dict[str, str] = {}
+    for name in [*configured, *used]:
+        name = (name or "").strip()
+        if name:
+            names.setdefault(name.casefold(), name)
+    return sorted(names.values(), key=lambda value: value.casefold())
+
+
+def _group_for_kind(kind: str) -> dict:
+    for group in equipment_data.GROUPS:
+        if kind in group["kinds"]:
+            return group
+    return {"slug": "", "name": "Repair & Equipment", "icon": "tractor"}
+
+
+def _equipment_catalog(conn: sqlite3.Connection):
+    items = [dict(item) for item in db.vehicles(conn)]
+    by_kind: dict[str, list[dict]] = {}
+    for item in items:
+        by_kind.setdefault(item["kind"], []).append(item)
+    catalog: list[dict] = []
+    for group in equipment_data.GROUPS:
+        kinds: list[dict] = []
+        for kind_slug in group["kinds"]:
+            meta = equipment_data.KINDS.get(kind_slug)
+            if meta is None:
+                continue
+            models = by_kind.get(kind_slug, [])
+            brands = _merge_brand_names(meta["brands"],
+                                        [model["make"] for model in models])
+            kinds.append({
+                "slug": kind_slug,
+                "label": meta["label"],
+                "icon": meta["icon"],
+                "description": meta["description"],
+                "brand_count": len(brands),
+                "count": len(models),
+            })
+        if kinds:
+            catalog.append({**group, "kinds": kinds})
+    # Keep any legacy kind that is in the database but not in the new taxonomy.
+    known = {kind for group in catalog for kind in
+             [item["slug"] for item in group["kinds"]]}
+    extras = []
+    for kind_slug, models in by_kind.items():
+        if kind_slug in known:
+            continue
+        extras.append({
+            "slug": kind_slug,
+            "label": equipment_data.KINDS.get(kind_slug, {}).get(
+                "label", kind_slug.replace("-", " ").title()),
+            "icon": "tool",
+            "description": "Records filed under a legacy equipment type.",
+            "brand_count": len({model["make"] for model in models}),
+            "count": len(models),
+        })
+    if extras:
+        catalog.append({"slug": "other", "name": "Other Filed Equipment",
+                        "icon": "tool", "blurb": "Legacy equipment records.",
+                        "kinds": extras})
+    return catalog, items, by_kind
+
+
 def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
-    items = db.vehicles(conn)
+    catalog, items, by_kind = _equipment_catalog(conn)
     vehicle_type = (kwargs.get("type", "") or "").strip().lower()
     make = (kwargs.get("make", "") or "").strip()
-    # normalise make case against the data
     if make:
-        make = next((m["make"] for m in items if m["make"].lower() == make.lower()), make)
+        make = next((m["make"] for m in items if m["make"].lower() == make.lower()),
+                    make)
 
-    kinds: dict[str, list[dict]] = {}
-    for item in items:
-        kinds.setdefault(item["kind"], []).append(dict(item))
-
-    grouped: dict[str, dict[str, list]] = {}
-    for kind, machines in kinds.items():
-        by_make: dict[str, list] = {}
-        for machine in machines:
-            by_make.setdefault(machine["make"], []).append(machine)
-        grouped[kind] = by_make
-
-    # Every tractor brand we intend to cover, even without model data yet.
-    try:
-        from app.seed.content import TRACTOR_BRANDS
-    except Exception:
-        TRACTOR_BRANDS = []
-    tractor_brands = []
-    for brand in TRACTOR_BRANDS:
-        models = [m for m in items if m["kind"] == "tractor" and m["make"] == brand]
-        tractor_brands.append({"name": brand, "count": len(models),
-                               "models": models})
-
-    ford = [m for m in items if m["make"] == "Ford" and m["kind"] == "tractor"]
-
-    # Filtered views: type page -> brands, brand page -> models.
     if vehicle_type and not make:
-        brands_for_type = []
-        if vehicle_type == "tractor":
-            brands_for_type = tractor_brands
-        else:
-            makes = sorted({m["make"] for m in items if m["kind"] == vehicle_type})
-            brands_for_type = [{"name": m, "count": len(grouped.get(vehicle_type, {}).get(m, [])),
-                               "models": grouped.get(vehicle_type, {}).get(m, [])}
-                              for m in makes]
-        brands_for_type.sort(key=lambda b: (not bool(b["count"]),
-                                            b["name"].lower() != "ford",
-                                            b["name"].lower()))
-        available_brands = [brand for brand in brands_for_type if brand["count"]]
-        planned_brands = [brand for brand in brands_for_type if not brand["count"]]
+        models = by_kind.get(vehicle_type, [])
+        meta = equipment_data.KINDS.get(vehicle_type, {
+            "label": vehicle_type.replace("-", " ").title(),
+            "icon": "tool",
+            "description": "Equipment records filed under this type.",
+        })
+        brands = _merge_brand_names(meta.get("brands", []),
+                                    [model["make"] for model in models])
+        brand_rows = []
+        for name in brands:
+            brand_models = [model for model in models
+                            if model["make"].casefold() == name.casefold()]
+            brand_rows.append({"name": name, "count": len(brand_models),
+                               "models": brand_models})
+        available_brands = [brand for brand in brand_rows if brand["count"]]
+        planned_brands = [brand for brand in brand_rows if not brand["count"]]
         return web.render("vehicles.html", **base_context(
-            conn, active="vehicles", vehicles=items, kinds=kinds, grouped=grouped,
-            ford=ford, view="type", vehicle_type=vehicle_type,
-            brands=brands_for_type, make="",
-            available_brands=available_brands, planned_brands=planned_brands,
-            tractor_brand_count=len(tractor_brands),
+            conn, active="vehicles", vehicles=items, catalog=catalog,
+            view="type", vehicle_type=vehicle_type,
+            type_label=meta["label"], type_icon=meta["icon"],
+            type_description=meta["description"],
+            group=_group_for_kind(vehicle_type),
+            brands=brand_rows, available_brands=available_brands,
+            planned_brands=planned_brands, make="", models=[],
+            vehicle_total=len(items),
+            type_total=sum(len(group["kinds"]) for group in catalog),
+            brand_total=sum(item["brand_count"] for group in catalog
+                            for item in group["kinds"]),
             page_sources=db.sources_for(conn, "page", "vehicles")))
+
     if make:
-        type_for_make = vehicle_type or next((m["kind"] for m in items if m["make"] == make), "tractor")
-        models = [m for m in items if m["make"] == make and (not vehicle_type or m["kind"] == vehicle_type)]
+        type_for_make = vehicle_type or next(
+            (m["kind"] for m in items if m["make"].casefold() == make.casefold()),
+            "tractor")
+        models = [m for m in items
+                  if m["make"].casefold() == make.casefold()
+                  and (not vehicle_type or m["kind"] == vehicle_type)]
+        meta = equipment_data.KINDS.get(type_for_make, {
+            "label": type_for_make.replace("-", " ").title(),
+            "icon": "tool",
+            "description": "Equipment records filed under this type.",
+        })
         return web.render("vehicles.html", **base_context(
-            conn, active="vehicles", vehicles=items, kinds=kinds, grouped=grouped,
-            ford=ford, view="brand", vehicle_type=type_for_make, make=make,
-            brands=[], models=models,
-            tractor_brand_count=len(tractor_brands),
+            conn, active="vehicles", vehicles=items, catalog=catalog,
+            view="brand", vehicle_type=type_for_make, make=make,
+            type_label=meta["label"], type_icon=meta["icon"],
+            type_description=meta["description"],
+            group=_group_for_kind(type_for_make),
+            brands=[], models=models, brand_count=len(models),
+            vehicle_total=len(items),
+            type_total=sum(len(group["kinds"]) for group in catalog),
+            brand_total=sum(item["brand_count"] for group in catalog
+                            for item in group["kinds"]),
             page_sources=db.sources_for(conn, "page", "vehicles")))
+
     return web.render("vehicles.html", **base_context(
-        conn, active="vehicles", vehicles=items, kinds=kinds, grouped=grouped,
-        ford=ford, view="index", vehicle_type="", make="", brands=[], models=[],
-        tractor_brand_count=len(tractor_brands),
+        conn, active="vehicles", vehicles=items, catalog=catalog,
+        view="index", vehicle_type="", make="", brands=[], models=[],
+        vehicle_total=len(items),
+        type_total=sum(len(group["kinds"]) for group in catalog),
+        brand_total=sum(item["brand_count"] for group in catalog
+                        for item in group["kinds"]),
+        manual_total=db.scalar(conn,
+                               "SELECT COUNT(*) FROM books WHERE format='MANUAL'"),
         page_sources=db.sources_for(conn, "page", "vehicles")))
 
 
@@ -1120,15 +1172,28 @@ def sources(conn: sqlite3.Connection, **kwargs) -> str:
     kind = (kwargs.get("kind", "") or "").strip()
     if kind not in counts:
         kind = ""
-    where = "WHERE s.kind = ? " if kind else ""
-    params = (kind,) if kind else ()
+    query = (kwargs.get("q", "") or "").strip()
+
+    clauses: list[str] = []
+    params: list = []
+    if kind:
+        clauses.append("s.kind = ?")
+        params.append(kind)
+    if query:
+        needle = f"%{query}%"
+        clauses.append("(s.title LIKE ? OR s.author LIKE ? OR s.note LIKE ? "
+                       "OR s.url LIKE ? OR s.license LIKE ? OR s.book_slug LIKE ?)")
+        params.extend([needle] * 6)
+    where = ("WHERE " + " AND ".join(clauses) + " ") if clauses else ""
     items = db.rows(conn,
                     "SELECT s.*, COUNT(c.id) n FROM sources s "
                     "LEFT JOIN citations c ON c.source_id=s.id "
                     f"{where}GROUP BY s.id ORDER BY s.kind, s.title", params)
     return web.render("sources.html", **base_context(
-        conn, active="sources", source_counts=counts, source_total=sum(counts.values()),
-        active_kind=kind, items=items,
+        conn, active="sources", source_counts=counts,
+        source_total=sum(counts.values()), active_kind=kind, query=query,
+        items=items, result_count=len(items),
+        manual_total=counts.get("manual", 0),
         page_sources=db.sources_for(conn, "page", "sources")))
 
 

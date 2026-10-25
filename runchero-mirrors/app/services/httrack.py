@@ -368,8 +368,9 @@ def _queue_loop() -> None:
     while True:
         conn = None
         try:
-            if _active_count() < config.MAX_CONCURRENT:
-                conn = db.connect()
+            conn = db.connect()
+            running = db.scalar(conn, "SELECT COUNT(*) FROM mirrors WHERE status='running'") or 0
+            if running < config.MAX_CONCURRENT:
                 row = db.one(
                     conn,
                     "SELECT * FROM mirrors WHERE status IN ('queued', 'crashed') "

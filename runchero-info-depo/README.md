@@ -22,7 +22,7 @@ single column on small screens.
 |------|---------------|
 | **Fixes & Notes** | 159 community articles: fault finding, servicing, crops, soil, growing, livestock, workshop, kitchen and safety. Cross linked with `[[wiki-links]]`, tables and step-by-step procedures. |
 | **Formula Shelf** | 359 formulas in 22 topics, ordered from the most-used everyday sums to advanced maths, statistics, finance, surveying, electrical and weather. Each one says what the symbols mean, what the units are, how to use it, and gives a worked example. |
-| **Machines** | 51 tractors, trucks, mowers and quads with engine, drive, power and the known weak points. The tractor index lists 65 brands; Ford is fully populated, the rest are ready for data. |
+| **Repair & Equipment** | 51 filed tractors, trucks, mowers and quads, plus a coverage menu of 49 equipment types and about 2,200 brand slots across vehicles, implements, outdoor power, workshop tools and garden tools. Ford tractors are fully populated; other brands are placeholders ready for manuals and specifications. |
 | **Library · Archive** | 1 489 real books from Project Gutenberg, 444 737 pages, 682 MB of plain text, across ten shelves and themed filters. Search, read in the browser, or download the `.txt`. |
 | **Library · Community** | The notes, grouped by shelf. |
 | **Library · Submit** | The submission form, deliberately switched off in this build. |
@@ -37,7 +37,7 @@ single column on small screens.
 | `/` | Dashboard |
 | `/section/<slug>` | A shelf of notes, with topic depots |
 | `/a/<slug>` | One note |
-| `/vehicles`, `/vehicles?type=…&make=…`, `/vehicles/<slug>` | Type to brand to model index and detail |
+| `/repair` (aliases `/vehicles`, `/equipment`), `?type=…&make=…`, `/vehicles/<slug>` | Repair equipment menu: type to brand to model index and detail |
 | `/library` | Library landing page |
 | `/library/archive`, `/library/archive/<slug>` | The book archive |
 | `/library/community`, `/library/community/<slug>` | Community notes |
