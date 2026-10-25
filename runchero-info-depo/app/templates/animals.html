@@ -84,4 +84,10 @@
 {% else %}
 <div class="empty">No animals match that search. Try a plainer word.</div>
 {% endfor %}
+
+{% set books_label = 'ALL ANIMAL BOOKS' %}
+{% set books_anchor = 'animal-books' %}
+{% set books_list_id = 'animal-books-list' %}
+{% set books_intro = 'The complete local livestock shelf. Filter the list by title or author, then open a record to read the book here.' %}
+{% include "_books_shelf.html" %}
 {% endblock %}

@@ -186,6 +186,14 @@ def register_routes() -> None:
          lambda conn, slug, **kw: views.collection_page(
              conn, slug, expected_kind="animal", **kw)))
     add(("GET", re.compile(r"^/kitchen$"), views.kitchen))
+    add(("GET", re.compile(r"^/farm$"),
+         lambda conn, **kw: views.group_index(conn, "farm", **kw)))
+    add(("GET", re.compile(r"^/workshop$"),
+         lambda conn, **kw: views.group_index(conn, "workshop", **kw)))
+    add(("GET", re.compile(r"^/survival$"),
+         lambda conn, **kw: views.group_index(conn, "survival", **kw)))
+    add(("GET", re.compile(r"^/home$"),
+         lambda conn, **kw: views.group_index(conn, "home", **kw)))
     add(("GET", re.compile(r"^/topic/(?P<slug>[a-z0-9-]+)$"),
          lambda conn, slug, **kw: views.collection_page(
              conn, slug, expected_kind="topic", **kw)))

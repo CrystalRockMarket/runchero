@@ -30,9 +30,9 @@ SOURCE_LABELS = {
 NAV = [
     {"slug": "grow", "label": "Grow", "icon": "seedling", "href": "/grow"},
     {"slug": "animals", "label": "Animals", "icon": "cow", "href": "/animals"},
-    {"slug": "farm", "label": "Farm", "icon": "wheat", "href": "/topic/farm"},
+    {"slug": "farm", "label": "Farm", "icon": "wheat", "href": "/farm"},
     {"slug": "kitchen", "label": "Kitchen", "icon": "jar", "href": "/kitchen"},
-    {"slug": "workshop", "label": "Workshop", "icon": "wrench", "href": "/topic/workshop"},
+    {"slug": "workshop", "label": "Workshop", "icon": "wrench", "href": "/workshop"},
     {"slug": "formulas", "label": "Formulas", "icon": "notes", "href": "/formulas"},
     {"slug": "conversions", "label": "Conversions", "icon": "clock", "href": "/conversions"},
     {"slug": "vehicles", "label": "Equipment", "icon": "tractor", "href": "/vehicles"},
@@ -128,6 +128,134 @@ KITCHEN_SUBGROUP_ORDER = [
     "cooking", "library", "overview",
 ]
 
+SHELF_INDEXES = {
+    "farm": {
+        "name": "Farm & Soil",
+        "short": "Farm",
+        "icon": "wheat",
+        "blurb": ("An index of the archive's soil, compost, water, hay, grain, "
+                  "pasture, fencing and seed-saving sources. Shelves are grouped "
+                  "by subject. Every card opens a depot of real books; nothing "
+                  "here is written advice."),
+        "href": "/farm",
+        "placeholder": "Filter by subject, tool, author...",
+        "button": "FILTER FARM",
+        "sort_label": "SUBJECT",
+        "sub_order": ["soil", "water", "hay-grain", "pasture-fencing",
+                      "seeds", "overview"],
+        "archive_cat": "lib-agriculture",
+        "book_categories": ("lib-agriculture",),
+        "books_label": "ALL FARM BOOKS",
+        "books_anchor": "farm-books",
+        "books_list_id": "farm-books-list",
+        "books_intro": ("The complete local farming shelf. Filter the list by "
+                        "title or author, then open a record to read the book here."),
+        "extra_chips": (("soil", "SOIL & COMPOST"),
+                        ("irrigation", "WATER & IRRIGATION")),
+        "empty": "No farm shelves match that filter. Try a plainer word.",
+    },
+    "workshop": {
+        "name": "Workshop & Making",
+        "short": "Workshop",
+        "icon": "wrench",
+        "blurb": ("An index of the archive's woodwork, metalwork, mechanics, "
+                  "building, plumbing and electrical sources. Shelves are grouped "
+                  "by trade. Every card opens a depot of real books and factory "
+                  "manuals; nothing here is written advice."),
+        "href": "/workshop",
+        "placeholder": "Filter by trade, tool, author...",
+        "button": "FILTER WORKSHOP",
+        "sort_label": "TRADE",
+        "sub_order": ["wood", "metal", "mechanical", "building",
+                      "electrical", "overview"],
+        "archive_cat": "lib-craft",
+        "book_categories": ("lib-craft", "lib-manuals"),
+        "books_label": "ALL WORKSHOP BOOKS",
+        "books_anchor": "workshop-books",
+        "books_list_id": "workshop-books-list",
+        "books_intro": ("The complete local workshop shelf, including factory "
+                        "manuals. Filter by title or author, then open a record "
+                        "to read it here."),
+        "extra_chips": (("woodwork", "WOODWORK"),
+                        ("metalwork", "METALWORK")),
+        "empty": "No workshop shelves match that filter. Try a plainer word.",
+    },
+    "survival": {
+        "name": "Survival & Preparedness",
+        "short": "Survival",
+        "icon": "shield",
+        "blurb": ("An index of the archive's foraging, wild food, water, shelter, "
+                  "first-aid and off-grid sources. Shelves are grouped by subject. "
+                  "Every card opens a depot of real books and reports; nothing here "
+                  "is written advice."),
+        "href": "/survival",
+        "placeholder": "Filter by subject, skill, author...",
+        "button": "FILTER SURVIVAL",
+        "sort_label": "SUBJECT",
+        "sub_order": ["food-water", "shelter", "first-aid", "overview"],
+        "archive_cat": "lib-survival",
+        "book_categories": ("lib-survival",),
+        "books_label": "ALL SURVIVAL BOOKS",
+        "books_anchor": "survival-books",
+        "books_list_id": "survival-books-list",
+        "books_intro": ("The complete local survival shelf. Filter the list by "
+                        "title or author, then open a record to read the book here."),
+        "extra_chips": (("first-aid", "FIRST AID"),
+                        ("foraging", "FORAGING")),
+        "empty": "No survival shelves match that filter. Try a plainer word.",
+    },
+    "home": {
+        "name": "Home & Health",
+        "short": "Home",
+        "icon": "firstaid",
+        "blurb": ("An index of the archive's home health, medicine, hygiene and "
+                  "household sources. Shelves are grouped by subject. Every card "
+                  "opens a depot of real books and reports; nothing here is "
+                  "written advice."),
+        "href": "/home",
+        "placeholder": "Filter by subject, remedy, author...",
+        "button": "FILTER HOME",
+        "sort_label": "SUBJECT",
+        "sub_order": ["health"],
+        "archive_cat": "lib-health",
+        "book_categories": ("lib-health",),
+        "books_label": "ALL HOME BOOKS",
+        "books_anchor": "home-books",
+        "books_list_id": "home-books-list",
+        "books_intro": ("The complete local home and health shelf. Filter the "
+                        "list by title or author, then open a record to read the "
+                        "book here."),
+        "extra_chips": (("home-health", "HOME & HEALTH"),),
+        "empty": "No home shelves match that filter. Try a plainer word.",
+    },
+}
+
+
+def _shelf_sort(items, sort: str, sub_order: list[str]) -> tuple[list, str]:
+    if sort == "name":
+        items.sort(key=lambda item: item["name"].lower())
+    elif sort == "sources":
+        items.sort(key=lambda item: (-item["source_count"], item["name"].lower()))
+    else:
+        sort = "group"
+        rank = {slug: index for index, slug in enumerate(sub_order)}
+        items.sort(key=lambda item: (rank.get(item["subgroup_slug"], 999),
+                                     item["name"].lower()))
+    return items, sort
+
+
+def _books_for(conn: sqlite3.Connection, categories, query: str = ""):
+    seen: dict[str, object] = {}
+    for category in categories:
+        for book in db.books(conn, category_slug=category):
+            seen.setdefault(book["slug"], book)
+    books = sorted(seen.values(), key=lambda book: book["title"])
+    if query:
+        needle = query.lower()
+        books = [book for book in books
+                 if needle in (book["title"] + " " + (book["author"] or "")).lower()]
+    return books
+
 
 def _grouped(items, order: dict[str, str],
              sub_order: list[str] | None = None) -> list[dict]:
@@ -197,6 +325,7 @@ def grow(conn: sqlite3.Connection, **kwargs) -> str:
         conn, active="grow", query=query, collections=items,
         featured=featured,
         groups=_grouped(items, collection_data.CROP_GROUPS),
+        books=_books_for(conn, ("lib-agriculture", "lib-rural"), query),
         recent=db.recent_collection_books(conn, "crop", limit=8),
         page_sources=db.sources_for(conn, "page", "grow"),
     ))
@@ -210,6 +339,7 @@ def animals(conn: sqlite3.Connection, **kwargs) -> str:
         conn, active="animals", query=query, collections=items,
         featured=featured,
         groups=_grouped(items, collection_data.ANIMAL_GROUPS),
+        books=_books_for(conn, ("lib-livestock",), query),
         recent=db.recent_collection_books(conn, "animal", limit=8),
         page_sources=db.sources_for(conn, "page", "animals"),
     ))
@@ -230,27 +360,42 @@ def kitchen(conn: sqlite3.Connection, **kwargs) -> str:
     sort = (kwargs.get("sort", "") or "food").strip()
     items = list(db.collections(conn, kind="topic", group="kitchen",
                                 query=query or None))
-    if sort == "name":
-        items.sort(key=lambda item: item["name"].lower())
-    elif sort == "sources":
-        items.sort(key=lambda item: (-item["source_count"], item["name"].lower()))
-    else:
-        sort = "food"
-        subgroup_rank = {slug: i for i, slug in enumerate(KITCHEN_SUBGROUP_ORDER)}
-        items.sort(key=lambda item: (
-            subgroup_rank.get(item["subgroup_slug"], 999),
-            item["name"].lower()))
-    books = list(db.books(conn, category_slug="lib-kitchen"))
-    if query:
-        needle = query.lower()
-        books = [book for book in books
-                 if needle in (book["title"] + " " + book["author"]).lower()]
+    items, sort = _shelf_sort(items, "group" if sort == "food" else sort,
+                              KITCHEN_SUBGROUP_ORDER)
     return web.render("kitchen.html", **base_context(
         conn, active="kitchen", query=query, sort=sort, collections=items,
         groups=_grouped(items, collection_data.TOPIC_GROUPS,
                         KITCHEN_SUBGROUP_ORDER),
-        kitchen_books=books,
+        books=_books_for(conn, ("lib-kitchen",), query),
+        books_label="ALL COOKBOOKS",
+        books_anchor="cookbook-shelf",
+        books_list_id="cookbook-list",
+        books_intro=("The complete local cookery shelf. Filter the list by title "
+                     "or author, then open a record to read the book here."),
+        books_aria="Filter the cookbook list",
+        books_placeholder="Filter cookbooks by title or author...",
         page_sources=db.sources_for(conn, "page", "kitchen"),
+    ))
+
+
+def group_index(conn: sqlite3.Connection, group: str, **kwargs) -> str:
+    meta = SHELF_INDEXES[group]
+    query = (kwargs.get("q", "") or "").strip()
+    sort = (kwargs.get("sort", "") or "group").strip()
+    items = list(db.collections(conn, kind="topic", group=group,
+                                query=query or None))
+    items, sort = _shelf_sort(items, sort, meta["sub_order"])
+    return web.render("shelf_group.html", **base_context(
+        conn, active=group, query=query, sort=sort, collections=items,
+        group_slug=group, meta=meta,
+        groups=_grouped(items, collection_data.TOPIC_GROUPS,
+                        meta["sub_order"]),
+        books=_books_for(conn, meta["book_categories"], query),
+        books_label=meta["books_label"],
+        books_anchor=meta["books_anchor"],
+        books_list_id=meta["books_list_id"],
+        books_intro=meta["books_intro"],
+        page_sources=db.sources_for(conn, "page", group),
     ))
 
 

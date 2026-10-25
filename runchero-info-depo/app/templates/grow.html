@@ -84,4 +84,10 @@
 {% else %}
 <div class="empty">No crops match that search. Try a plainer word.</div>
 {% endfor %}
+
+{% set books_label = 'ALL GROWING BOOKS' %}
+{% set books_anchor = 'grow-books' %}
+{% set books_list_id = 'grow-books-list' %}
+{% set books_intro = 'The complete local growing shelf. Filter the list by title or author, then open a record to read the book here.' %}
+{% include "_books_shelf.html" %}
 {% endblock %}
