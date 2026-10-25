@@ -10,7 +10,7 @@
   <h1 class="panel-title">
     <img src="{{ static_url('img/icons/' ~ meta.icon ~ '.png') }}" alt="">
     {{ meta.name|upper }}
-    <span class="count">{{ collections|length }} shelves</span>
+    <span class="count">{{ collections|length }} {{ meta.count_label }}</span>
   </h1>
   <p class="muted small">{{ meta.blurb }}</p>
   <form action="{{ meta.href }}" method="get" class="home-search mt">
@@ -27,37 +27,38 @@
     <a class="chip" href="#{{ meta.books_anchor }}">{{ meta.books_label }}</a>
     <a class="chip blue" href="/search?q={{ query|urlencode }}">SEARCH CHAPTERS</a>
     <a class="chip" href="/library/archive?cat={{ meta.archive_cat }}">ARCHIVE SHELF</a>
-    {% for slug, label in meta.extra_chips %}
-    <a class="chip green" href="/topic/{{ slug }}">{{ label }}</a>
+    {% for href, label in meta.extra_chips %}
+    <a class="chip green" href="{{ href }}">{{ label }}</a>
     {% endfor %}
   </div>
 </section>
 
-{% for group in groups %}
-  {% for sub in group.subgroups %}
-  <details class="panel mb index-group" id="{{ group_slug }}-{{ sub.slug }}" {% if query %}open{% endif %}>
-    <summary class="index-summary">
-      <img src="{{ static_url('img/icons/' ~ (sub['items'][0].icon if sub['items'] else meta.icon) ~ '.png') }}" alt="">
-      <span class="index-name">{{ sub.name|upper }}</span>
-      <span class="count">{{ sub['items']|length }} shelves</span>
-      <span class="index-arrow" aria-hidden="true">+</span>
-    </summary>
-    <div class="index-body">
-      <div class="cards depot-grid">
-        {% for item in sub['items'] %}
-        <div class="card depot-card">
-          <div class="chead">
-            <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
-            <span class="chip green">{{ item.source_count }} sources</span>
-          </div>
-          <div class="card-title"><a href="/topic/{{ item.slug }}">{{ item.name }}</a></div>
-          <p class="small">{{ item.summary|truncate(110) }}</p>
+{% for topic in topics %}
+<details class="panel mb index-group" id="{{ meta.key }}-{{ topic.slug }}" {% if query %}open{% endif %}>
+  <summary class="index-summary">
+    <img src="{{ static_url('img/icons/' ~ topic.icon ~ '.png') }}" alt="">
+    <span class="index-name">{{ topic.name|upper }}</span>
+    <span class="count">{{ topic['items']|length }} shelves</span>
+    <span class="index-arrow" aria-hidden="true">+</span>
+  </summary>
+  <div class="index-body">
+    <div class="cards depot-grid">
+      {% for item in topic['items'] %}
+      <div class="card depot-card">
+        <div class="chead">
+          <img src="{{ static_url('img/icons/' ~ item.icon ~ '.png') }}" alt="">
+          <span class="chip green">{{ item.source_count }} sources</span>
         </div>
-        {% endfor %}
+        <div class="card-title"><a href="{{ meta.href_prefix }}{{ item.slug }}">{{ item.name }}</a></div>
+        {% if meta.show_scientific and item.scientific %}
+        <div class="small muted"><i>{{ item.scientific }}</i></div>
+        {% endif %}
+        <p class="small">{{ item.summary|truncate(110) }}</p>
       </div>
+      {% endfor %}
     </div>
-  </details>
-  {% endfor %}
+  </div>
+</details>
 {% else %}
 <div class="empty">{{ meta.empty }}</div>
 {% endfor %}
