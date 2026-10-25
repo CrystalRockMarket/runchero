@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Admin login - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a><span class="separator">/</span>
+  <span class="current">Admin</span>
+</nav>
+<div class="panel admin-login">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/shield.png') }}" alt="">
+    ADMIN REVIEW
+  </h1>
+  {% if not configured %}
+  <div class="callout safety">
+    <strong>No admin password is configured.</strong>
+    On the server run <code>python3 tools/admin_password.py set</code>, then
+    restart the depot. Public submissions are still accepted while the queue
+    waits.
+  </div>
+  {% endif %}
+  {% if error %}<div class="callout safety mb">{{ error }}</div>{% endif %}
+  <p class="small muted">
+    Sign in to edit, approve or reject community submissions. Sessions last
+    twelve hours and are signed with this machine's local admin secret.
+  </p>
+  <form method="post" action="/admin/login" class="mt">
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <div class="field">
+      <label for="password">ADMIN PASSWORD</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password">
+    </div>
+    <button class="btn" type="submit" {% if not configured %}disabled{% endif %}>
+      <img src="{{ static_url('img/icons/check.png') }}" alt="">SIGN IN
+    </button>
+  </form>
+</div>
+{% endblock %}

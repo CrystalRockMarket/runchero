@@ -48,7 +48,7 @@ Covers are generated locally from the book metadata, so the archive needs no ima
 server and every book gets a jacket that matches the site palette.
 
 ### `app/db.py`
-SQLite with the FTS5 module. Schema version 2. Tables:
+SQLite with the FTS5 module. Schema version 5. Tables:
 
 | Table | Holds |
 |-------|-------|
@@ -62,7 +62,10 @@ SQLite with the FTS5 module. Schema version 2. Tables:
 | `citations` | many-to-many between sources and pages (`page_kind`, `page_slug`) |
 | `book_vehicles` | many-to-many between factory manuals and machines |
 | `books` | archive records: author, year, pages, bytes, sha256, relative path |
-| `submissions` | queued submissions (unused in the read-only build) |
+| `submissions` | legacy book-submission table (unused) |
+| `change_requests` | public brand/type/model/category/collection/source requests, review status and applied link |
+| `equipment_brands` | approved community brands merged into the repair menu |
+| `equipment_types` | approved community equipment types merged into the repair menu |
 | `glossary` | 54 terms |
 | `calendar` | 12 months of farm work |
 | `formula_topics` | the 22 topics the formula shelf is sorted into |
@@ -102,7 +105,9 @@ right status code.
 `ThreadingHTTPServer` with a table of `(method, pattern, handler)` tuples. Static
 files are served from `app/static/` with path traversal blocked and a safe content
 type per extension. Every response carries `X-Content-Type-Options: nosniff` and a
-referrer policy. `POST` always returns `405` with a read-only notice.
+referrer policy. `POST` accepts URL-encoded forms only: `/submit` stores a pending
+request, `/admin/login` sets a signed session, and `/admin/requests/<id>` saves,
+rejects or approves a request after a CSRF check. Admin responses are `no-store`.
 
 Query parameters are parsed with `parse_qs` and joined with commas, so a form can
 send the same name twice (`kind=article&kind=book`).
@@ -180,17 +185,18 @@ Formula results do not use the FTS snippet at all: the guidance (`how`) or the
 worked example is rendered in full, because a formula is short enough that a
 fragment would read worse than the whole thing.
 
-## Read-only build
+## Community submissions and admin review
 
-`RID_READ_ONLY` is on by default:
+`/submit` is open to anyone. A request is validated, stored as `pending` in
+`change_requests`, and never touches the catalogue directly. The public form uses
+a honeypot and an in-process rate limit. `/admin/login` checks a PBKDF2 password
+hash (or `RID_ADMIN_PASSWORD`) and sets an HMAC-signed, `HttpOnly`,
+`SameSite=Strict` cookie. Every admin write needs a CSRF token derived from that
+session. Approval inserts into the relevant table and stores the public link in
+`applied_ref`; rejection leaves the catalogue untouched.
 
-* `do_POST` drains the request body and answers `405` with
-  `Allow: GET, HEAD`.
-* The submission page renders as a notice instead of a form.
-* No runtime code writes to the database.
-
-That makes the whole depot safe to copy onto a memory stick and serve from any
-machine on the local network.
+`RID_READ_ONLY` defaults to `0` because this flow intentionally writes. The read
+counter and other incidental writes still stay off.
 
 ## Offline behaviour
 
@@ -214,7 +220,6 @@ machine on the local network.
   between 1500 and 1999. A wrong year is harmless, but it is worth a glance.
 * **Page counts are estimated** at 250 words per page, not counted from the file.
 * **The read counter is static.** A note's view count is set by the seed and never
-  incremented at runtime, because writing to the database would break the
-  read-only promise and lock the file when several requests land at once.
+  incremented at runtime; only explicit submissions and admin approvals write.
 * **One database connection per request thread.** SQLite refuses to share a
   connection between threads, so the connection lives in thread local storage.

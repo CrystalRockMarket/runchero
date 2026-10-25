@@ -692,3 +692,67 @@ KINDS = {
         "brands": WATERING_BRANDS,
     },
 }
+
+
+def merged_taxonomy(conn=None):
+    """Return (kinds, groups), including approved community additions.
+
+    Static coverage stays the base. Community equipment types are appended to
+    their chosen group, and community brands are merged into the matching kind.
+    A database row never overwrites a curated slug.
+    """
+    kinds = {
+        slug: {**meta, "brands": list(meta.get("brands", []))}
+        for slug, meta in KINDS.items()
+    }
+    groups = [
+        {**group, "kinds": list(group["kinds"])}
+        for group in GROUPS
+    ]
+    if conn is None:
+        return kinds, groups
+
+    for row in conn.execute(
+            "SELECT slug, label, group_slug, icon, description "
+            "FROM equipment_types ORDER BY label"):
+        slug = row["slug"]
+        if slug in kinds:
+            continue
+        group_slug = row["group_slug"] or "other"
+        kinds[slug] = {
+            "label": row["label"],
+            "icon": row["icon"] or "tool",
+            "group": group_slug,
+            "description": row["description"] or "",
+            "brands": [],
+            "origin": "community",
+        }
+        group = next((g for g in groups if g["slug"] == group_slug), None)
+        if group is None:
+            group = {
+                "slug": group_slug,
+                "name": group_slug.replace("-", " ").title() or "Other Equipment",
+                "icon": "tool",
+                "blurb": "Community-contributed equipment types.",
+                "kinds": [],
+            }
+            groups.append(group)
+        group["kinds"].append(slug)
+
+    for row in conn.execute(
+            "SELECT kind, name FROM equipment_brands ORDER BY name"):
+        meta = kinds.get(row["kind"])
+        if meta is not None:
+            meta["brands"].append(row["name"])
+
+    for meta in kinds.values():
+        seen: set[str] = set()
+        unique = []
+        for name in meta["brands"]:
+            name = (name or "").strip()
+            key = name.casefold()
+            if name and key not in seen:
+                seen.add(key)
+                unique.append(name)
+        meta["brands"] = unique
+    return kinds, groups

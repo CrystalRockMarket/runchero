@@ -30,6 +30,7 @@
     {% endfor %}
     <a class="chip green" href="/library/archive">BROWSE ALL BOOKS</a>
     <a class="chip blue" href="/library/archive?format=MANUAL">BROWSE ALL MANUALS</a>
+    <a class="chip sun" href="/submit?kind=source">SUGGEST A SOURCE</a>
   </div>
   {% if active_kind %}
   <p class="small mt">Showing only <b>{{ source_labels.get(active_kind, active_kind|upper) }}</b> records.

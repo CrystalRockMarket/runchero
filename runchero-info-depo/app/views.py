@@ -1,7 +1,7 @@
 """Request handlers.
 
-Read-only by design. Every handler renders a template or streams a file from
-the archive; nothing in this module can write to the database or the disk.
+Most handlers only read. The explicit exceptions are the public submission
+form and the administrator review actions, which write through ``app.contrib``.
 """
 from __future__ import annotations
 
@@ -11,7 +11,8 @@ import re
 import sqlite3
 from pathlib import Path
 
-from . import calculators, config, db, equipment as equipment_data, md, web
+from . import (admin as admin_auth, calculators, config, contrib, db,
+               equipment as equipment_data, md, web)
 from .seed import collections as collection_data
 from .seed.content import TOPIC_MAP
 from .seed.formulas import COMMON as COMMON_FORMULAS
@@ -63,15 +64,6 @@ ROLE_LABELS = {
 
 ROLE_ORDER = {role: index for index, role in enumerate(ROLE_LABELS)}
 
-EQUIPMENT_KIND_LABELS = {
-    slug: meta["label"] for slug, meta in equipment_data.KINDS.items()
-}
-EQUIPMENT_KIND_DESCRIPTIONS = {
-    slug: meta["description"] for slug, meta in equipment_data.KINDS.items()
-}
-EQUIPMENT_KIND_ICONS = {
-    slug: meta["icon"] for slug, meta in equipment_data.KINDS.items()
-}
 
 
 # --------------------------------------------------------------------------
@@ -81,12 +73,16 @@ def base_context(conn: sqlite3.Connection, **extra) -> dict:
     cats = db.categories(conn)
     nav_cats = [c for c in cats
                 if c["kind"] == "article" and c["parent_id"] is None]
+    equipment_kinds, _equipment_groups = equipment_data.merged_taxonomy(conn)
     context = {
         "conn": conn,
         "nav": NAV,
-        "equipment_kind_labels": EQUIPMENT_KIND_LABELS,
-        "equipment_kind_descriptions": EQUIPMENT_KIND_DESCRIPTIONS,
-        "equipment_kind_icons": EQUIPMENT_KIND_ICONS,
+        "equipment_kind_labels": {slug: meta["label"] for slug, meta in
+                                  equipment_kinds.items()},
+        "equipment_kind_descriptions": {slug: meta["description"] for slug, meta in
+                                        equipment_kinds.items()},
+        "equipment_kind_icons": {slug: meta["icon"] for slug, meta in
+                                 equipment_kinds.items()},
         "nav_categories": nav_cats,
         "library_categories": [c for c in cats if c["kind"] in ("library", "community")],
         "stats": db.stats(conn),
@@ -574,6 +570,10 @@ def redirect(location: str) -> tuple[int, dict, str]:
     return 301, {"Location": location, "Content-Length": "0"}, ""
 
 
+def see_other(location: str) -> tuple[int, dict, str]:
+    return 303, {"Location": location, "Content-Length": "0"}, ""
+
+
 
 def old_section(conn: sqlite3.Connection, slug: str, **_) -> tuple[int, dict, str]:
     if slug.startswith("vehicle"):
@@ -635,8 +635,7 @@ def article(conn: sqlite3.Connection, slug: str, **_) -> str:
     vehicle = None
     if row["vehicle_id"]:
         vehicle = db.one(conn, "SELECT * FROM vehicles WHERE id = ?", (row["vehicle_id"],))
-    # No write here on purpose: the depot is read-only at runtime, so the read
-    # counter stays as the seed left it.
+    # Incidental writes stay off; only submissions and admin approvals write.
     return web.render("article.html", **base_context(
         conn, active=row["category_slug"] or "", article=row,
         body_html=body_html, related=related, vehicle=vehicle,
@@ -653,23 +652,24 @@ def _merge_brand_names(configured, used) -> list[str]:
     return sorted(names.values(), key=lambda value: value.casefold())
 
 
-def _group_for_kind(kind: str) -> dict:
-    for group in equipment_data.GROUPS:
+def _group_for_kind(kind: str, groups) -> dict:
+    for group in groups:
         if kind in group["kinds"]:
             return group
     return {"slug": "", "name": "Repair & Equipment", "icon": "tractor"}
 
 
 def _equipment_catalog(conn: sqlite3.Connection):
+    kinds_meta, groups = equipment_data.merged_taxonomy(conn)
     items = [dict(item) for item in db.vehicles(conn)]
     by_kind: dict[str, list[dict]] = {}
     for item in items:
         by_kind.setdefault(item["kind"], []).append(item)
     catalog: list[dict] = []
-    for group in equipment_data.GROUPS:
+    for group in groups:
         kinds: list[dict] = []
         for kind_slug in group["kinds"]:
-            meta = equipment_data.KINDS.get(kind_slug)
+            meta = kinds_meta.get(kind_slug)
             if meta is None:
                 continue
             models = by_kind.get(kind_slug, [])
@@ -694,7 +694,7 @@ def _equipment_catalog(conn: sqlite3.Connection):
             continue
         extras.append({
             "slug": kind_slug,
-            "label": equipment_data.KINDS.get(kind_slug, {}).get(
+            "label": kinds_meta.get(kind_slug, {}).get(
                 "label", kind_slug.replace("-", " ").title()),
             "icon": "tool",
             "description": "Records filed under a legacy equipment type.",
@@ -709,6 +709,7 @@ def _equipment_catalog(conn: sqlite3.Connection):
 
 
 def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
+    kinds_meta, groups = equipment_data.merged_taxonomy(conn)
     catalog, items, by_kind = _equipment_catalog(conn)
     vehicle_type = (kwargs.get("type", "") or "").strip().lower()
     make = (kwargs.get("make", "") or "").strip()
@@ -718,7 +719,7 @@ def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
 
     if vehicle_type and not make:
         models = by_kind.get(vehicle_type, [])
-        meta = equipment_data.KINDS.get(vehicle_type, {
+        meta = kinds_meta.get(vehicle_type, {
             "label": vehicle_type.replace("-", " ").title(),
             "icon": "tool",
             "description": "Equipment records filed under this type.",
@@ -738,7 +739,7 @@ def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
             view="type", vehicle_type=vehicle_type,
             type_label=meta["label"], type_icon=meta["icon"],
             type_description=meta["description"],
-            group=_group_for_kind(vehicle_type),
+            group=_group_for_kind(vehicle_type, groups),
             brands=brand_rows, available_brands=available_brands,
             planned_brands=planned_brands, make="", models=[],
             vehicle_total=len(items),
@@ -754,7 +755,7 @@ def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
         models = [m for m in items
                   if m["make"].casefold() == make.casefold()
                   and (not vehicle_type or m["kind"] == vehicle_type)]
-        meta = equipment_data.KINDS.get(type_for_make, {
+        meta = kinds_meta.get(type_for_make, {
             "label": type_for_make.replace("-", " ").title(),
             "icon": "tool",
             "description": "Equipment records filed under this type.",
@@ -764,7 +765,7 @@ def vehicle_index(conn: sqlite3.Connection, **kwargs) -> str:
             view="brand", vehicle_type=type_for_make, make=make,
             type_label=meta["label"], type_icon=meta["icon"],
             type_description=meta["description"],
-            group=_group_for_kind(type_for_make),
+            group=_group_for_kind(type_for_make, groups),
             brands=[], models=models, brand_count=len(models),
             vehicle_total=len(items),
             type_total=sum(len(group["kinds"]) for group in catalog),
@@ -928,11 +929,257 @@ def community(conn: sqlite3.Connection, **kwargs) -> str:
     ))
 
 
-def submit(conn: sqlite3.Connection, **_) -> str:
-    pending = db.rows(conn, "SELECT * FROM submissions ORDER BY submitted_at DESC LIMIT 20")
-    return web.render("submit.html", **base_context(
-        conn, active="library", pending=pending,
+def _request_values(conn, kind: str, form: dict | None = None) -> dict:
+    values = {}
+    for field in contrib.field_specs(conn, kind):
+        values[field["name"]] = field.get("default", "")
+    if form:
+        for field in contrib.field_specs(conn, kind):
+            value = form.get(field["name"], "")
+            if isinstance(value, list):
+                value = value[-1] if value else ""
+            values[field["name"]] = value or ""
+    return values
+
+
+def _submit_page(conn, kind: str, values: dict, errors: dict, code: int = 200):
+    if kind not in contrib.REQUEST_KIND_LABELS:
+        kind = "brand"
+    body = web.render("submit.html", **base_context(
+        conn, active="library", request_kind=kind,
+        request_kinds=contrib.REQUEST_KIND_LABELS,
+        fields=contrib.field_specs(conn, kind), values=values, errors=errors,
         page_sources=db.sources_for(conn, "page", "submit")))
+    return body if code == 200 else (code, "text/html; charset=utf-8", body)
+
+
+def submit(conn: sqlite3.Connection, **kwargs) -> str:
+    kind = (kwargs.get("kind") or "brand").strip()
+    if kind not in contrib.REQUEST_KIND_LABELS:
+        kind = "brand"
+    values = _request_values(conn, kind)
+    if kind in ("brand", "model"):
+        if kwargs.get("equipment_kind"):
+            values["kind"] = kwargs["equipment_kind"]
+        if kwargs.get("make"):
+            values["make"] = kwargs["make"]
+    return _submit_page(conn, kind, values, {})
+
+
+def submit_post(conn: sqlite3.Connection, form: dict, client_ip: str = "", **kwargs):
+    if form.get("website"):
+        return see_other("/submit")
+    if not contrib.rate_ok(f"submit:{client_ip}", limit=6, window=600):
+        return (429, "text/html; charset=utf-8",
+                web.render("submit.html", **base_context(
+                    conn, active="library", request_kind="brand",
+                    request_kinds=contrib.REQUEST_KIND_LABELS,
+                    fields=contrib.field_specs(conn, "brand"),
+                    values=_request_values(conn, "brand", form),
+                    errors={"form": "Too many requests. Wait ten minutes and try again."},
+                    page_sources=db.sources_for(conn, "page", "submit"))))
+    kind = (form.get("request_kind", "") or "")
+    if isinstance(kind, list):
+        kind = kind[-1] if kind else ""
+    if kind not in contrib.REQUEST_KIND_LABELS:
+        return _submit_page(conn, "brand", _request_values(conn, "brand", form),
+                            {"form": "Choose a request type."}, 400)
+    values = _request_values(conn, kind, form)
+    payload, errors = contrib.parse_request(conn, kind, form)
+    if errors:
+        return _submit_page(conn, kind, values, errors, 400)
+    contact = form.get("contact", "")
+    if isinstance(contact, list):
+        contact = contact[-1] if contact else ""
+    request_id = contrib.create_request(conn, kind, payload, contact or "",
+                                        client_ip)
+    return web.render("submit_done.html", **base_context(
+        conn, active="library", request_id=request_id,
+        request_kind=kind, request_kind_label=contrib.REQUEST_KIND_LABELS[kind],
+        title=contrib.title_for(conn, kind, payload),
+        page_sources=db.sources_for(conn, "page", "submit")))
+
+
+def _admin_session(cookies: dict) -> str | None:
+    return admin_auth.session_from_cookies(cookies)
+
+
+def _admin_redirect() -> tuple[int, dict, str]:
+    return see_other("/admin/login")
+
+
+def admin_login(conn: sqlite3.Connection, cookies: dict, **kwargs):
+    if _admin_session(cookies):
+        return see_other("/admin")
+    body = web.render("admin_login.html", **base_context(
+        conn, active="", configured=admin_auth.configured(conn),
+        error="", next_url=kwargs.get("next", "/admin")))
+    return body
+
+
+def admin_login_post(conn: sqlite3.Connection, form: dict, cookies: dict,
+                     client_ip: str = "", **kwargs):
+    if not contrib.rate_ok(f"login:{client_ip}", limit=12, window=600):
+        body = web.render("admin_login.html", **base_context(
+            conn, active="", configured=admin_auth.configured(conn),
+            error="Too many attempts. Wait ten minutes.", next_url="/admin"))
+        return 429, "text/html; charset=utf-8", body
+    password = form.get("password", "")
+    if isinstance(password, list):
+        password = password[-1] if password else ""
+    if not admin_auth.configured(conn):
+        body = web.render("admin_login.html", **base_context(
+            conn, active="", configured=False,
+            error="No admin password has been set on this box.", next_url="/admin"))
+        return 503, "text/html; charset=utf-8", body
+    if not admin_auth.verify_password(conn, password or ""):
+        body = web.render("admin_login.html", **base_context(
+            conn, active="", configured=True, error="Wrong password.",
+            next_url="/admin"))
+        return 401, "text/html; charset=utf-8", body
+    token = admin_auth.make_session()
+    next_url = form.get("next", "/admin")
+    if isinstance(next_url, list):
+        next_url = next_url[-1] if next_url else "/admin"
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = "/admin"
+    return 303, {"Location": next_url,
+                 "Set-Cookie": admin_auth.cookie_header(token)}, ""
+
+
+def admin_logout(conn: sqlite3.Connection, form: dict, cookies: dict, **kwargs):
+    token = _admin_session(cookies)
+    if token and not admin_auth.check_csrf(token, form.get("csrf")):
+        return 400, "text/plain; charset=utf-8", "Bad CSRF token.\n"
+    return 303, {"Location": "/admin/login",
+                 "Set-Cookie": admin_auth.clear_cookie_header()}, ""
+
+
+def admin_dashboard(conn: sqlite3.Connection, cookies: dict, **kwargs) -> str:
+    token = _admin_session(cookies)
+    if not token:
+        return _admin_redirect()
+    status = (kwargs.get("status") or "pending").strip()
+    if status not in ("pending", "approved", "rejected", "all"):
+        status = "pending"
+    query = (kwargs.get("q") or "").strip()
+    sql = ("SELECT * FROM change_requests WHERE 1=1")
+    params: list = []
+    if status != "all":
+        sql += " AND status=?"
+        params.append(status)
+    if query:
+        sql += " AND (title LIKE ? OR kind LIKE ? OR payload LIKE ?)"
+        params.extend([f"%{query}%"] * 3)
+    sql += " ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END, submitted_at DESC"
+    requests = db.rows(conn, sql, params)
+    return web.render("admin.html", **base_context(
+        conn, active="", requests=requests, status=status, query=query,
+        counts=contrib.status_counts(conn),
+        csrf=admin_auth.csrf_token(token), configured=True))
+
+
+def admin_request(conn: sqlite3.Connection, request_id: str, cookies: dict,
+                  **kwargs):
+    token = _admin_session(cookies)
+    if not token:
+        return _admin_redirect()
+    row = db.one(conn, "SELECT * FROM change_requests WHERE id=?", (request_id,))
+    if row is None:
+        return not_found(conn)
+    try:
+        payload = json.loads(row["payload"] or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+    kind = row["kind"]
+    fields = contrib.field_specs(conn, kind) if kind in contrib.REQUEST_KIND_LABELS else []
+    values = {field["name"]: payload.get(field["name"], field.get("default", ""))
+              for field in fields}
+    done = (kwargs.get("done") or "").strip()
+    return web.render("admin_request.html", **base_context(
+        conn, active="", row=row, payload=payload, fields=fields, values=values,
+        errors={}, done=done, csrf=admin_auth.csrf_token(token)))
+
+
+def admin_request_post(conn: sqlite3.Connection, request_id: str, form: dict,
+                       cookies: dict, **kwargs):
+    token = _admin_session(cookies)
+    if not token:
+        return _admin_redirect()
+    if not admin_auth.check_csrf(token, form.get("csrf")):
+        return 400, "text/plain; charset=utf-8", "Bad CSRF token.\n"
+    row = db.one(conn, "SELECT * FROM change_requests WHERE id=?", (request_id,))
+    if row is None:
+        return not_found(conn)
+    action = form.get("action", "save")
+    if isinstance(action, list):
+        action = action[-1] if action else "save"
+    note = form.get("admin_note", "")
+    if isinstance(note, list):
+        note = note[-1] if note else ""
+    if action == "reject":
+        conn.execute(
+            "UPDATE change_requests SET status='rejected', admin_note=?, "
+            "reviewed_at=datetime('now'), reviewed_by='admin' WHERE id=?",
+            (note[:2000], request_id))
+        conn.commit()
+        return see_other(f"/admin/requests/{request_id}?done=rejected")
+    if action == "reopen":
+        conn.execute(
+            "UPDATE change_requests SET status='pending', admin_note=?, "
+            "reviewed_at=NULL, reviewed_by='' WHERE id=?",
+            (note[:2000], request_id))
+        conn.commit()
+        return see_other(f"/admin/requests/{request_id}?done=reopened")
+
+    kind = row["kind"]
+    if kind not in contrib.REQUEST_KIND_LABELS:
+        return 400, "text/plain; charset=utf-8", "Unknown request kind.\n"
+    payload, errors = contrib.parse_request(conn, kind, form)
+    if errors:
+        fields = contrib.field_specs(conn, kind)
+        values = _request_values(conn, kind, form)
+        body = web.render("admin_request.html", **base_context(
+            conn, active="", row=row, payload=payload, fields=fields,
+            values=values, errors=errors, done="", csrf=admin_auth.csrf_token(token)))
+        return 400, "text/html; charset=utf-8", body
+
+    if action == "approve":
+        if row["applied_ref"]:
+            message = ("This request was already applied. Reopen it only if you "
+                       "intend to create a separate record.")
+            body = web.render("admin_request.html", **base_context(
+                conn, active="", row=row, payload=payload,
+                fields=contrib.field_specs(conn, kind),
+                values={field["name"]: payload.get(field["name"], "")
+                        for field in contrib.field_specs(conn, kind)},
+                errors={"form": message}, done="",
+                csrf=admin_auth.csrf_token(token)))
+            return 409, "text/html; charset=utf-8", body
+        contrib.update_payload(conn, int(request_id), kind, payload)
+        ok, message, ref = contrib.apply_request(conn, int(request_id), kind, payload)
+        if not ok:
+            conn.rollback()
+            body = web.render("admin_request.html", **base_context(
+                conn, active="", row=row, payload=payload,
+                fields=contrib.field_specs(conn, kind),
+                values={field["name"]: payload.get(field["name"], "")
+                        for field in contrib.field_specs(conn, kind)},
+                errors={"form": message}, done="",
+                csrf=admin_auth.csrf_token(token)))
+            return 409, "text/html; charset=utf-8", body
+        conn.execute(
+            "UPDATE change_requests SET status='approved', admin_note=?, "
+            "applied_ref=?, reviewed_at=datetime('now'), reviewed_by='admin' "
+            "WHERE id=?", (note[:2000], ref, request_id))
+        conn.commit()
+        return see_other(f"/admin/requests/{request_id}?done=approved")
+
+    contrib.update_payload(conn, int(request_id), kind, payload)
+    conn.execute("UPDATE change_requests SET admin_note=? WHERE id=?",
+                 (note[:2000], request_id))
+    conn.commit()
+    return see_other(f"/admin/requests/{request_id}?done=saved")
 
 
 def formulas(conn: sqlite3.Connection, **kwargs) -> str:
@@ -1182,8 +1429,9 @@ def sources(conn: sqlite3.Connection, **kwargs) -> str:
     if query:
         needle = f"%{query}%"
         clauses.append("(s.title LIKE ? OR s.author LIKE ? OR s.note LIKE ? "
-                       "OR s.url LIKE ? OR s.license LIKE ? OR s.book_slug LIKE ?)")
-        params.extend([needle] * 6)
+                       "OR s.url LIKE ? OR s.license LIKE ? OR s.book_slug LIKE ? "
+                       "OR s.slug LIKE ?)")
+        params.extend([needle] * 7)
     where = ("WHERE " + " AND ".join(clauses) + " ") if clauses else ""
     items = db.rows(conn,
                     "SELECT s.*, COUNT(c.id) n FROM sources s "

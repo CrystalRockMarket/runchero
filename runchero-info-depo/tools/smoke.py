@@ -13,6 +13,7 @@ import json
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 RAW_LINK = re.compile(r"\[\[[^\]]+\]\]")
@@ -61,7 +62,10 @@ CHECKS: list[tuple[str, str, int]] = [
     ("/search?q=ford&source=manual", "source search", 200),
     ("/library/archive/farm-mechanics", "book", 200),
     ("/library/community", "old community redirect", 200),
-    ("/library/submit", "old submit redirect", 200),
+    ("/submit", "submission form", 200),
+    ("/submit?kind=brand", "brand submission", 200),
+    ("/submit?kind=source", "source submission", 200),
+    ("/admin/login", "admin login", 200),
     ("/section/growing", "old shelf redirect", 200),
     ("/formulas", "formulas", 200),
     ("/conversions", "conversions", 200),
@@ -117,6 +121,18 @@ def get(base: str, path: str, method: str = "GET"):
         return error.code, error.read()
 
 
+def post_form(base: str, path: str, data: dict[str, str]):
+    body = urllib.parse.urlencode(data).encode()
+    request = urllib.request.Request(
+        base + path, data=body, method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Smoke test the depot")
     parser.add_argument("--base", default="http://127.0.0.1:8080")
@@ -138,9 +154,10 @@ def main(argv: list[str] | None = None) -> int:
         print("  FAIL  the depot is empty")
         failures += 1
 
-    status, body = get(base, "/library/submit", method="POST")
-    print(f"  {'ok ' if status == 405 else 'FAIL'} {status:>3}  post is refused")
-    if status != 405:
+    status, body = post_form(base, "/submit",
+                             {"request_kind": "brand", "kind": "chainsaw"})
+    print(f"  {'ok ' if status == 400 else 'FAIL'} {status:>3}  invalid form is rejected")
+    if status != 400:
         failures += 1
 
     for path in LINK_PAGES:

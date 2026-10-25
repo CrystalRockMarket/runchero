@@ -13,7 +13,7 @@ from typing import Any, Iterable, Iterator
 
 from . import config
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -173,6 +173,47 @@ CREATE TABLE IF NOT EXISTS submissions (
     sha256       TEXT NOT NULL DEFAULT '',
     status       TEXT NOT NULL DEFAULT 'pending',
     submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS change_requests (
+    id           INTEGER PRIMARY KEY,
+    kind         TEXT NOT NULL,
+    title        TEXT NOT NULL DEFAULT '',
+    payload      TEXT NOT NULL DEFAULT '{}',
+    contact      TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL DEFAULT 'pending',
+    admin_note   TEXT NOT NULL DEFAULT '',
+    applied_ref  TEXT NOT NULL DEFAULT '',
+    ip           TEXT NOT NULL DEFAULT '',
+    submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+    reviewed_at  TEXT,
+    reviewed_by  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_change_requests_status
+    ON change_requests(status, submitted_at);
+
+CREATE TABLE IF NOT EXISTS equipment_brands (
+    id         INTEGER PRIMARY KEY,
+    kind       TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    url        TEXT NOT NULL DEFAULT '',
+    note       TEXT NOT NULL DEFAULT '',
+    origin     TEXT NOT NULL DEFAULT 'community',
+    request_id INTEGER REFERENCES change_requests(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(kind, name)
+);
+CREATE INDEX IF NOT EXISTS idx_equipment_brands_kind ON equipment_brands(kind);
+
+CREATE TABLE IF NOT EXISTS equipment_types (
+    slug        TEXT PRIMARY KEY,
+    label       TEXT NOT NULL,
+    group_slug  TEXT NOT NULL,
+    icon        TEXT NOT NULL DEFAULT 'tool',
+    description TEXT NOT NULL DEFAULT '',
+    origin      TEXT NOT NULL DEFAULT 'community',
+    request_id  INTEGER REFERENCES change_requests(id) ON DELETE SET NULL,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS glossary (

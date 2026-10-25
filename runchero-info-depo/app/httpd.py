@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import config, db, views, web
+from . import admin as admin_auth, config, db, views, web
 
 ROUTES: list[tuple[str, re.Pattern[str], object]] = []
 
@@ -69,21 +69,38 @@ class DepotHandler(BaseHTTPRequestHandler):
         self._dispatch("HEAD")
 
     def do_POST(self) -> None:
-        # The depot is read-only for now: nothing is accepted, ever.
         length = int(self.headers.get("Content-Length") or 0)
-        if length:
-            self.rfile.read(min(length, 1024 * 64))
-        self._send(405, "text/plain; charset=utf-8",
-                   "This depot is read-only. Submissions are disabled in this build.\n",
-                   extra={"Allow": "GET, HEAD"})
+        if length > config.MAX_FORM_BYTES:
+            self.close_connection = True
+            self._send(413, "text/plain; charset=utf-8",
+                       "That form is too large.\n",
+                       extra={"Allow": "GET, HEAD", "Connection": "close"})
+            return
+        raw = self.rfile.read(length) if length else b""
+        content_type = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip()
+        if content_type != "application/x-www-form-urlencoded":
+            self._send(415, "text/plain; charset=utf-8",
+                       "Forms must be application/x-www-form-urlencoded.\n",
+                       extra={"Allow": "GET, HEAD"})
+            return
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            self._send(400, "text/plain; charset=utf-8", "Bad form encoding.\n")
+            return
+        parsed_form = parse_qs(text, keep_blank_values=True)
+        form = {key: values[-1] if values else ""
+                for key, values in parsed_form.items()}
+        self._dispatch("POST", form=form)
 
     # -- routing ----------------------------------------------------------
-    def _dispatch(self, method: str) -> None:
+    def _dispatch(self, method: str, form: dict | None = None) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path) or "/"
         if len(path) > 1 and path.endswith("/"):
             path = path.rstrip("/") or "/"
         query = {k: ",".join(v) for k, v in parse_qs(parsed.query).items()}
+        cookies = admin_auth.parse_cookies(self.headers.get("Cookie"))
 
         if path.startswith("/static/"):
             self._serve_static(path[len("/static/"):])
@@ -99,6 +116,9 @@ class DepotHandler(BaseHTTPRequestHandler):
                     continue
                 kwargs = dict(match.groupdict())
                 kwargs.update(query)
+                kwargs["form"] = form or {}
+                kwargs["cookies"] = cookies
+                kwargs["client_ip"] = self.client_address[0]
                 result = handler(conn, **kwargs)
                 self._send_result(result)
                 return
@@ -143,7 +163,10 @@ class DepotHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
-        for key, value in (extra or {}).items():
+        headers = dict(extra or {})
+        if self.path.startswith("/admin"):
+            headers.setdefault("Cache-Control", "no-store")
+        for key, value in headers.items():
             self.send_header(key, value)
         self.end_headers()
         if self.command != "HEAD":
@@ -209,8 +232,16 @@ def register_routes() -> None:
          lambda conn, **kw: views.redirect("/grow")))
     add(("GET", re.compile(r"^/library/community/(?P<slug>[a-z0-9-]+)$"),
          lambda conn, slug, **kw: views.redirect(f"/search?q={slug.replace('-', ' ')}")))
-    add(("GET", re.compile(r"^/library/submit$"),
-         lambda conn, **kw: views.redirect("/library")))
+    add(("GET", re.compile(r"^/(?:submit|library/submit)$"), views.submit))
+    add(("POST", re.compile(r"^/(?:submit|library/submit)$"), views.submit_post))
+    add(("GET", re.compile(r"^/admin/login$"), views.admin_login))
+    add(("POST", re.compile(r"^/admin/login$"), views.admin_login_post))
+    add(("POST", re.compile(r"^/admin/logout$"), views.admin_logout))
+    add(("GET", re.compile(r"^/admin$"), views.admin_dashboard))
+    add(("GET", re.compile(r"^/admin/requests/(?P<request_id>[0-9]+)$"),
+         views.admin_request))
+    add(("POST", re.compile(r"^/admin/requests/(?P<request_id>[0-9]+)$"),
+         views.admin_request_post))
     add(("GET", re.compile(r"^/formulas$"), views.formulas))
     add(("GET", re.compile(r"^/conversions$"), views.conversions))
     add(("GET", re.compile(r"^/sources$"), views.sources))
@@ -288,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
     server = build(args.host, args.port)
     shown = "localhost" if args.host in ("0.0.0.0", "") else args.host
     print(f"{config.SITE_NAME} running on http://{shown}:{args.port}")
-    print("  read-only build: press Ctrl+C to stop")
+    print("  press Ctrl+C to stop")
 
     def shutdown(*_):
         threading.Thread(target=server.shutdown, daemon=True).start()

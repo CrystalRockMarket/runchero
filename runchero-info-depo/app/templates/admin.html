@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Admin review - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a><span class="separator">/</span>
+  <span class="current">Admin review</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/shield.png') }}" alt="">
+    SUBMISSION REVIEW
+    <span class="count">{{ counts.pending|default(0) }} pending</span>
+  </h1>
+  <p class="page-intro muted">
+    Review public suggestions before they enter the catalogue. Editing a request
+    changes what will be written when it is approved.
+  </p>
+  <div class="chips mt">
+    {% for key, label in [('pending','PENDING'), ('approved','APPROVED'), ('rejected','REJECTED'), ('all','ALL')] %}
+    <a class="chip {{ 'green' if status == key else '' }}" href="/admin?status={{ key }}">{{ label }}
+      <span class="count">{{ counts.get(key, counts.total if key == 'all' else 0) }}</span></a>
+    {% endfor %}
+    <a class="chip sun" href="/submit">PUBLIC FORM</a>
+  </div>
+  <form class="admin-search mt" method="get" action="/admin">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input type="search" name="q" value="{{ query }}" placeholder="Search title, kind or payload..." aria-label="Search requests">
+    <button class="btn ghost" type="submit">SEARCH</button>
+    {% if query %}<a class="btn ghost" href="/admin?status={{ status }}">CLEAR</a>{% endif %}
+  </form>
+</div>
+
+{% if requests %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr><th>#</th><th>TYPE</th><th>REQUEST</th><th>STATUS</th><th>SUBMITTED</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for row in requests %}
+      <tr>
+        <td class="nowrap">{{ row.id }}</td>
+        <td class="nowrap">{{ row.kind|replace('-', ' ')|upper }}</td>
+        <td><b>{{ row.title }}</b>{% if row.admin_note %}<div class="small muted">{{ row.admin_note|truncate(100) }}</div>{% endif %}</td>
+        <td><span class="chip {{ 'green' if row.status == 'approved' else ('sun' if row.status == 'pending' else '') }}">{{ row.status|upper }}</span></td>
+        <td class="nowrap">{{ row.submitted_at|prettydate }}</td>
+        <td><a class="btn ghost" href="/admin/requests/{{ row.id }}">OPEN</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">No {{ status if status != 'all' else '' }} requests found. The queue is clear.</div>
+{% endif %}
+
+<div class="panel mt">
+  <form method="post" action="/admin/logout">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn ghost" type="submit">SIGN OUT</button>
+  </form>
+</div>
+{% endblock %}

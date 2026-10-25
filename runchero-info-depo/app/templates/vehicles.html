@@ -24,6 +24,7 @@
     <span class="chip blue">{{ manual_total }} factory manuals</span>
     <a class="chip green" href="/library/archive?format=MANUAL">BROWSE MANUALS</a>
     <a class="chip" href="/sources?kind=manual#source-records">MANUAL SOURCES</a>
+    <a class="chip sun" href="/submit?kind=brand">SUBMIT A BRAND OR TYPE</a>
   </div>
   <div class="chips mt">
     {% for group in catalog %}
@@ -81,6 +82,7 @@
     {% if group.slug %}<a class="chip" href="/repair#repair-{{ group.slug }}">{{ group.name }}</a>{% endif %}
     <a class="chip green" href="/library/archive?q={{ type_label|urlencode }}">SEARCH BOOKS</a>
     <a class="chip blue" href="/sources?kind=manual&q={{ type_label|urlencode }}#source-records">SEARCH MANUALS</a>
+    <a class="chip sun" href="/submit?kind=brand&amp;equipment_kind={{ vehicle_type }}">SUBMIT A MISSING BRAND</a>
   </div>
 </div>
 
@@ -142,6 +144,7 @@
     <a class="chip" href="/repair?type={{ vehicle_type }}">All {{ type_label }} brands</a>
     {% if group.slug %}<a class="chip" href="/repair#repair-{{ group.slug }}">{{ group.name }}</a>{% endif %}
     <a class="chip" href="/repair">All repair</a>
+    <a class="chip sun" href="/submit?kind=model&amp;equipment_kind={{ vehicle_type }}&amp;make={{ make|urlencode }}">SUBMIT A MODEL OR CORRECTION</a>
   </div>
 </div>
 

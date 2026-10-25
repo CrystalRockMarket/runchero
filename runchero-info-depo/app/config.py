@@ -36,8 +36,17 @@ DEFAULT_PORT = int(os.environ.get("RID_PORT", "8080"))
 #: Hard cap for a single upload / download stream, 512 MB.
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
 
-#: Read-only mode: the UI hides every "edit / submit / delete" affordance.
-READ_ONLY = os.environ.get("RID_READ_ONLY", "1") not in ("0", "false", "no")
+#: Compatibility flag for read-only demos. Submissions/admin stay available.
+READ_ONLY = os.environ.get("RID_READ_ONLY", "0") not in ("0", "false", "no")
+
+#: Admin review panel. Set either RID_ADMIN_PASSWORD or store a hash with
+#: tools/admin_password.py. Sessions are signed with a local secret file.
+ADMIN_PASSWORD = os.environ.get("RID_ADMIN_PASSWORD", "")
+ADMIN_SECRET = os.environ.get("RID_ADMIN_SECRET", "")
+ADMIN_SESSION_SECONDS = int(os.environ.get("RID_ADMIN_SESSION_HOURS", "12")) * 3600
+
+#: Public request limits.
+MAX_FORM_BYTES = 256 * 1024
 
 
 def ensure_dirs() -> None:

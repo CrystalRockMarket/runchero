@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Request received - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/library">Library</a><span class="separator">/</span>
+  <span class="current">Request received</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/check.png') }}" alt="">
+    REQUEST RECEIVED
+    <span class="count">#{{ request_id }}</span>
+  </h1>
+  <p class="page-intro">
+    Thanks. <b>{{ title }}</b> has been added to the review queue as a
+    {{ request_kind_label|lower }} request. It will not appear in the catalogue
+    until an administrator approves it.
+  </p>
+  <div class="chips mt">
+    <a class="chip green" href="/submit?kind={{ request_kind }}">SUBMIT ANOTHER</a>
+    <a class="chip" href="/repair">BROWSE REPAIR</a>
+    <a class="chip" href="/sources">BROWSE SOURCES</a>
+  </div>
+  <p class="small muted mt">Keep this reference number: <b>#{{ request_id }}</b>. No account is needed.</p>
+</div>
+{% endblock %}

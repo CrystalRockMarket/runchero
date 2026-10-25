@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Request #{{ row.id }} - {{ site_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/admin?status=all">Admin review</a><span class="separator">/</span>
+  <span class="current">Request #{{ row.id }}</span>
+</nav>
+<div class="panel mb">
+  <h1 class="panel-title">
+    <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+    {{ row.title|upper }}
+    <span class="count">#{{ row.id }}</span>
+  </h1>
+  <div class="chips mt">
+    <span class="chip">{{ row.kind|replace('-', ' ')|upper }}</span>
+    <span class="chip {{ 'green' if row.status == 'approved' else ('sun' if row.status == 'pending' else '') }}">{{ row.status|upper }}</span>
+    <span class="chip">SUBMITTED {{ row.submitted_at|prettydate }}</span>
+  </div>
+  {% if row.contact %}<p class="small muted mt">Contact: {{ row.contact }}</p>{% endif %}
+  {% if row.applied_ref %}
+  <p class="mt"><b>Applied at:</b> <a href="{{ row.applied_ref }}">{{ row.applied_ref }}</a></p>
+  {% endif %}
+</div>
+
+{% if done == 'approved' %}<div class="callout tip mb"><strong>Approved.</strong> The new record has been written to the catalogue.</div>{% endif %}
+{% if done == 'rejected' %}<div class="callout safety mb"><strong>Rejected.</strong> Nothing was published.</div>{% endif %}
+{% if done == 'reopened' %}<div class="callout mb"><strong>Reopened.</strong> The request is pending again.</div>{% endif %}
+{% if done == 'saved' %}<div class="callout tip mb"><strong>Saved.</strong> The request remains in its current status.</div>{% endif %}
+{% if errors %}
+<div class="callout safety mb">
+  <strong>Could not apply this request.</strong>
+  {% if errors.form %}{{ errors.form }}{% else %}Check the fields below.{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="/admin/requests/{{ row.id }}" class="request-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="panel mb">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/notes.png') }}" alt="">
+      EDIT REQUEST
+    </div>
+    {% for field in fields %}
+    {% set value = values.get(field.name, '') %}
+    <div class="field">
+      <label for="f-{{ field.name }}">{{ field.label|upper }}{% if field.required %} *{% endif %}</label>
+      {% if field.type == 'select' %}
+      <select id="f-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+        {% if not field.required %}<option value="">- none -</option>{% endif %}
+        {% for option in field.options %}
+        <option value="{{ option.value }}" {% if value|string == option.value|string %}selected{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+      </select>
+      {% elif field.type == 'textarea' %}
+      <textarea id="f-{{ field.name }}" name="{{ field.name }}"
+                {% if field.required %}required{% endif %}
+                {% if field.maxlength %}maxlength="{{ field.maxlength }}"{% endif %}
+                placeholder="{{ field.placeholder|default('') }}">{{ value }}</textarea>
+      {% else %}
+      <input type="{{ field.type }}" id="f-{{ field.name }}" name="{{ field.name }}"
+             value="{{ value }}"
+             {% if field.required %}required{% endif %}
+             {% if field.maxlength %}maxlength="{{ field.maxlength }}"{% endif %}
+             {% if field.min is defined %}min="{{ field.min }}"{% endif %}
+             {% if field.max %}max="{{ field.max }}"{% endif %}
+             placeholder="{{ field.placeholder|default('') }}">
+      {% endif %}
+      {% if errors.get(field.name) %}<div class="field-error">{{ errors[field.name] }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="field">
+      <label for="admin_note">REVIEW NOTE</label>
+      <textarea id="admin_note" name="admin_note" maxlength="2000"
+                placeholder="Why this was edited, rejected or held">{{ row.admin_note }}</textarea>
+      <div class="hint">Stored with the request. Approved notes are not shown publicly.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <img src="{{ static_url('img/icons/check.png') }}" alt="">
+      DECISION
+    </div>
+    <p class="small muted">
+      Approving writes the edited values into the catalogue. Rejecting leaves the
+      catalogue untouched. Save keeps the request at its current status.
+    </p>
+    <div class="chips mt">
+      <button class="btn ghost" type="submit" name="action" value="save">SAVE EDITS</button>
+      {% if not row.applied_ref and row.status != 'approved' %}
+      <button class="btn" type="submit" name="action" value="approve">APPROVE &amp; PUBLISH</button>
+      {% endif %}
+      {% if row.status == 'pending' %}
+      <button class="btn sun" type="submit" name="action" value="reject">REJECT</button>
+      {% elif row.status == 'rejected' %}
+      <button class="btn ghost" type="submit" name="action" value="reopen">REOPEN</button>
+      {% endif %}
+    </div>
+    {% if row.applied_ref %}
+    <p class="small muted mt">This request has already been applied. Use “Save edits” only for the review note, or reopen it only if you intend a separate record.</p>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}
