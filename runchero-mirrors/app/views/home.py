@@ -79,7 +79,7 @@ def _failed(conn):
         "COALESCE(s.files_saved,0) files_saved, COALESCE(s.bytes_saved,0) bytes_saved, "
         "COALESCE(s.rate_bps,0) rate_bps "
         "FROM mirrors m LEFT JOIN mirror_stats s ON s.mirror_id=m.id "
-        "WHERE m.status IN ('failed','cancelled') "
+        "    WHERE m.status IN ('failed','cancelled','crashed') "
         "ORDER BY m.updated_at DESC, m.id DESC LIMIT 12",
     ))
 
@@ -95,7 +95,7 @@ def _counts(conn) -> dict[str, int]:
         "COALESCE(SUM(s.files_saved),0) files, "
         "COALESCE(SUM(s.bytes_saved),0) bytes "
         "FROM mirror_stats s JOIN mirrors m ON m.id=s.mirror_id "
-        "WHERE m.status='completed'",
+        "WHERE m.status='completed' OR (m.status='crashed' AND m.entry_path <> '')",
     )
     counts["total_pages"] = int(totals["pages"] if totals else 0)
     counts["total_files"] = int(totals["files"] if totals else 0)

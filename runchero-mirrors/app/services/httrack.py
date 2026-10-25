@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
 import re
 import shutil
@@ -16,7 +17,7 @@ from urllib.parse import unquote, urlparse
 from .. import config, crawl_options, db
 
 _lock = threading.Lock()
-_active: dict[int, subprocess.Popen] = {}
+_active: dict[int, object] = {}
 _worker: threading.Thread | None = None
 
 PAGE_SUFFIXES = {
@@ -38,6 +39,42 @@ def looks_like_html(path: Path) -> bool:
     return any(marker in head for marker in (b"<html", b"<!doctype html", b"<head", b"<body"))
 
 
+class _ProcessHandle:
+    def __init__(self, proc=None, pid: int | None = None):
+        self._proc = proc
+        self._pid = pid if pid else (proc.pid if proc else None)
+        self.returncode = None
+
+    @property
+    def pid(self) -> int | None:
+        return self._pid
+
+    def poll(self):
+        if self._proc is not None:
+            rc = self._proc.poll()
+            if rc is not None:
+                self.returncode = rc
+                return rc
+            return None
+        try:
+            os.kill(int(self._pid), 0)
+        except OSError:
+            self.returncode = 1
+            return 1
+        return None
+
+    def wait(self, timeout=None):
+        if self._proc is not None:
+            return self._proc.wait(timeout)
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while True:
+            if self.poll() is not None:
+                return self.returncode
+            if deadline is not None and time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired(self._pid, timeout)
+            time.sleep(0.25)
+
+
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
@@ -53,7 +90,6 @@ def _now() -> str:
 
 
 def _clock(value: float) -> str:
-    # Database timestamps are UTC; keep file mtimes in the same frame.
     return dt.datetime.utcfromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -94,7 +130,6 @@ def _pid_alive(pid: int | None) -> bool:
 
 
 def _pid_is_httrack(pid: int | None) -> bool:
-    """Guard against recycled PIDs when cleaning up after a restart."""
     if not pid:
         return False
     try:
@@ -105,7 +140,6 @@ def _pid_is_httrack(pid: int | None) -> bool:
 
 
 def _scan_tree(root: Path) -> tuple[int, int, int, str | None]:
-    """Return (pages, files, bytes, newest_file_time)."""
     pages = files = total = 0
     newest: float | None = None
     if not root.exists():
@@ -127,9 +161,6 @@ def _scan_tree(root: Path) -> tuple[int, int, int, str | None]:
             total += stat.st_size
             if stat.st_mtime > (newest or 0):
                 newest = stat.st_mtime
-            # HTTrack writes unfinished pages as name.html.tmp and only renames
-            # them when the download is complete. Count those as pages now so
-            # the progress panel is honest during a crawl.
             real_name = name[:-4] if name.lower().endswith(".tmp") else name
             if Path(real_name).suffix.lower() in PAGE_SUFFIXES:
                 pages += 1
@@ -137,7 +168,6 @@ def _scan_tree(root: Path) -> tuple[int, int, int, str | None]:
 
 
 def _candidate_entries(root: Path, source_url: str) -> list[Path]:
-    """Find HTML files that could be the front door of the mirror."""
     parsed = urlparse(source_url)
     host = (parsed.netloc or "").lower()
     lookup = unquote(parsed.path or "/")
@@ -208,7 +238,6 @@ def _candidate_entries(root: Path, source_url: str) -> list[Path]:
 
 
 def find_entry(root: Path, source_url: str) -> tuple[str, str]:
-    """Return (entry_path, serve_root), both relative to the mirror root."""
     root = root.resolve()
     for candidate in _candidate_entries(root, source_url):
         try:
@@ -259,21 +288,65 @@ def _tail(path: Path, lines: int = 60) -> str:
 # --------------------------------------------------------------------------
 
 def recover(conn) -> None:
-    """Close out jobs left running by a previous server process."""
     stale = db.rows(
         conn,
-        "SELECT * FROM mirrors WHERE status IN ('running', 'paused', 'starting')",
+        "SELECT * FROM mirrors WHERE status IN ('running', 'paused', 'starting', 'failed')",
     )
+    active_count = db.scalar(
+        conn,
+        "SELECT COUNT(*) FROM mirrors WHERE status IN ('running', 'paused', 'starting')",
+    ) or 0
     for row in stale:
-        if _pid_is_httrack(row["pid"]):
-            _kill_group(row["pid"], signal.SIGCONT)
-            _kill_group(row["pid"], signal.SIGTERM)
-        conn.execute(
-            "UPDATE mirrors SET status='failed', pid=NULL, finished_at=?, "
-            "updated_at=?, error_log=CASE WHEN error_log='' THEN ? ELSE error_log END "
-            "WHERE id=?",
-            (_now(), _now(), "The depot restarted while this download was running. Retry it.", row["id"]),
-        )
+        mirror_id = int(row["id"])
+        outdir = _mirror_dir(row)
+        pid = row["pid"]
+        if _pid_alive(pid) and _pid_is_httrack(pid):
+            handle = _ProcessHandle(pid=pid)
+            with _lock:
+                _active[mirror_id] = handle
+            watcher = threading.Thread(
+                target=_monitor,
+                args=(mirror_id, handle, outdir),
+                name=f"mirror-{mirror_id}",
+                daemon=True,
+            )
+            watcher.start()
+            continue
+
+        pages, files, total, newest = _scan_tree(outdir)
+        entry, serve_root = (find_entry(outdir, row["url"]) if pages > 0 else ("", ""))
+        options = json.loads(row["options_json"] or "{}")
+        options["keep_existing"] = True
+        if pages > 0 or files > 0:
+            error = row["error_log"] or "Crashed or interrupted during download. Partial copy saved."
+            if "restarted while this download was running" not in error:
+                error = f"{error}\nThe depot restarted while this download was running. Resume to continue."
+            conn.execute(
+                "UPDATE mirrors SET status='crashed', pid=NULL, partial_copy=1, speed=?, "
+                "options_json=?, error_log=?, recovery_notes=?, entry_path=?, serve_root=?, "
+                "last_activity=?, updated_at=? WHERE id=?",
+                (
+                    row["speed"], crawl_options.dump(options),
+                    error, "The depot restarted while this download was running.", entry, serve_root,
+                    newest or _now(), _now(), mirror_id,
+                ),
+            )
+            db.record_progress(conn, mirror_id, pages, files, total, 0, 0, 0)
+            db.refresh_file_progress(conn, mirror_id, outdir)
+            if active_count < config.MAX_CONCURRENT:
+                conn.execute(
+                    "UPDATE mirrors SET status='queued', started_at=NULL, finished_at=NULL, "
+                    "last_activity=NULL WHERE id=? AND status='crashed'",
+                    (mirror_id,),
+                )
+                active_count += 1
+        else:
+            conn.execute(
+                "UPDATE mirrors SET status='failed', pid=NULL, finished_at=?, "
+                "updated_at=?, error_log=CASE WHEN error_log='' THEN ? ELSE error_log END "
+                "WHERE id=?",
+                (_now(), _now(), "The depot restarted while this download was running. Retry it.", mirror_id),
+            )
     conn.commit()
 
 
@@ -299,13 +372,13 @@ def _queue_loop() -> None:
                 conn = db.connect()
                 row = db.one(
                     conn,
-                    "SELECT * FROM mirrors WHERE status='queued' "
+                    "SELECT * FROM mirrors WHERE status IN ('queued', 'crashed') "
                     "ORDER BY created_at ASC, id ASC LIMIT 1",
                 )
                 if row is not None:
                     claimed = conn.execute(
                         "UPDATE mirrors SET status='starting', updated_at=? "
-                        "WHERE id=? AND status='queued'",
+                        "WHERE id=? AND status IN ('queued', 'crashed')",
                         (_now(), row["id"]),
                     )
                     conn.commit()
@@ -331,10 +404,14 @@ def _queue_loop() -> None:
         time.sleep(1.0)
 
 
+def _load_options(row) -> dict:
+    return crawl_options.resolve(row["speed"] or config.DEFAULT_SPEED, row["options_json"])
+
+
 def start_process(conn, row) -> bool:
     mirror_id = int(row["id"])
     fresh = db.one(conn, "SELECT status, cancel_requested FROM mirrors WHERE id=?", (mirror_id,))
-    if not fresh or fresh["status"] != "starting" or fresh["cancel_requested"]:
+    if not fresh or fresh["status"] not in ("starting", "crashed") or fresh["cancel_requested"]:
         return False
     if not available():
         conn.execute(
@@ -347,8 +424,9 @@ def start_process(conn, row) -> bool:
         return False
 
     speed = row["speed"] or config.DEFAULT_SPEED
-    options = crawl_options.resolve(speed, row["options_json"])
+    options = _load_options(row)
     keep_existing = bool(options["keep_existing"])
+    rate = int(options["rate"])
     outdir = _mirror_dir(row)
     cache = _cache_dir(row)
     logfile = log_path(row)
@@ -368,6 +446,16 @@ def start_process(conn, row) -> bool:
     outdir.mkdir(parents=True, exist_ok=True)
     cache.mkdir(parents=True, exist_ok=True)
     logfile.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = db.one(
+        conn,
+        "SELECT pages_saved, files_saved, bytes_saved FROM mirror_stats WHERE mirror_id=?",
+        (mirror_id,),
+    )
+    if existing and keep_existing:
+        pages, files, total = int(existing["pages_saved"] or 0), int(existing["files_saved"] or 0), int(existing["bytes_saved"] or 0)
+    else:
+        pages, files, total = 0, 0, 0
 
     scope = "--stay-on-same-domain" if options["scope"] == "domain" else "--stay-on-same-address"
     cmd = [
@@ -397,12 +485,20 @@ def start_process(conn, row) -> bool:
         env["LD_LIBRARY_PATH"] = config.HTTRACK_LIB + ":" + env.get("LD_LIBRARY_PATH", "")
 
     started = _now()
+    entry_path = row["entry_path"] or ""
+    serve_root = row["serve_root"] or ""
+    if keep_existing and not entry_path and outdir.exists():
+        found_entry, found_root = find_entry(outdir, row["url"])
+        if found_entry:
+            entry_path = found_entry
+            serve_root = found_root
+
     prepared = conn.execute(
         "UPDATE mirrors SET status='starting', pid=NULL, speed=?, started_at=?, "
-        "finished_at=NULL, entry_path='', serve_root='', "
+        "finished_at=NULL, entry_path=?, serve_root=?, "
         "last_activity=NULL, updated_at=?, error_log='' "
-        "WHERE id=? AND status='starting' AND cancel_requested=0",
-        (speed, started, started, mirror_id),
+        "WHERE id=? AND status IN ('starting', 'crashed') AND cancel_requested=0",
+        (speed, started, entry_path, serve_root, started, mirror_id),
     )
     conn.commit()
     if prepared.rowcount != 1:
@@ -410,10 +506,11 @@ def start_process(conn, row) -> bool:
     conn.execute(
         "INSERT INTO mirror_stats(mirror_id, pages_saved, files_saved, bytes_saved, "
         "links_processed, errors_count, rate_bps, updated_at) "
-        "VALUES(?, 0, 0, 0, 0, 0, 0, ?) "
-        "ON CONFLICT(mirror_id) DO UPDATE SET pages_saved=0, files_saved=0, "
-        "bytes_saved=0, links_processed=0, errors_count=0, rate_bps=0, updated_at=excluded.updated_at",
-        (mirror_id, started),
+        "VALUES(?, ?, ?, ?, ?, 0, ?, ?) "
+        "ON CONFLICT(mirror_id) DO UPDATE SET pages_saved=excluded.pages_saved, "
+        "files_saved=excluded.files_saved, bytes_saved=excluded.bytes_saved, "
+        "rate_bps=excluded.rate_bps, updated_at=excluded.updated_at",
+        (mirror_id, pages, files, total, 0, rate, _now()),
     )
     conn.commit()
 
@@ -424,7 +521,7 @@ def start_process(conn, row) -> bool:
         log_handle.write(
             (
                 f"Source: {row['url']}\n"
-                f"Speed: {speed} · depth {options['depth']} · "
+                f"Speed: {row['speed']} · depth {options['depth']} · "
                 f"{max(1, round(options['rate'] / 1000))} KB/s · "
                 f"{options['sockets']} connection(s)\n"
                 f"Limits: {options['max_bytes'] / 1_000_000:g} MB, "
@@ -479,11 +576,12 @@ def start_process(conn, row) -> bool:
         )
         conn.commit()
         return False
+    handle = _ProcessHandle(proc)
     with _lock:
-        _active[mirror_id] = proc
+        _active[mirror_id] = handle
     watcher = threading.Thread(
         target=_monitor,
-        args=(mirror_id, proc, outdir),
+        args=(mirror_id, handle, outdir),
         name=f"mirror-{mirror_id}",
         daemon=True,
     )
@@ -495,7 +593,7 @@ def start_process(conn, row) -> bool:
 # monitoring
 # --------------------------------------------------------------------------
 
-def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
+def _monitor(mirror_id: int, handle: _ProcessHandle, outdir: Path) -> None:
     conn = None
     last_bytes = 0
     last_time = time.monotonic()
@@ -504,7 +602,7 @@ def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
         db.init_db(conn)
         last_scan = 0.0
         while True:
-            rc = proc.poll()
+            rc = handle.poll()
             status = db.scalar(conn, "SELECT status FROM mirrors WHERE id=?", (mirror_id,))
             now_mono = time.monotonic()
             if rc is None and now_mono - last_scan >= 2.0:
@@ -533,21 +631,20 @@ def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
             if rc is not None:
                 break
             if status == "cancelled":
-                _kill_group(proc.pid, signal.SIGCONT)
-                _kill_group(proc.pid, signal.SIGTERM)
+                _kill_group(handle.pid, signal.SIGCONT)
+                _kill_group(handle.pid, signal.SIGTERM)
                 try:
-                    proc.wait(timeout=10)
+                    handle.wait(timeout=10)
                 except subprocess.TimeoutExpired:
-                    _kill_group(proc.pid, signal.SIGKILL)
+                    _kill_group(handle.pid, signal.SIGKILL)
                 break
             time.sleep(0.5)
 
-        # Final state. The row may have been cancelled by a button while the
-        # process was finishing, so always re-read it before deciding.
         row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
         if row is None:
             return
         pages, files, total, newest = _scan_tree(outdir)
+        db.refresh_file_progress(conn, mirror_id, outdir)
         status = row["status"]
         if status == "cancelled":
             final_status = "cancelled"
@@ -556,7 +653,7 @@ def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
             entry, serve_root = find_entry(outdir, row["url"])
             if pages > 0 and entry:
                 final_status = "completed"
-                error = "" if proc.returncode == 0 else _tail(log_path(row), 20)
+                error = "" if handle.returncode == 0 or handle.returncode is None else _tail(log_path(row), 20)
             else:
                 final_status = "failed"
                 error = (
@@ -566,15 +663,7 @@ def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
                 technical = _tail(log_path(row), 25)
                 if technical:
                     error += "\n\n" + technical
-        conn.execute(
-            "INSERT INTO mirror_stats(mirror_id, pages_saved, files_saved, bytes_saved, "
-            "links_processed, errors_count, rate_bps, updated_at) "
-            "VALUES(?, ?, ?, ?, ?, 0, 0, ?) "
-            "ON CONFLICT(mirror_id) DO UPDATE SET pages_saved=excluded.pages_saved, "
-            "files_saved=excluded.files_saved, bytes_saved=excluded.bytes_saved, "
-            "rate_bps=0, updated_at=excluded.updated_at",
-            (mirror_id, pages, files, total, pages, _now()),
-        )
+        db.record_progress(conn, mirror_id, pages, files, total, pages, 0, 0)
         if final_status == "completed":
             conn.execute(
                 "UPDATE mirrors SET status='completed', pid=NULL, finished_at=?, "
@@ -598,7 +687,7 @@ def _monitor(mirror_id: int, proc: subprocess.Popen, outdir: Path) -> None:
     except Exception:
         traceback.print_exc()
         try:
-            _kill_group(proc.pid, signal.SIGTERM)
+            _kill_group(handle.pid, signal.SIGTERM)
         except Exception:
             pass
         if conn is not None:
@@ -636,13 +725,23 @@ def enqueue(conn, mirror_id: int) -> None:
 
 def retry(conn, mirror_id: int) -> bool:
     row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
-    if not row or row["status"] not in ("failed", "cancelled"):
+    if not row or row["status"] not in ("failed", "cancelled", "crashed"):
         return False
+    options = json.loads(row["options_json"] or "{}")
+    if row["status"] == "crashed":
+        outdir = Path(row["output_dir"])
+        pages, files, total, newest = _scan_tree(outdir)
+        if pages > 0 or files > 0:
+            options["keep_existing"] = True
+        else:
+            options["keep_existing"] = False
+    else:
+        options["keep_existing"] = False
     conn.execute(
-        "UPDATE mirrors SET status='queued', pid=NULL, cancel_requested=0, "
-        "entry_path='', serve_root='', started_at=NULL, finished_at=NULL, "
-        "last_activity=NULL, error_log='', updated_at=? WHERE id=?",
-        (_now(), mirror_id),
+        "UPDATE mirrors SET status='queued', speed=?, options_json=?, pid=NULL, "
+        "cancel_requested=0, entry_path='', serve_root='', started_at=NULL, "
+        "finished_at=NULL, last_activity=NULL, error_log='', updated_at=? WHERE id=?",
+        (row["speed"], crawl_options.dump(options), _now(), mirror_id),
     )
     conn.commit()
     ensure_worker()
@@ -653,14 +752,20 @@ def rerun(conn, mirror_id: int, speed: str, options_json: str) -> tuple[bool, st
     row = db.one(conn, "SELECT * FROM mirrors WHERE id=?", (mirror_id,))
     if not row:
         return False, "That mirror was not found."
-    if row["status"] not in ("completed", "failed", "cancelled"):
+    if row["status"] not in ("completed", "failed", "cancelled", "crashed"):
         return False, "That site is still working. Stop it before rerunning."
+    options = crawl_options.parse_stored(options_json)
+    if row["status"] == "crashed":
+        outdir = Path(row["output_dir"])
+        pages, files, total, newest = _scan_tree(outdir)
+        if pages > 0 or files > 0:
+            options["keep_existing"] = True
     changed = conn.execute(
         "UPDATE mirrors SET status='queued', speed=?, options_json=?, pid=NULL, "
         "cancel_requested=0, entry_path='', serve_root='', started_at=NULL, "
         "finished_at=NULL, last_activity=NULL, error_log='', updated_at=? "
-        "WHERE id=? AND status IN ('completed','failed','cancelled')",
-        (speed, options_json, _now(), mirror_id),
+        "WHERE id=? AND status IN ('completed','failed','cancelled','crashed')",
+        (speed, crawl_options.dump(options), _now(), mirror_id),
     )
     conn.commit()
     if changed.rowcount != 1:
@@ -726,7 +831,8 @@ def cancel(conn, mirror_id: int) -> tuple[bool, str]:
             pid = proc.pid
     if row["status"] == "paused":
         _kill_group(pid, signal.SIGCONT)
-    _kill_group(pid, signal.SIGTERM)
+    if row["status"] in ("running", "paused", "starting") and _pid_alive(pid):
+        _kill_group(pid, signal.SIGTERM)
     conn.execute(
         "UPDATE mirrors SET status='cancelled', cancel_requested=1, finished_at=?, "
         "updated_at=? WHERE id=?",

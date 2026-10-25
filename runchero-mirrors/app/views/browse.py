@@ -24,7 +24,8 @@ def list_mirrors(conn, req, **_):
         "SELECT m.*, COALESCE(s.pages_saved,0) pages_saved, "
         "COALESCE(s.files_saved,0) files_saved, COALESCE(s.bytes_saved,0) bytes_saved "
         "FROM mirrors m LEFT JOIN mirror_stats s ON s.mirror_id=m.id "
-        "WHERE m.status='completed' ORDER BY m.finished_at DESC, m.id DESC",
+        "WHERE m.status='completed' OR (m.status='crashed' AND m.entry_path <> '') "
+        "ORDER BY m.finished_at DESC, m.id DESC",
     ):
         completed.append(dict(row))
     ctx = page_context(conn, req, title="Browse saved sites", completed=completed)
@@ -50,7 +51,7 @@ def _looks_like_dir(path: Path) -> bool:
 def serve_mirror(conn, req, slug, path=None, **_):
     row = db.one(
         conn,
-        "SELECT * FROM mirrors WHERE slug=? AND status='completed'",
+        "SELECT * FROM mirrors WHERE slug=? AND status IN ('completed', 'crashed')",
         (slug,),
     )
     if not row:

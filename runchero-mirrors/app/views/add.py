@@ -239,7 +239,7 @@ def add_submit(conn, req, **_):
 
 
 def _rerunnable(row) -> bool:
-    return row is not None and row["status"] in ("completed", "failed", "cancelled")
+    return row is not None and row["status"] in ("completed", "failed", "cancelled", "crashed")
 
 
 def rerun_form(conn, req, id, **_):
@@ -353,7 +353,7 @@ def start_job(conn, req, id, **_):
         return _action_redirect(req, "That site was not found.", "error")
     if row["status"] == "paused":
         ok, message = httrack.resume(conn, mirror_id)
-    elif row["status"] in ("failed", "cancelled"):
+    elif row["status"] in ("failed", "cancelled", "crashed"):
         ok = httrack.retry(conn, mirror_id)
         message = "Queued for another try." if ok else "That site could not be retried."
     elif row["status"] == "queued":
