@@ -9,10 +9,10 @@
   </div>
   <div class="actions">
     <a class="btn" href="/working"><img src="/static/img/icons/truck.png" alt="" width="16" height="16"> Currently working</a>
-    {% if mirror.status == 'completed' %}
+    {% if mirror.status == 'completed' or (mirror.status == 'crashed' and mirror.entry_path) %}
     <a class="btn primary" href="/mirror/{{ mirror.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open saved copy</a>
     {% endif %}
-    {% if mirror.status in ('completed', 'failed', 'cancelled') %}
+    {% if mirror.status in ('completed', 'crashed', 'failed', 'cancelled') %}
     <a class="btn" href="/rerun/{{ mirror.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="16" height="16"> Rerun</a>
     <form method="post" action="/remove/{{ mirror.id }}" onsubmit="return confirm('Delete this saved copy and its files? This cannot be undone.');">
       <input type="hidden" name="_csrf" value="{{ csrf }}">

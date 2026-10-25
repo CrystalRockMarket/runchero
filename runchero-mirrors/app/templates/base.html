@@ -22,6 +22,7 @@
     <nav class="nav" aria-label="Main">
       <a href="/" {% if path == '/' or path == '/dashboard' %}aria-current="page"{% endif %}><img src="/static/img/icons/list.png" alt="" width="16" height="16"> Dashboard</a>
       <a href="/working" {% if path.startswith('/working') %}aria-current="page"{% endif %}><img src="/static/img/icons/truck.png" alt="" width="16" height="16"> Currently working</a>
+      <a href="/logs" {% if path.startswith('/logs') %}aria-current="page"{% endif %}><img src="/static/img/icons/notes.png" alt="" width="16" height="16"> Logs</a>
       <a href="/add" {% if path.startswith('/add') %}aria-current="page"{% endif %}><img src="/static/img/icons/download.png" alt="" width="16" height="16"> Add a site</a>
       <a href="/browse" {% if path.startswith('/browse') or path.startswith('/mirror/') %}aria-current="page"{% endif %}><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Saved sites</a>
     </nav>

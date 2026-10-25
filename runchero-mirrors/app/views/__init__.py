@@ -5,12 +5,12 @@ from ..web import Request, render
 
 
 def register(routes) -> None:
-    from . import add, api, browse, home
+    from . import add, api, browse, home, logs
 
     def add_route(method, pattern, handler):
         routes.append((method, pattern, handler))
 
-    for module in (home, add, browse, api):
+    for module in (home, add, logs, api, browse):
         module.register(add_route)
 
 

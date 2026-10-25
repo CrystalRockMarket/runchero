@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Logs · {{ site_name }}{% endblock %}
+{% block body %}
+<section class="panel page-head">
+  <div>
+    <div class="panel-title"><img src="/static/img/icons/notes.png" alt=""> Logs</div>
+    <p class="lead">Every saved site and download attempt. Use the log links to see why a run failed or was interrupted.</p>
+  </div>
+</section>
+
+{% if mirrors %}
+<section class="panel">
+  <div class="cards" id="log-cards">
+    {% for m in mirrors %}
+    <article class="card site-card" data-search="{{ (m.name ~ ' ' ~ m.url ~ ' ' ~ (m.description or ''))|lower }}">
+      <div class="card-kicker">{{ m.updated_at|prettydate }}</div>
+      <h3 class="card-title"><img src="/static/img/icons/archive.png" alt=""> {{ m.name }}
+        <span class="status {{ m.status }}">{{ m.status }}</span>
+        {% if m.partial_copy %}<span class="badge small">partial copy</span>{% endif %}
+      </h3>
+      <p class="source break">{{ m.url }}</p>
+      <div class="card-stats">
+        <span><strong>{{ m.pages_saved }}</strong> pages</span>
+        <span><strong>{{ m.files_saved }}</strong> files</span>
+        <span><strong>{{ m.bytes_saved|filesize }}</strong></span>
+        <span><strong>{{ m.rate_bps|filesize }}/s</strong></span>
+      </div>
+      <div class="card-meta">
+        <span>{{ m.option_summary.depth }} depth</span>
+        <span>{{ m.option_summary.rate }}</span>
+        <span>{{ m.started_at|prettydatetime }}</span>
+      </div>
+      {% if m.error_log %}
+      <p class="error-text small">{{ m.error_log.split('\n')[0] }}</p>
+      {% endif %}
+      <div class="card-actions">
+        <a class="btn small" href="/logs/{{ m.id }}"><img src="/static/img/icons/notes.png" alt="" width="14" height="14"> Log</a>
+        {% if m.status in ('completed', 'crashed', 'failed', 'cancelled') %}
+        <a class="btn small" href="/rerun/{{ m.id }}"><img src="/static/img/icons/gearbox.png" alt="" width="14" height="14"> Rerun</a>
+        {% endif %}
+        {% if m.status == 'completed' or (m.status == 'crashed' and m.entry_path) %}
+        <a class="btn small" href="/mirror/{{ m.slug }}/"><img src="/static/img/icons/book.png" alt="" width="16" height="16"> Open</a>
+        {% endif %}
+        {% if m.status not in ('queued', 'starting', 'running', 'paused') %}
+        <form method="post" action="/remove/{{ m.id }}" onsubmit="return confirm('Delete this saved copy and its files? This cannot be undone.');">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn small danger" type="submit"><img src="/static/img/icons/x.png" alt="" width="14" height="14"> Remove</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="panel">
+  <div class="empty big">
+    <img src="/static/img/icons/notes.png" alt="" width="52" height="52">
+    <h2>No logs yet</h2>
+    <p>Once a site is added, its download log will appear here.</p>
+    <a class="btn primary large" href="/add"><img src="/static/img/icons/download.png" alt="" width="18" height="18"> Save a website</a>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
