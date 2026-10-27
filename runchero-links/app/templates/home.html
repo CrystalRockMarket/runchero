@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Turn Amazon links into community support{% endblock %}
+{% block description %}Convert Amazon product links and searches into tagged affiliate links for the Runchero community.{% endblock %}
+
+{% block body %}
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">For neighbours, friends, and the wider Runchero community</p>
+    <h1>Everyday Amazon links, working for the community.</h1>
+    <p class="lede">Paste a product link or start with a search. We clean it up, add the community tag, and hand it back ready to share. No accounts, no tracking, no history.</p>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <img src="/static/img/icons/wheat.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/jar.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/carrot.png" alt="" width="64" height="64">
+  </div>
+</section>
+
+<div class="grid">
+  <section class="card" id="convert" aria-labelledby="convert-title">
+    <h2 id="convert-title"><img src="/static/img/icons/tag.png" alt="" width="20" height="20"> Convert a link</h2>
+    <form method="post" action="/convert" class="form">
+      <label class="label" for="urls">Paste one link, or up to {{ max_bulk }} links on separate lines</label>
+      <textarea id="urls" name="urls" rows="5" maxlength="64000" spellcheck="false"
+                placeholder="https://www.amazon.com/dp/B08N5WRWNW&#10;https://www.amazon.com/s?k=canning+jars"></textarea>
+      <p class="hint">Product links, search links, and short <code>a.co</code> / <code>amzn.to</code> links are all welcome. Short links are resolved online.</p>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">
+          <img src="/static/img/icons/check.png" alt="" width="16" height="16"> Convert
+        </button>
+        <span class="hint">We never store the links you paste.</span>
+      </div>
+    </form>
+  </section>
+
+  <section class="card card-search" id="search" aria-labelledby="search-title">
+    <h2 id="search-title"><img src="/static/img/icons/magnifier.png" alt="" width="20" height="20"> Search Amazon</h2>
+    <p class="hint">Type what you need. The search opens on Amazon in a new tab with the community tag already attached.</p>
+    <form id="search-form" class="search-form" action="https://www.amazon.com/s" method="get" target="_blank">
+      <input type="hidden" name="tag" value="{{ affiliate_tag }}">
+      <label class="sr-only" for="search-q">Search Amazon</label>
+      <input id="search-q" name="k" type="search" value="{{ prefill }}"
+             placeholder="canning jars" maxlength="{{ max_keywords }}" autocomplete="off" required>
+      <button class="btn btn-primary" type="submit">
+        <img src="/static/img/icons/magnifier.png" alt="" width="16" height="16"> Search
+      </button>
+    </form>
+    <div class="chips" aria-label="Example searches">
+      {% for term in example_searches %}
+      <a class="chip" href="/?q={{ term|urlencode }}#search" data-search="{{ term }}">{{ term }}</a>
+      {% endfor %}
+    </div>
+    <div class="search-preview">
+      <label class="label" for="search-preview">Your affiliate search link</label>
+      <div class="copy-row">
+        <input id="search-preview" class="result-url" type="text" readonly value="">
+        <button class="btn btn-small" type="button" data-copy-target="#search-preview">Copy</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="card estimator" id="earnings" aria-labelledby="earnings-title">
+  <h2 id="earnings-title"><img src="/static/img/icons/star.png" alt="" width="20" height="20"> What could this earn?</h2>
+  <p class="lede small">A simple estimate. Amazon pays a percentage of qualifying purchases, and the real rate depends on the category and Amazon's current rate card.</p>
+
+  <div class="estimator-grid">
+    <div class="estimator-controls">
+      <div class="field">
+        <label class="label" for="order-total">Typical order total</label>
+        <input id="order-total" type="range" min="5" max="500" step="5" value="60">
+        <output id="order-total-out" for="order-total">$60</output>
+      </div>
+      <div class="field">
+        <label class="label" for="orders-month">Orders per month</label>
+        <input id="orders-month" type="range" min="1" max="100" step="1" value="10">
+        <output id="orders-month-out" for="orders-month">10</output>
+      </div>
+      <div class="field">
+        <label class="label" for="commission-rate">Commission rate (assumption)</label>
+        <input id="commission-rate" type="range" min="{{ min_rate }}" max="{{ max_rate }}" step="0.5" value="{{ default_rate }}">
+        <output id="commission-rate-out" for="commission-rate">{{ default_rate }}%</output>
+      </div>
+    </div>
+    <div class="estimator-results" aria-live="polite">
+      <div class="stat">
+        <span class="stat-num" id="per-order">$1.80</span>
+        <span class="stat-label">per qualifying order</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="per-month">$18.00</span>
+        <span class="stat-label">per month</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="per-year">$216.00</span>
+        <span class="stat-label">per year</span>
+      </div>
+    </div>
+  </div>
+
+  <table class="table">
+    <caption class="sr-only">Example commission at the selected rate</caption>
+    <thead>
+      <tr><th scope="col">Order total</th><th scope="col">At <span id="example-rate">{{ default_rate }}%</span></th></tr>
+    </thead>
+    <tbody>
+      {% for price in example_prices %}
+      <tr>
+        <td>{{ price|money }}</td>
+        <td data-example-commission data-price="{{ price }}">{{ (price * default_rate / 100)|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="hint">Example: a $60 order at 3% is about $1.80. Ten qualifying orders a month is about $18. Not every click or purchase qualifies, and Amazon can change rates at any time. This is an estimate, not a promise of income.</p>
+</section>
+
+<section class="card how-summary" aria-labelledby="how-title">
+  <h2 id="how-title"><img src="/static/img/icons/seedling.png" alt="" width="20" height="20"> How it works</h2>
+  <ol class="steps">
+    <li><strong>Paste an Amazon link.</strong> Product page, search results, or a short link.</li>
+    <li><strong>We clean it up.</strong> Tracking codes are removed and the product ID is checked.</li>
+    <li><strong>The community tag is added.</strong> That is how qualifying purchases are credited.</li>
+    <li><strong>Copy and share.</strong> The link goes straight to Amazon. Nothing is redirected or hidden.</li>
+  </ol>
+  <p><a class="btn btn-small" href="/how">Read the full explanation</a></p>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/app.js" defer></script>{% endblock %}

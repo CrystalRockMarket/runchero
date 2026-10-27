@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
+<meta name="description" content="{% block description %}{{ site_tagline }}{% endblock %}">
+<meta name="theme-color" content="#1b1b23">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/img/icons/tag.png" type="image/png">
+<link rel="stylesheet" href="/static/css/links.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/static/img/icons/tag.png" alt="" width="42" height="42">
+      <span class="name">{{ site_name }}<small>{{ site_tagline }}</small></span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Main">
+      <a href="/" {% if path == '/' or path == '/convert' %}aria-current="page"{% endif %}>
+        <img src="/static/img/icons/magnifier.png" alt="" width="16" height="16"> Convert
+      </a>
+      <a href="/how" {% if path == '/how' %}aria-current="page"{% endif %}>
+        <img src="/static/img/icons/info.png" alt="" width="16" height="16"> How it works
+      </a>
+    </nav>
+    <span class="badge">{{ site_badge }}</span>
+  </header>
+
+  <main id="main" tabindex="-1">
+    {% block body %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p class="disclosure"><strong>Affiliate disclosure.</strong> {{ disclosure }}</p>
+    <p>{{ site_name }} · v{{ site_version }} · runs on the community's local network</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Converted links{% endblock %}
+
+{% block body %}
+<section class="card">
+  <p class="eyebrow"><a href="/">← Back to the converter</a></p>
+  {% set converted = results|selectattr('ok')|list|length %}
+  {% set failed = results|length - converted %}
+  <h1>Converted links</h1>
+  <p class="lede small">
+    {{ converted }} ready{% if failed %}, {{ failed }} need attention{% endif %}.
+    {% if too_many %}Only the first {{ max_bulk }} links were converted.{% endif %}
+  </p>
+
+  {% if not results %}
+  <div class="callout">Nothing was pasted. <a href="/">Go back and add a link.</a></div>
+  {% endif %}
+
+  {% if converted > 1 %}
+  <p><button class="btn btn-small" type="button" data-copy-all>Copy all converted links</button></p>
+  {% endif %}
+
+  <div class="results">
+    {% for item in results %}
+    <article class="result {% if item.ok %}is-ok{% else %}is-error{% endif %}">
+      <div class="result-head">
+        <span class="pill">{{ item.kind or 'link' }}</span>
+        {% if item.asin %}<span class="pill pill-mono">ASIN {{ item.asin }}</span>{% endif %}
+        {% if item.ok %}
+        <span class="result-status ok"><img src="/static/img/icons/check.png" alt="" width="14" height="14"> Ready</span>
+        {% else %}
+        <span class="result-status bad">Needs attention</span>
+        {% endif %}
+      </div>
+
+      <p class="source"><span class="sr-only">Original link: </span>{{ item.original }}</p>
+
+      {% if item.ok %}
+      {% if item.keywords %}<p class="hint">Search: <strong>{{ item.keywords }}</strong></p>{% endif %}
+      <div class="copy-row">
+        <label class="sr-only" for="affiliate-{{ loop.index }}">Affiliate link</label>
+        <input id="affiliate-{{ loop.index }}" class="result-url" type="text" readonly value="{{ item.affiliate_url }}">
+        <button class="btn btn-small" type="button" data-copy-target="#affiliate-{{ loop.index }}">Copy</button>
+        <a class="btn btn-small btn-ghost" href="{{ item.affiliate_url }}" target="_blank"
+           rel="nofollow sponsored noopener noreferrer">Open</a>
+      </div>
+      {% if item.note %}<p class="hint">{{ item.note }}</p>{% endif %}
+      {% else %}
+      <p class="error-text">{{ item.error }}</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+
+  <p class="hint">Affiliate links are marked <code>sponsored</code> and <code>nofollow</code>. The Runchero tag is <code>{{ affiliate_tag }}</code>.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/app.js" defer></script>{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}How it works{% endblock %}
+{% block description %}How Runchero Links turns Amazon links into tagged affiliate links, and how the community earns from qualifying purchases.{% endblock %}
+
+{% block body %}
+<section class="card prose">
+  <p class="eyebrow"><a href="/">← Back to the converter</a></p>
+  <h1>How Runchero Links works</h1>
+  <p class="lede">A small, private tool that adds the community's Amazon Associate tag to links. It does not redirect, shorten, hide, or track anything.</p>
+
+  <h2>What happens to a link</h2>
+  <ol class="steps">
+    <li><strong>Check the address.</strong> Only Amazon US addresses are accepted: <code>amazon.com</code> and its <code>www</code>, <code>m</code>, and <code>smile</code> subdomains.</li>
+    <li><strong>Find the useful part.</strong> Product links are reduced to the 10-character product ID (ASIN). Search links keep the words and department.</li>
+    <li><strong>Remove clutter.</strong> Referral, campaign, session, and tracking parameters are stripped.</li>
+    <li><strong>Add the tag.</strong> The link is rebuilt with <code>tag={{ affiliate_tag }}</code> and nothing else.</li>
+    <li><strong>Hand it back.</strong> Copy it or open it. The link goes directly to Amazon.</li>
+  </ol>
+
+  <h2>Example</h2>
+  <table class="table">
+    <thead><tr><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="mono">amazon.com/Some-Name/dp/B08N5WRWNW/ref=sr_1_1?qid=123&amp;th=1</td>
+        <td class="mono">amazon.com/dp/B08N5WRWNW?tag={{ affiliate_tag }}</td>
+      </tr>
+      <tr>
+        <td class="mono">amazon.com/s?k=canning+jars&amp;ref=nb_sb_noss</td>
+        <td class="mono">amazon.com/s?k=canning%20jars&amp;tag={{ affiliate_tag }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Short links</h2>
+  <p><code>a.co</code> and <code>amzn.to</code> links do not contain the product ID in the address. The server follows the shortcut, checking every hop is still Amazon-owned, then converts the final page. If the shortcut service cannot be reached, paste the full product link instead.</p>
+
+  <h2>What could it earn?</h2>
+  <p>Amazon pays a percentage of the price of <strong>qualifying</strong> purchases made after someone follows a tagged link. Rates depend on the product category and can change. The estimator on the front page lets you try different assumptions.</p>
+  <ul>
+    <li>A $60 order at 3% is about <strong>$1.80</strong>.</li>
+    <li>Ten qualifying orders a month is about <strong>$18.00</strong>.</li>
+    <li>That pace for a year is about <strong>$216.00</strong>.</li>
+  </ul>
+  <p class="hint">These are illustrations, not promises. Not every click leads to a purchase, not every purchase qualifies, returns can reverse a commission, and Amazon can change the rate card or the programme rules at any time.</p>
+
+  <h2>Privacy</h2>
+  <ul>
+    <li>No accounts, no cookies, no analytics, no history.</li>
+    <li>Links you paste are converted in memory and not written to a database.</li>
+    <li>Server logs record the page and status, not the links or searches.</li>
+  </ul>
+
+  <h2>Rules we follow</h2>
+  <ul>
+    <li><strong>Disclosure.</strong> The affiliate relationship is stated in the page footer and beside the tool.</li>
+    <li><strong>No cloaking.</strong> Links point straight at Amazon with the tag visible, not through a redirect.</li>
+    <li><strong>No shortening.</strong> Amazon's Operating Agreement does not allow masking or shortening affiliate links.</li>
+    <li><strong>Honest estimates.</strong> Earnings figures are labelled as estimates and the rate is adjustable.</li>
+  </ul>
+
+  <h2>Limits</h2>
+  <ul>
+    <li>Amazon US (<code>amazon.com</code>) only for now.</li>
+    <li>Up to {{ max_bulk }} links per conversion.</li>
+    <li>Short-link resolution needs an internet connection.</li>
+    <li>The tag is a demo value until the real Associate tag is configured with <code>RLK_AFFILIATE_TAG</code>.</li>
+  </ul>
+</section>
+{% endblock %}
