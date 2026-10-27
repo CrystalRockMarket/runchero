@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Request a community app{% endblock %}
+{% block description %}Suggest a new app for the Runchero community. No account needed.{% endblock %}
+
+{% block body %}
+<section class="request-layout">
+  <div class="card">
+    <p class="eyebrow"><a href="/">← Back to the directory</a></p>
+    <h1>Request a community app</h1>
+    <p class="lede small">Have an idea for a tool the community could use? Describe it here. Anyone on the local network can submit without signing up.</p>
+
+    {% if errors %}
+    <div class="callout callout-error" role="alert">
+      <strong>Please fix this:</strong>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/request" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="name">Your name <span class="optional">(optional)</span></label>
+          <input id="name" name="name" type="text" maxlength="{{ max_name }}" value="{{ values.name }}" autocomplete="name">
+        </div>
+        <div class="field">
+          <label class="label" for="contact">Contact <span class="optional">(optional)</span></label>
+          <input id="contact" name="contact" type="text" maxlength="{{ max_contact }}" value="{{ values.contact }}" placeholder="Email or phone" autocomplete="email">
+          <p class="hint">Only admins see this. It is never shown publicly.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="title">Name of the app idea</label>
+        <input id="title" name="title" type="text" maxlength="{{ max_title }}" value="{{ values.title }}" placeholder="e.g. Community seed swap board" required>
+      </div>
+
+      <div class="field">
+        <label class="label" for="category">Category</label>
+        <select id="category" name="category">
+          {% for category in categories %}
+          <option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="description">What should it do?</label>
+        <textarea id="description" name="description" rows="6" maxlength="{{ max_description }}" placeholder="Who is it for, what problem does it solve, and what would the first version do?" required>{{ values.description }}</textarea>
+        <p class="counter"><span id="desc-count">0</span> / {{ max_description }}</p>
+      </div>
+
+      <div class="hp" aria-hidden="true">
+        <label for="website">Website</label>
+        <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">
+          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Send the idea
+        </button>
+        <span class="hint">A volunteer admin reviews every request.</span>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Good to know</h2>
+    <ul class="plain-list">
+      <li>No account and no sign-up.</li>
+      <li>One or two clear paragraphs is plenty.</li>
+      <li>Don't include passwords or private information.</li>
+      <li>Name and contact are optional and admin-only.</li>
+      <li>Ideas are reviewed, not published automatically.</li>
+    </ul>
+    <h3>What makes a useful request?</h3>
+    <p class="hint">Say who it helps, what the first version should do, and how you would know it works. Small and specific beats big and vague.</p>
+  </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/hub.js" defer></script>{% endblock %}

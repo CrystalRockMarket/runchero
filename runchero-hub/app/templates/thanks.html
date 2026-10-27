@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Idea received{% endblock %}
+
+{% block body %}
+<section class="card prose success-card">
+  <p class="eyebrow">Request received</p>
+  <h1>Thanks — the idea is in the queue.</h1>
+  <p class="lede">A volunteer admin will review it. Nothing is published automatically. If you left contact details, an admin may reach out.</p>
+  <div class="actions">
+    <a class="btn btn-primary" href="/">Back to the directory</a>
+    <a class="btn" href="/request">Send another idea</a>
+  </div>
+</section>
+{% endblock %}

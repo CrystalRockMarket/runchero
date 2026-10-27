@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Community projects{% endblock %}
+{% block description %}Every Runchero community app in one place, with screenshots and plain-language descriptions.{% endblock %}
+
+{% block body %}
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">The community's own tools, on the local network</p>
+    <h1>One place for every Runchero project.</h1>
+    <p class="lede">Browse what the community has built, see what each app does, and open it in a click. Missing something? Ask for it below.</p>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <img src="/static/img/icons/depot.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/tree.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/cow.png" alt="" width="64" height="64">
+  </div>
+</section>
+
+<section class="directory-head">
+  <div>
+    <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Project directory</h2>
+    <p class="hint"><strong id="project-count">{{ project_count }}</strong> live projects. Screenshots are refreshed when a project changes.</p>
+  </div>
+  <div class="filter">
+    <label class="sr-only" for="filter">Filter projects</label>
+    <img src="/static/img/icons/magnifier.png" alt="" width="18" height="18">
+    <input id="filter" type="search" placeholder="Filter by name or topic" autocomplete="off">
+  </div>
+</section>
+
+<div class="app-grid" id="app-grid">
+  {% for p in projects %}
+  <article class="app-card" data-search="{{ (p.name ~ ' ' ~ p.tagline ~ ' ' ~ p.description ~ ' ' ~ p.tags|join(' '))|lower }}">
+    <a class="shot" href="{{ p.url }}" target="_blank" rel="noopener">
+      <img src="/static/img/shots/{{ p.screenshot }}" alt="Screenshot of the {{ p.name }} home page" loading="lazy" width="1280" height="800">
+    </a>
+    <div class="app-body">
+      <div class="app-head">
+        <img class="app-icon" src="/static/img/icons/{{ p.icon }}" alt="" width="32" height="32">
+        <h3>{{ p.name }}</h3>
+        {% if p.internal %}<span class="pill pill-internal">Internal</span>{% endif %}
+      </div>
+      <p class="tagline">{{ p.tagline }}</p>
+      <p class="desc">{{ p.description }}</p>
+      <ul class="tags" aria-label="Topics">
+        {% for tag in p.tags %}<li>{{ tag }}</li>{% endfor %}
+      </ul>
+      {% if p.note %}<p class="note">{{ p.note }}</p>{% endif %}
+      <a class="btn btn-primary" href="{{ p.url }}" target="_blank" rel="noopener">
+        <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Open {{ p.name }}
+      </a>
+    </div>
+  </article>
+  {% endfor %}
+
+  <article class="app-card app-card-cta" data-search="request idea new app suggest">
+    <div class="cta-body">
+      <img src="/static/img/icons/seedling.png" alt="" width="56" height="56">
+      <h3>Something missing?</h3>
+      <p class="desc">Tell us what would help the community. No account needed. A volunteer reviews every idea.</p>
+      <a class="btn" href="/request">Request a new app</a>
+    </div>
+  </article>
+</div>
+
+<p class="empty-filter" id="empty-filter" hidden>No projects match that filter.</p>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/hub.js" defer></script>{% endblock %}

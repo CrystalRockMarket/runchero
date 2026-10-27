@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Admin sign in{% endblock %}
+
+{% block body %}
+<section class="card login-card">
+  <p class="eyebrow"><a href="/">← Back to the directory</a></p>
+  <h1><img src="/static/img/icons/info.png" alt="" width="22" height="22"> Admin sign in</h1>
+  <p class="hint">Review incoming app requests and update their status.</p>
+
+  {% if error %}
+  <div class="callout callout-error" role="alert">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/admin/login" class="form">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <div class="field">
+      <label class="label" for="user">Username</label>
+      <input id="user" name="user" type="text" value="{{ admin_user }}" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label class="label" for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Sign in</button>
+    </div>
+  </form>
+
+  <p class="hint demo-hint">Demo login: <code>{{ admin_user }}</code> / <code>runchero</code>. Set <code>RHUB_ADMIN_PASSWORD</code> before sharing the hub.</p>
+</section>
+{% endblock %}

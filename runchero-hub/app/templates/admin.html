@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Request admin{% endblock %}
+
+{% block body %}
+<section class="admin-head">
+  <div>
+    <p class="eyebrow">Admin panel</p>
+    <h1>Community app requests</h1>
+    <p class="hint">Review ideas, leave a private note, and move each one through the queue.</p>
+  </div>
+  <div class="admin-actions">
+    <a class="btn btn-small" href="/">View directory</a>
+    <form method="post" action="/admin/logout" class="inline-form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn btn-small" type="submit">Sign out</button>
+    </form>
+  </div>
+</section>
+
+{% if message %}
+<div class="callout callout-ok" role="status">{{ message }}</div>
+{% endif %}
+
+<nav class="tabs" aria-label="Filter by status">
+  <a class="tab {% if not active_status %}is-active{% endif %}" href="/admin">
+    All <span class="tab-count">{{ stats.total }}</span>
+  </a>
+  {% for status in statuses %}
+  <a class="tab {% if active_status == status %}is-active{% endif %}" href="/admin?status={{ status }}">
+    {{ status_labels[status] }} <span class="tab-count">{{ stats[status] }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<form method="get" action="/admin" class="admin-search">
+  {% if active_status %}<input type="hidden" name="status" value="{{ active_status }}">{% endif %}
+  <label class="sr-only" for="q">Search requests</label>
+  <input id="q" name="q" type="search" value="{{ query }}" placeholder="Search title, description, name, or contact">
+  <button class="btn btn-small" type="submit">Search</button>
+  {% if query %}<a class="btn btn-small btn-ghost" href="/admin{% if active_status %}?status={{ active_status }}{% endif %}">Clear</a>{% endif %}
+</form>
+
+{% if not requests %}
+<div class="card empty-state">
+  <img src="/static/img/icons/seedling.png" alt="" width="48" height="48">
+  <h2>No requests here yet</h2>
+  <p class="hint">When someone submits an idea it will appear in this queue.</p>
+</div>
+{% endif %}
+
+<div class="request-list">
+  {% for r in requests %}
+  <article class="request-card" id="request-{{ r['id'] }}">
+    <header class="request-head">
+      <span class="request-id">#{{ r['id'] }}</span>
+      <span class="pill status-{{ r['status'] }}">{{ status_labels[r['status']] }}</span>
+      {% if r['category'] %}<span class="pill">{{ r['category'] }}</span>{% endif %}
+      <span class="request-date">{{ r['created_at']|dt }}</span>
+    </header>
+    <h2>{{ r['title'] }}</h2>
+    <p class="request-meta">
+      {% if r['name'] %}<strong>{{ r['name'] }}</strong>{% else %}<em>Anonymous</em>{% endif %}
+      {% if r['contact'] %}<span class="contact">· {{ r['contact'] }}</span>{% endif %}
+    </p>
+    <p class="request-desc">{{ r['description'] }}</p>
+
+    <div class="request-controls">
+      <form method="post" action="/admin/requests/{{ r['id'] }}/status" class="status-form">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <div class="field">
+          <label class="label" for="status-{{ r['id'] }}">Status</label>
+          <select id="status-{{ r['id'] }}" name="status">
+            {% for status in statuses %}
+            <option value="{{ status }}" {% if r['status'] == status %}selected{% endif %}>{{ status_labels[status] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field grow">
+          <label class="label" for="note-{{ r['id'] }}">Private admin note</label>
+          <textarea id="note-{{ r['id'] }}" name="admin_note" rows="2" maxlength="{{ max_admin_note }}" placeholder="Only admins see this.">{{ r['admin_note'] }}</textarea>
+        </div>
+        <button class="btn btn-small btn-primary" type="submit">Save</button>
+      </form>
+
+      <form method="post" action="/admin/requests/{{ r['id'] }}/delete" class="inline-form"
+            data-confirm="Delete request #{{ r['id'] }} permanently?">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <button class="btn btn-small btn-danger" type="submit">Delete</button>
+      </form>
+    </div>
+    {% if r['updated_at'] and r['updated_at'] != r['created_at'] %}
+    <p class="hint updated">Last updated {{ r['updated_at']|dt }}</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/hub.js" defer></script>{% endblock %}
