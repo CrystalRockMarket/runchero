@@ -49,6 +49,7 @@ def init_db(conn: sqlite3.Connection) -> None:
     )
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(entries)")}
     if "kind" in columns:
+        conn.execute("DROP INDEX IF EXISTS idx_entries_kind")
         conn.execute("ALTER TABLE entries DROP COLUMN kind")
     conn.commit()
 

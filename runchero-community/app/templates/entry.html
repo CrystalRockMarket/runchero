@@ -8,7 +8,7 @@
     <p class="eyebrow"><a href="/">← Back to the directory</a></p>
     {% if not entry.published %}
     <div class="callout callout-error" role="alert">
-      <strong>This listing is hidden.</strong> Only signed-in admins can see it.
+      <strong>This entry is hidden.</strong> Only signed-in admins can see it.
     </div>
     {% endif %}
     <header class="entry-head">
@@ -47,7 +47,7 @@
 
     <div class="actions">
       <a class="btn btn-primary" href="/">Back to the directory</a>
-      <a class="btn" href="/add">Add another listing</a>
+      <a class="btn" href="/add">Add yourself</a>
     </div>
   </article>
 
@@ -55,7 +55,7 @@
     <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> About this directory</h2>
     <ul class="plain-list">
       <li>Anyone on the local network can add themselves.</li>
-      <li>Listings are locked after submission.</li>
+      <li>Entries are locked after submission.</li>
       <li>Only an admin can edit, hide, or delete one.</li>
       <li>This directory is for people, not businesses.</li>
       <li>Contact details are shown publicly.</li>
@@ -67,7 +67,7 @@
       <h3>Admin</h3>
       <p class="hint"><strong>Submitter contact:</strong> {{ entry.submitter_contact or '—' }}</p>
       {% if entry.admin_note %}<p class="hint"><strong>Private note:</strong> {{ entry.admin_note }}</p>{% endif %}
-      <a class="btn btn-small" href="/admin/entries/{{ entry.id }}/edit">Edit this listing</a>
+      <a class="btn btn-small" href="/admin/entries/{{ entry.id }}/edit">Edit this person</a>
     </div>
     {% endif %}
   </aside>

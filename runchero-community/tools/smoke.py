@@ -50,10 +50,9 @@ def csrf_from(html: str) -> str:
 def listing_form(token: str, **overrides) -> dict:
     data = {
         "_csrf": token,
-        "name": "Smoke Test Apiary",
-        "kind": "Business",
-        "category": "Food",
-        "description": "Local honey and hive advice for the smoke test.",
+        "name": "Smoke Test Neighbour",
+        "category": "Skills & Help",
+        "description": "A test neighbour created by the smoke test and deleted afterwards.",
         "location": "South Runchero",
         "submitter_contact": "private@example.com",
         "phone": "555 0199",
@@ -119,7 +118,7 @@ def main() -> int:
 
         status, _, headers, body = fetch(opener, "/")
         check("home responds 200", status == 200, str(status))
-        check("home has directory heading", "Community listings" in body)
+        check("home has directory heading", "Neighbours" in body)
         check("empty directory message", "The directory is empty" in body)
         check("excluded earth.love absent", "earth.love" not in body.lower())
         check("excluded games-earth absent", "games-earth" not in body.lower())
@@ -157,16 +156,16 @@ def main() -> int:
 
         status, _, _, body = fetch(opener, f"/entry/{entry_id}")
         check("public detail responds 200", status == 200, str(status))
-        check("detail shows name", "Smoke Test Apiary" in body)
+        check("detail shows name", "Smoke Test Neighbour" in body)
         check("detail shows phone", "555 0199" in body)
         check("detail has mailto link", "mailto:smoke@example.com" in body)
         check("detail has facebook link", "facebook.com/smoke.apiary" in body)
         check("private contact hidden publicly", "private@example.com" not in body)
 
         status, _, _, body = fetch(opener, "/?q=Smoke+Test")
-        check("search finds listing", "Smoke Test Apiary" in body)
-        status, _, _, body = fetch(opener, "/?kind=Business&category=Food")
-        check("filters find listing", "Smoke Test Apiary" in body)
+        check("search finds listing", "Smoke Test Neighbour" in body)
+        status, _, _, body = fetch(opener, "/?category=Skills+%26+Help")
+        check("filters find listing", "Smoke Test Neighbour" in body)
         status, _, _, _ = fetch(opener, "/entry/99999")
         check("missing listing is 404", status == 404, str(status))
 
@@ -188,7 +187,7 @@ def main() -> int:
         status, final, _, body = fetch(opener, "/admin/login", {
             "_csrf": login_token, "user": "runchero", "password": PASSWORD})
         check("admin login works", status == 200 and "/admin" in final
-              and "Community listings" in body, final)
+              and "People in the directory" in body, final)
         check("admin sees submitter contact", "private@example.com" in body)
         admin_token = csrf_from(body)
 
@@ -199,7 +198,7 @@ def main() -> int:
 
         anon = build_opener()
         status, _, _, body = fetch(anon, "/?q=Smoke+Test")
-        check("hidden listing absent from public", "Smoke Test Apiary" not in body)
+        check("hidden listing absent from public", "Smoke Test Neighbour" not in body)
         status, _, _, _ = fetch(anon, f"/entry/{entry_id}")
         check("hidden listing public detail 404", status == 404, str(status))
 
@@ -209,20 +208,20 @@ def main() -> int:
 
         status, final, _, body = fetch(
             opener, f"/admin/entries/{entry_id}",
-            listing_form(edit_token, name="Smoke Test Apiary Updated",
+            listing_form(edit_token, name="Smoke Test Neighbour Updated",
                          admin_note="Smoke checked", published="1"),
         )
         check("edit saves changes", status == 200 and "Listing updated" in body
-              and "Smoke Test Apiary Updated" in body, final)
+              and "Smoke Test Neighbour Updated" in body, final)
 
         status, _, _, body = fetch(opener, f"/entry/{entry_id}")
         check("edited listing is public", status == 200
-              and "Smoke Test Apiary Updated" in body, str(status))
+              and "Smoke Test Neighbour Updated" in body, str(status))
 
         status, final, _, body = fetch(
             opener, f"/admin/entries/{entry_id}/delete", {"_csrf": admin_token})
         check("delete works", status == 200 and "Listing deleted" in body
-              and "Smoke Test Apiary Updated" not in body, final)
+              and "Smoke Test Neighbour Updated" not in body, final)
 
         status, _, _, body = fetch(opener, "/healthz")
         check("health still ok", status == 200 and '"ok": true' in body, body[:80])

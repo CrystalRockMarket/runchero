@@ -24,7 +24,7 @@
 
 <section class="directory-head" id="listings">
   <div>
-    <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Community listings</h2>
+    <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Neighbours</h2>
     <p class="hint"><strong>{{ stats.published }}</strong> neighbours listed. Entries are added by people and can only be edited by an admin.</p>
   </div>
 </section>
@@ -32,8 +32,8 @@
 <form method="get" action="/" class="community-filter" role="search">
   <div class="filter">
     <img src="/static/img/icons/magnifier.png" alt="" width="18" height="18">
-    <label class="sr-only" for="q">Search listings</label>
-    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search names, services, or places" autocomplete="off">
+    <label class="sr-only" for="q">Search neighbours</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search names, skills, or places" autocomplete="off">
   </div>
   <div class="field">
     <label class="label" for="category">Category</label>
@@ -53,10 +53,10 @@
 {% if not entries %}
 <div class="card empty-state">
   <img src="/static/img/icons/chat.png" alt="" width="48" height="48">
-  <h2>No listings match that search</h2>
+  <h2>No neighbours match that search</h2>
   {% if filtered %}
   <p class="hint">Try a different word, or clear the filters to see everyone.</p>
-  <a class="btn btn-small" href="/">Show all listings</a>
+  <a class="btn btn-small" href="/">Show everyone</a>
   {% else %}
   <p class="hint">The directory is empty. Be the first neighbour to add yourself.</p>
   <a class="btn btn-primary" href="/add">Add yourself</a>
@@ -83,7 +83,7 @@
       </li>
       {% endfor %}
     </ul>
-    <a class="btn btn-small" href="/entry/{{ e.id }}">View listing</a>
+    <a class="btn btn-small" href="/entry/{{ e.id }}">View profile</a>
   </article>
   {% endfor %}
 </div>

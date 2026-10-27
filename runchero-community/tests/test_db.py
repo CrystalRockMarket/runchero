@@ -12,10 +12,9 @@ from app import db
 
 def listing(**overrides):
     data = {
-        "name": "Runchero Beef Co-op",
-        "kind": "Business",
-        "category": "Farm",
-        "description": "Grass-fed beef shares.",
+        "name": "Marta Ruiz",
+        "category": "Neighbours",
+        "description": "Long-time north-side neighbour.",
         "location": "North Runchero",
         "published": True,
         "submitter_contact": "secret@example.com",
@@ -43,12 +42,18 @@ class DatabaseTests(unittest.TestCase):
         self.conn.close()
         self.tmp.cleanup()
 
+    def test_entries_table_has_no_kind_column(self) -> None:
+        columns = {row["name"] for row in self.conn.execute(
+            "PRAGMA table_info(entries)"
+        )}
+        self.assertNotIn("kind", columns)
+
     def test_create_and_get(self) -> None:
         entry_id = db.create_entry(self.conn, listing(), CHANNELS)
         entry = db.get_entry(self.conn, entry_id)
         self.assertIsNotNone(entry)
         assert entry is not None
-        self.assertEqual(entry["name"], "Runchero Beef Co-op")
+        self.assertEqual(entry["name"], "Marta Ruiz")
         self.assertTrue(entry["published"])
         self.assertEqual([channel["label"] for channel in entry["channels"]],
                          ["Phone", "Website"])
@@ -57,37 +62,36 @@ class DatabaseTests(unittest.TestCase):
         db.create_entry(self.conn, listing(), CHANNELS)
         db.create_entry(
             self.conn,
-            listing(name="Fermentation Station", category="Food"),
+            listing(name="Sam Okafor", category="Skills & Help"),
             [{"kind": "contact", "label": "Email", "value": "ferment@example.com",
               "sort_order": 10}],
         )
-        by_name = db.list_entries(self.conn, q="Runchero Beef")
+        by_name = db.list_entries(self.conn, q="Marta Ruiz")
         by_channel = db.list_entries(self.conn, q="ferment@example.com")
-        self.assertEqual([entry["name"] for entry in by_name], ["Runchero Beef Co-op"])
-        self.assertEqual([entry["name"] for entry in by_channel], ["Fermentation Station"])
+        self.assertEqual([entry["name"] for entry in by_name], ["Marta Ruiz"])
+        self.assertEqual([entry["name"] for entry in by_channel], ["Sam Okafor"])
 
     def test_filters(self) -> None:
         db.create_entry(self.conn, listing(), CHANNELS)
-        db.create_entry(self.conn, listing(name="Tool Library", kind="Service",
-                                           category="Trades"),
+        db.create_entry(self.conn, listing(name="June Halvorsen", category="Garden & Farm"),
                         [{"kind": "contact", "label": "Phone", "value": "555 0111",
                           "sort_order": 10}])
-        self.assertEqual(len(db.list_entries(self.conn, category="Farm")), 1)
-        self.assertEqual(len(db.list_entries(self.conn, kind="Service")), 1)
-        self.assertEqual(len(db.list_entries(self.conn, kind="Person")), 0)
+        self.assertEqual(len(db.list_entries(self.conn, category="Neighbours")), 1)
+        self.assertEqual(len(db.list_entries(self.conn, category="Garden & Farm")), 1)
+        self.assertEqual(len(db.list_entries(self.conn, category="Health")), 0)
 
     def test_update_replaces_channels(self) -> None:
         entry_id = db.create_entry(self.conn, listing(), CHANNELS)
         db.update_entry(
             self.conn,
             entry_id,
-            listing(name="Runchero Beef Co-op Ltd", published=False),
+            listing(name="Marta Ruiz Garcia", published=False),
             [{"kind": "contact", "label": "Email", "value": "beef@example.com",
               "sort_order": 10}],
         )
         entry = db.get_entry(self.conn, entry_id)
         assert entry is not None
-        self.assertEqual(entry["name"], "Runchero Beef Co-op Ltd")
+        self.assertEqual(entry["name"], "Marta Ruiz Garcia")
         self.assertFalse(entry["published"])
         self.assertEqual(len(entry["channels"]), 1)
         self.assertEqual(entry["channels"][0]["value"], "beef@example.com")
@@ -109,10 +113,10 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(remaining, 0)
 
     def test_listing_order(self) -> None:
-        db.create_entry(self.conn, listing(name="Zebra Farm"), CHANNELS)
-        db.create_entry(self.conn, listing(name="Apple Orchard"), CHANNELS)
+        db.create_entry(self.conn, listing(name="Zoe Adams"), CHANNELS)
+        db.create_entry(self.conn, listing(name="Aaron Bell"), CHANNELS)
         names = [entry["name"] for entry in db.list_entries(self.conn)]
-        self.assertEqual(names, ["Apple Orchard", "Zebra Farm"])
+        self.assertEqual(names, ["Aaron Bell", "Zoe Adams"])
 
 
 if __name__ == "__main__":

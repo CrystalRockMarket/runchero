@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Add a listing{% endblock %}
+{% block title %}Add yourself{% endblock %}
 {% block description %}Add yourself to the Runchero community directory. No account needed.{% endblock %}
 
 {% block body %}
@@ -7,10 +7,10 @@
   <div class="card">
     <p class="eyebrow"><a href="/">← Back to the directory</a></p>
     <h1>Add yourself to the directory</h1>
-    <p class="lede small">Tell your neighbours who you are and how to reach you. No account needed. The listing appears immediately.</p>
+    <p class="lede small">Tell your neighbours who you are and how to reach you. No account needed. Your entry appears immediately.</p>
 
     <div class="callout callout-note" role="note">
-      <strong>This directory is for people, not businesses. Once submitted, your listing is locked.</strong>
+      <strong>This directory is for people, not businesses. Once submitted, your entry is locked.</strong>
       You will not be able to edit it yourself. Only an admin can change or remove it, so double-check the details before sending.
     </div>
 
@@ -104,7 +104,7 @@
       <div class="field">
         <label class="label" for="submitter_contact">Your contact for admin follow-up</label>
         <input id="submitter_contact" name="submitter_contact" type="text" maxlength="{{ max_submitter }}" value="{{ values.submitter_contact }}" placeholder="Email or phone">
-        <p class="hint">Only admins see this. It is never shown on the public listing.</p>
+        <p class="hint">Only admins see this. It is never shown publicly.</p>
       </div>
 
       <div class="hp" aria-hidden="true">
@@ -114,7 +114,7 @@
 
       <div class="actions">
         <button class="btn btn-primary" type="submit">
-          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Publish the listing
+          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Publish my entry
         </button>
         <span class="hint">Locked after publishing. An admin can help with changes.</span>
       </div>
@@ -125,7 +125,7 @@
     <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Good to know</h2>
     <ul class="plain-list">
       <li>No account and no sign-up.</li>
-      <li>The listing is public the moment you send it.</li>
+      <li>Your entry is public the moment you send it.</li>
       <li>It is locked afterwards. Only an admin can edit or remove it.</li>
       <li>At least one public contact detail is required.</li>
       <li>This directory is for people, not businesses.</li>

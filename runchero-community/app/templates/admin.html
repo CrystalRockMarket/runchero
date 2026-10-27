@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Listing admin{% endblock %}
+{% block title %}People admin{% endblock %}
 
 {% block body %}
 <section class="admin-head">
@@ -35,7 +35,7 @@
 
 <form method="get" action="/admin" class="admin-search">
   <input type="hidden" name="status" value="{{ active_status }}">
-  <label class="sr-only" for="q">Search listings</label>
+  <label class="sr-only" for="q">Search people</label>
   <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search name, description, place, or contact">
   <select id="category" name="category" aria-label="Category">
     <option value="">Any category</option>

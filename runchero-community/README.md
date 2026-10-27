@@ -1,21 +1,22 @@
 # Runchero Community Directory
 
-A community noticeboard for the Runchero local network. Neighbours can add
-themselves, a business, a group, or a service without making an account. Every
-listing shows the public ways to get in touch: phone, email, Facebook,
-Instagram, website, address, and up to three custom contact rows or links.
+A people-only directory for the Runchero local network. Neighbours can add
+themselves without making an account. Businesses, groups, and services are not
+listed. Every person shows the public ways to get in touch: phone, email,
+Facebook, Instagram, website, address, and up to three custom contact rows or
+links.
 
-Anonymous listings are published immediately and then **locked**. Only a
+Anonymous entries are published immediately and then **locked**. Only a
 signed-in admin can edit, hide, or delete an entry.
 
 ```
 app/
   httpd.py             standard-library server, routes, security headers
   web.py               Jinja environment, signed cookies, CSRF
-  views.py             directory, listing form, admin, health
+  views.py             directory, person form, admin, health
   channels.py          contact/link validation, normalisation, display
   db.py                SQLite storage for entries and channels
-  config.py            settings, limits, kinds, categories
+  config.py            settings, limits, categories
   limits.py            in-memory rate limiter
   templates/           base, home, entry, add, added, admin, login, error
   static/              pixel CSS, fonts, icons, JS
@@ -32,7 +33,7 @@ tests/
 ```bash
 ./tools/community.sh start      # serve on 0.0.0.0:8093
 ./tools/community.sh status
-./tools/community.sh backup     # snapshot the listing database
+./tools/community.sh backup     # snapshot the people database
 ./tools/community.sh stop
 ```
 
@@ -48,19 +49,20 @@ but the database is deliberately kept out of git.
 | --- | --- | --- |
 | `RDIR_PORT` | `8093` | listen port |
 | `RDIR_HOST` | `0.0.0.0` | listen address |
-| `RDIR_DB_PATH` | `/home/barn/data/runchero-community.db` | listing database |
+| `RDIR_DB_PATH` | `/home/barn/data/runchero-community.db` | people database |
 | `RDIR_ADMIN_USER` | `runchero` | admin username |
 | `RDIR_ADMIN_PASSWORD` | `runchero` | admin password — change before sharing |
-| `RDIR_SUBMISSIONS_PER_HOUR` | `5` | anonymous listings per device |
+| `RDIR_SUBMISSIONS_PER_HOUR` | `5` | anonymous entries per device |
 | `RDIR_SECRET_KEY` | empty | signing key; otherwise generated on first run |
 | `RDIR_SECURE_COOKIES` | `0` | set to `1` when serving over HTTPS |
 
-## Listing rules
+## Directory rules
 
+- People only. Businesses, groups, and services are out of scope.
 - No account or sign-up for submitters.
 - CSRF token, hidden honeypot field, length caps, and a per-device rate limit.
 - At least one public contact detail is required.
-- Listings are public immediately and locked after submission.
+- Entries are public immediately and locked after submission.
 - Only an admin can edit, hide, or delete an entry.
 - Submitter contact and admin notes are private and never shown publicly.
 - Custom values beginning with `https://` are rendered as links; everything else
@@ -68,8 +70,9 @@ but the database is deliberately kept out of git.
 
 ## Schema
 
-`entries` stores the listing (name, kind, category, description, location,
-published flag, private submitter contact, private admin note, timestamps).
+`entries` stores the person (name, category, description, location, published
+flag, private submitter contact, private admin note, timestamps). A legacy
+`kind` column is dropped automatically when an older database is opened.
 
 `channels` stores one row per public contact method (kind `contact` or `link`,
 label, value, sort order) and cascades on delete.
@@ -82,4 +85,4 @@ python3 tools/smoke.py
 ```
 
 The smoke test starts its own server on port 8094 with a temporary database, so
-it never touches real listings.
+it never touches real entries.

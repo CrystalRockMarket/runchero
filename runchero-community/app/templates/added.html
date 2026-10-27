@@ -17,11 +17,11 @@
   </ul>
 
   <div class="actions">
-    <a class="btn btn-primary" href="/entry/{{ entry.id }}">View the listing</a>
+    <a class="btn btn-primary" href="/entry/{{ entry.id }}">View your entry</a>
     <a class="btn" href="/">Back to the directory</a>
   </div>
   {% if is_admin %}
-  <p class="hint"><a href="/admin/entries/{{ entry.id }}/edit">Edit this listing in the admin panel</a></p>
+  <p class="hint"><a href="/admin/entries/{{ entry.id }}/edit">Edit this entry in the admin panel</a></p>
   {% endif %}
 </section>
 {% endblock %}
