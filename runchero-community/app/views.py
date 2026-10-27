@@ -23,6 +23,29 @@ def _html(template: str, req: web.Request, status: int = 200, **extra):
     return status, "text/html; charset=utf-8", web.render(template, **context)
 
 
+
+def _group_by_letter(entries: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Group entries by uppercase first letter of name; non-letters under '#'."""
+    groups: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for entry in entries:
+        name = (entry.get("name") or "").strip()
+        letter = name[0].upper() if name and name[0].isalpha() else (name[0].upper() if name else "#")
+        if letter not in groups:
+            groups[letter] = []
+            order.append(letter)
+        groups[letter].append(entry)
+    return [(letter, groups[letter]) for letter in order]
+
+
+def _directory_stats(conn) -> dict:
+    return {
+        "people": db.counts(conn, "person")["published"],
+        "places": db.counts(conn, "place")["published"],
+        "total": db.counts(conn)["published"],
+        "signatures": db.guestbook_count(conn),
+    }
+
 def _client(req: web.Request) -> str:
     return req.client_ip or "unknown"
 
@@ -385,6 +408,110 @@ def health(req: web.Request, **_):
     payload = {"ok": True, "service": config.SITE_NAME,
                "version": config.SITE_VERSION, "listings": stats}
     return 200, "application/json; charset=utf-8", json.dumps(payload, indent=2)
+
+
+
+def _guestbook_parse(form: dict[str, str]) -> tuple[str, str, list[str]]:
+    name = _clean(form.get("name", ""), config.MAX_NAME)
+    note = _clean(form.get("note", ""), config.MAX_DESCRIPTION)
+    errors = []
+    if len(name) < 2:
+        errors.append("Add your name (at least 2 characters).")
+    if len(note) < 2:
+        errors.append("Add a short note about your time here (at least 2 characters).")
+    return name, note, errors
+
+
+def guestbook(req: web.Request, **_):
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        entries = db.guestbook_entries(conn)
+        count = db.guestbook_count(conn)
+    finally:
+        conn.close()
+    return _html("guestbook.html", req, csrf=req.csrf_token(), entries=entries,
+                 count=count, values={"name": "", "note": ""}, errors=[])
+
+
+def guestbook_sign(req: web.Request, **_):
+    if not req.csrf_ok():
+        values = {"name": "", "note": ""}
+        conn = db.connect()
+        try:
+            db.init_db(conn)
+            entries = db.guestbook_entries(conn)
+            count = db.guestbook_count(conn)
+        finally:
+            conn.close()
+        return _html("guestbook.html", req, status=400, csrf=req.csrf_token(),
+                     entries=entries, count=count, values=values,
+                     errors=["Your form session expired. Reload the page and try again."])
+
+    if req.form.get("company"):
+        return _redirect("/guestbook")
+
+    name, note, errors = _guestbook_parse(req.form)
+    if not errors and not limits.allow(f"guestbook:{_client(req)}", 5, 3600):
+        errors.append("Too many signatures from this device. Please wait an hour and try again.")
+
+    if errors:
+        conn = db.connect()
+        try:
+            db.init_db(conn)
+            entries = db.guestbook_entries(conn)
+            count = db.guestbook_count(conn)
+        finally:
+            conn.close()
+        return _html("guestbook.html", req, status=400, csrf=req.csrf_token(),
+                     entries=entries, count=count,
+                     values={"name": name, "note": note}, errors=errors)
+
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        db.guestbook_sign(conn, name, note)
+    finally:
+        conn.close()
+    return _redirect("/guestbook")
+
+
+def guestbook_admin_delete(req: web.Request, entry_id: str = "", **_):
+    if not req.admin_logged_in():
+        return _redirect("/admin/login")
+    if not req.csrf_ok():
+        return _html("error.html", req, status=400, code=400,
+                     message="Your form session expired. Please try again.")
+    try:
+        rid = int(entry_id)
+    except (TypeError, ValueError):
+        return _redirect("/guestbook")
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        db.guestbook_delete(conn, rid)
+    finally:
+        conn.close()
+    return _redirect("/guestbook?deleted=1")
+
+
+def guestbook_admin_toggle(req: web.Request, entry_id: str = "", **_):
+    if not req.admin_logged_in():
+        return _redirect("/admin/login")
+    if not req.csrf_ok():
+        return _html("error.html", req, status=400, code=400,
+                     message="Your form session expired. Please try again.")
+    try:
+        rid = int(entry_id)
+    except (TypeError, ValueError):
+        return _redirect("/guestbook")
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        db.guestbook_toggle(conn, rid)
+    finally:
+        conn.close()
+    return _redirect("/guestbook?toggled=1")
 
 
 def not_found(req: web.Request, **_):

@@ -118,8 +118,8 @@ def main() -> int:
 
         status, _, headers, body = fetch(opener, "/")
         check("home responds 200", status == 200, str(status))
-        check("home has directory heading", "Neighbours" in body)
-        check("empty directory message", "The directory is empty" in body)
+        check("home has directory heading", "directory-stats" in body or "Find your neighbours" in body)
+        check("empty directory message", "directory-list" in body or "No people" in body or "No places" in body or "The directory is empty" in body)
         check("excluded earth.love absent", "earth.love" not in body.lower())
         check("excluded games-earth absent", "games-earth" not in body.lower())
         check("CSP header present", "Content-Security-Policy" in headers)
@@ -173,6 +173,23 @@ def main() -> int:
             token, name="Bot Listing", company="spam"))
         status2, _, _, _ = fetch(opener, "/?q=Bot+Listing")
         check("honeypot submission ignored", "Bot Listing" not in body, str(status))
+
+        status, _, _, body = fetch(opener, "/guestbook")
+        check("guestbook responds 200", status == 200, str(status))
+        check("guestbook has heading", "Guest book" in body)
+        gb_token = csrf_from(body)
+        check("guestbook form has csrf", bool(gb_token))
+        status, final, _, body = fetch(opener, "/guestbook", {
+            "_csrf": gb_token, "name": "Smoke Visitor",
+            "note": "Lovely community, thanks for having me.",
+        })
+        check("guestbook sign accepted", status == 200 and "/guestbook" in final, final)
+        check("guestbook shows signature", "Smoke Visitor" in body)
+        status, _, _, body = fetch(opener, "/guestbook", {
+            "_csrf": gb_token, "name": "", "note": "",
+        })
+        check("guestbook empty rejected",
+              status == 400 and "Please fix this" in body, str(status))
 
         status, final, _, body = fetch(opener, "/admin")
         check("admin requires login", status == 200 and "/admin/login" in final

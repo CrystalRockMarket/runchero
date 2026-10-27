@@ -45,12 +45,58 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_entries_published ON entries(published);
         CREATE INDEX IF NOT EXISTS idx_entries_name ON entries(name);
         CREATE INDEX IF NOT EXISTS idx_channels_entry ON channels(entry_id);
+        CREATE TABLE IF NOT EXISTS guestbook (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            name TEXT NOT NULL,
+            note TEXT NOT NULL DEFAULT '',
+            published INTEGER NOT NULL DEFAULT 1
+        );
+        CREATE INDEX IF NOT EXISTS idx_guestbook_created ON guestbook(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_guestbook_published ON guestbook(published);
         """
     )
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(entries)")}
     if "kind" in columns:
         conn.execute("DROP INDEX IF EXISTS idx_entries_kind")
         conn.execute("ALTER TABLE entries DROP COLUMN kind")
+    conn.commit()
+
+
+def guestbook_sign(conn: sqlite3.Connection, name: str, note: str) -> int:
+    cursor = conn.execute(
+        "INSERT INTO guestbook (created_at, name, note, published) VALUES (?, ?, ?, 1)",
+        (_now(), name, note),
+    )
+    conn.commit()
+    return int(cursor.lastrowid)
+
+
+def guestbook_entries(conn: sqlite3.Connection, *, published_only: bool = True,
+                      limit: int = 300) -> list[dict]:
+    where = " WHERE published = 1" if published_only else ""
+    rows = conn.execute(
+        f"SELECT * FROM guestbook{where} ORDER BY created_at DESC, id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def guestbook_count(conn: sqlite3.Connection) -> int:
+    return int(conn.execute("SELECT COUNT(*) FROM guestbook WHERE published = 1").fetchone()[0])
+
+
+def guestbook_delete(conn: sqlite3.Connection, entry_id: int) -> None:
+    conn.execute("DELETE FROM guestbook WHERE id = ?", (entry_id,))
+    conn.commit()
+
+
+def guestbook_toggle(conn: sqlite3.Connection, entry_id: int) -> None:
+    conn.execute(
+        "UPDATE guestbook SET published = CASE WHEN published = 1 THEN 0 ELSE 1 END "
+        "WHERE id = ?",
+        (entry_id,),
+    )
     conn.commit()
 
 

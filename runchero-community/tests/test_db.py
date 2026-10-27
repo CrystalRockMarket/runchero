@@ -119,5 +119,33 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(names, ["Aaron Bell", "Zoe Adams"])
 
 
+
+    def test_guestbook_sign_and_list(self) -> None:
+        entry_id = db.guestbook_sign(self.conn, "River T.", "Lovely visit, thank again.")
+        self.assertGreater(entry_id, 0)
+        entries = db.guestbook_entries(self.conn)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["name"], "River T.")
+        self.assertTrue(entries[0]["published"])
+        self.assertEqual(db.guestbook_count(self.conn), 1)
+
+    def test_guestbook_order_newest_first(self) -> None:
+        db.guestbook_sign(self.conn, "First Visitor", "hello")
+        db.guestbook_sign(self.conn, "Second Visitor", "hi again")
+        names = [row["name"] for row in db.guestbook_entries(self.conn)]
+        self.assertEqual(names, ["Second Visitor", "First Visitor"])
+
+    def test_guestbook_toggle_and_delete(self) -> None:
+        entry_id = db.guestbook_sign(self.conn, "Temp Guest", "bye soon")
+        db.guestbook_toggle(self.conn, entry_id)
+        entries = db.guestbook_entries(self.conn, published_only=True)
+        self.assertEqual(len(entries), 0)
+        entries_all = db.guestbook_entries(self.conn, published_only=False)
+        self.assertEqual(len(entries_all), 1)
+        db.guestbook_toggle(self.conn, entry_id)
+        db.guestbook_delete(self.conn, entry_id)
+        self.assertEqual(db.guestbook_count(self.conn), 0)
+        self.assertEqual(len(db.guestbook_entries(self.conn, published_only=False)), 0)
+
 if __name__ == "__main__":
     unittest.main()

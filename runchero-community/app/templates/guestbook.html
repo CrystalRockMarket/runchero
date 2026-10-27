@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Guest book{% endblock %}
+{% block description %}Sign the Runchero guest book and leave a note about your time here.{% endblock %}
+
+{% block body %}
+<section class="request-layout">
+  <div class="card">
+    <p class="eyebrow"><a href="/">← Back to the directory</a></p>
+    <h1><img src="/static/img/icons/chat.png" alt="" width="22" height="22"> Guest book</h1>
+    <p class="lede small">A space for visitors and neighbours to leave a note about their time in Runchero. No account needed &mdash; just your name and a few words.</p>
+
+    {% if errors %}
+    <div class="callout callout-error" role="alert">
+      <strong>Please fix this:</strong>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    {% if is_admin and req.query.get("deleted") %}
+    <div class="callout callout-ok" role="status">Signature removed.</div>
+    {% elif is_admin and req.query.get("toggled") %}
+    <div class="callout callout-ok" role="status">Signature visibility changed.</div>
+    {% endif %}
+
+    <form method="post" action="/guestbook" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <div class="field">
+        <label class="label" for="name">Your name</label>
+        <input id="name" name="name" type="text" maxlength="{{ max_name }}" value="{{ values.name }}" placeholder="Your name" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="note">Your note</label>
+        <textarea id="note" name="note" rows="4" maxlength="{{ max_description }}" placeholder="Share something about your time here, what brought you to Runchero, or a message for the community." required>{{ values.note }}</textarea>
+      </div>
+
+      <div class="hp" aria-hidden="true">
+        <label for="company_hp">Company</label>
+        <input id="company_hp" name="company" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">
+          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Sign the guest book
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> About the guest book</h2>
+    <ul class="plain-list">
+      <li>Anyone on the local network can sign.</li>
+      <li>Signatures appear publicly once submitted.</li>
+      <li>No account or sign-up is required.</li>
+      <li>Only an admin can remove a signature.</li>
+      <li>Keep it kind and on-topic for the community.</li>
+    </ul>
+    {% if is_admin %}
+    <div class="admin-aside">
+      <h3>Admin</h3>
+      <p class="hint">You can hide or delete signatures below. Hidden signatures stay in the database but are not shown publicly.</p>
+      <a class="btn btn-small" href="/admin">Admin panel</a>
+    </div>
+    {% endif %}
+  </aside>
+</section>
+
+<section class="guestbook">
+  <div class="directory-head">
+    <div>
+      <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Signatures</h2>
+      <p class="hint"><strong>{{ count }}</strong> {% if count == 1 %}signature{% else %}signatures{% endif %} in the guest book.</p>
+    </div>
+  </div>
+
+  {% if not entries %}
+  <div class="card empty-state">
+    <img src="/static/img/icons/chat.png" alt="" width="48" height="48">
+    <h2>No signatures yet</h2>
+    <p class="hint">Be the first to sign the guest book.</p>
+  </div>
+  {% else %}
+  <ol class="guestbook-list">
+    {% for entry in entries %}
+    <li class="guestbook-entry">
+      <div class="signature-head">
+        <span class="signature-name">{{ entry.name }}</span>
+        <span class="signature-date">{{ entry.created_at|dt }}</span>
+        {% if is_admin %}
+        <span class="signature-admin">
+          <form method="post" action="/guestbook/{{ entry.id }}/toggle" class="inline-form">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="btn btn-small" type="submit">{% if entry.published %}Hide{% else %}Show{% endif %}</button>
+          </form>
+          <form method="post" action="/guestbook/{{ entry.id }}/delete" class="inline-form"
+                data-confirm="Remove {{ entry.name }}'s signature permanently?">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="btn btn-small btn-danger" type="submit">Delete</button>
+          </form>
+        </span>
+        {% endif %}
+      </div>
+      {% if entry.note %}
+      <p class="signature-note">{{ entry.note }}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/community.js" defer></script>{% endblock %}

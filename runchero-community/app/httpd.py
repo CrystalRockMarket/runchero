@@ -36,6 +36,10 @@ ROUTES = [
     ("POST", re.compile(r"^/admin/entries/(?P<entry_id>\d+)/delete$"),
      views.admin_delete),
     ("GET", re.compile(r"^/healthz$"), views.health),
+    ("GET", re.compile(r"^/guestbook$"), views.guestbook),
+    ("POST", re.compile(r"^/guestbook$"), views.guestbook_sign),
+    ("POST", re.compile(r"^/guestbook/(?P<entry_id>\d+)/delete$"), views.guestbook_admin_delete),
+    ("POST", re.compile(r"^/guestbook/(?P<entry_id>\d+)/toggle$"), views.guestbook_admin_toggle),
 ]
 
 CSP = (

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block description %}{{ page_description }}{% endblock %}
+
+{% block body %}
+<section class="directory-page">
+  <header class="directory-header">
+    <div>
+      <p class="eyebrow">{{ hero_eyebrow }}</p>
+      <h1>{{ hero_heading }}</h1>
+      <p class="lede">{{ hero_lede }}</p>
+    </div>
+    <div class="directory-quicknav">
+      <a class="btn btn-primary" href="{{ add_path }}">
+        <img src="/static/img/icons/star.png" alt="" width="15" height="15"> {{ add_label }}
+      </a>
+      <a class="btn" href="/guestbook">
+        <img src="/static/img/icons/chat.png" alt="" width="15" height="15"> Guest book
+      </a>
+      {% if kind == 'place' %}
+      <a class="btn btn-ghost" href="/">People</a>
+      {% else %}
+      <a class="btn btn-ghost" href="/places">Places</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="directory-stats" role="status">
+    <div class="stat">
+      <span class="stat-num">{{ stats.people }}</span>
+      <span class="stat-label">people</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">{{ stats.places }}</span>
+      <span class="stat-label">places</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">{{ stats.total }}</span>
+      <span class="stat-label">total listings</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">{{ stats.signatures }}</span>
+      <span class="stat-label">guest book</span>
+    </div>
+  </div>
+
+  <form method="get" action="{{ '/places' if kind == 'place' else '/' }}" class="community-filter" role="search">
+    <div class="filter">
+      <img src="/static/img/icons/magnifier.png" alt="" width="18" height="18">
+      <label class="sr-only" for="q">Search</label>
+      <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search names, skills, or places" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="label" for="category">Category</label>
+      <select id="category" name="category">
+        <option value="">Any category</option>
+        {% for category in categories %}
+        <option value="{{ category }}" {% if active_category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" type="submit">Search</button>
+      {% if filtered %}<a class="btn btn-small btn-ghost" href="{{ '/places' if kind == 'place' else '/' }}">Clear</a>{% endif %}
+    </div>
+  </form>
+
+  {% if not entries %}
+  <div class="card empty-state">
+    <img src="/static/img/icons/{{ card_icon }}" alt="" width="48" height="48">
+    <h2>{% if filtered %}{{ empty_title_filtered }}{% else %}{{ empty_title_empty }}{% endif %}</h2>
+    {% if filtered %}
+    <p class="hint">{{ empty_hint_filtered }}</p>
+    <a class="btn btn-small" href="{{ '/places' if kind == 'place' else '/' }}">Show all</a>
+    {% else %}
+    <p class="hint">{{ empty_hint_empty }}</p>
+    <a class="btn btn-primary" href="{{ add_path }}">{{ add_label }}</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <ol class="directory-list">
+    {% for letter, group in letter_groups %}
+    <li class="directory-group" id="letter-{{ letter }}">
+      <div class="directory-letter">{{ letter }}</div>
+      <div class="directory-entries">
+        {% for e in group %}
+        <details class="dir-entry" data-entry="{{ e.id }}">
+          <summary class="dir-summary">
+            <span class="dir-name">{{ e.name }}</span>
+            <span class="dir-meta">
+              <span class="pill">{{ e.category }}</span>
+              {% if e.location %}<span class="dir-loc">{{ e.location }}</span>{% endif %}
+            </span>
+            <span class="dir-toggle" aria-hidden="true"></span>
+          </summary>
+          <div class="dir-detail">
+            {% if e.description %}
+            <p class="dir-description">{{ e.description }}</p>
+            {% endif %}
+            {% if e.channels %}
+            <ul class="channel-list">
+              {% for ch in e.channels %}
+              <li>
+                <span class="ch-label">{{ ch.label }}</span>
+                {% if ch.href %}<a href="{{ ch.href }}" {% if ch.external %}target="_blank" rel="noopener"{% endif %}>{{ ch.value }}</a>{% else %}<span>{{ ch.value }}</span>{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <div class="dir-actions">
+              <a class="btn btn-small" href="/entry/{{ e.id }}">View full page</a>
+            </div>
+          </div>
+        </details>
+        {% endfor %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  <section class="card add-cta">
+    <img src="/static/img/icons/seedling.png" alt="" width="48" height="48">
+    <div>
+      <h2>{{ cta_title }}</h2>
+      <p class="hint">{{ cta_text }}</p>
+    </div>
+    <a class="btn btn-primary" href="{{ add_path }}">{{ add_label }}</a>
+  </section>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/directory.js" defer></script>{% endblock %}
