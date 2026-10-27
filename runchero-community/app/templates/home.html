@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Community directory{% endblock %}
+{% block description %}Find neighbours, local businesses, groups, and services in the Runchero community.{% endblock %}
+
+{% block body %}
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">The community's own noticeboard, on the local network</p>
+    <h1>Find your neighbours. Share what you do.</h1>
+    <p class="lede">A directory of people, businesses, groups, and services in the Runchero community. Browse freely, or add your own listing in a minute. No account needed.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/add">
+        <img src="/static/img/icons/star.png" alt="" width="15" height="15"> Add your listing
+      </a>
+      <a class="btn" href="#listings">Browse the directory</a>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <img src="/static/img/icons/chat.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/person.png" alt="" width="64" height="64">
+    <img src="/static/img/icons/home.png" alt="" width="64" height="64">
+  </div>
+</section>
+
+<section class="directory-head" id="listings">
+  <div>
+    <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Community listings</h2>
+    <p class="hint"><strong>{{ stats.published }}</strong> published listings. Entries are added by neighbours and can only be edited by an admin.</p>
+  </div>
+</section>
+
+<form method="get" action="/" class="community-filter" role="search">
+  <div class="filter">
+    <img src="/static/img/icons/magnifier.png" alt="" width="18" height="18">
+    <label class="sr-only" for="q">Search listings</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search names, services, or places" autocomplete="off">
+  </div>
+  <div class="field">
+    <label class="label" for="kind">Kind</label>
+    <select id="kind" name="kind">
+      <option value="">Any kind</option>
+      {% for kind in kinds %}
+      <option value="{{ kind }}" {% if active_kind == kind %}selected{% endif %}>{{ kind }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label class="label" for="category">Category</label>
+    <select id="category" name="category">
+      <option value="">Any category</option>
+      {% for category in categories %}
+      <option value="{{ category }}" {% if active_category == category %}selected{% endif %}>{{ category }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button class="btn btn-primary" type="submit">Search</button>
+    {% if filtered %}<a class="btn btn-small btn-ghost" href="/">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if not entries %}
+<div class="card empty-state">
+  <img src="/static/img/icons/chat.png" alt="" width="48" height="48">
+  <h2>No listings match that search</h2>
+  {% if filtered %}
+  <p class="hint">Try a different word, or clear the filters to see everyone.</p>
+  <a class="btn btn-small" href="/">Show all listings</a>
+  {% else %}
+  <p class="hint">The directory is empty. Be the first to add a neighbour, business, or group.</p>
+  <a class="btn btn-primary" href="/add">Add the first listing</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="listing-grid">
+  {% for e in entries %}
+  <article class="listing-card">
+    <header class="listing-head">
+      <img class="app-icon" src="/static/img/icons/{{ kind_icons.get(e.kind, 'star.png') }}" alt="" width="30" height="30">
+      <h3><a href="/entry/{{ e.id }}">{{ e.name }}</a></h3>
+    </header>
+    <p class="pill-row">
+      <span class="pill">{{ e.kind }}</span>
+      <span class="pill">{{ e.category }}</span>
+    </p>
+    {% if e.location %}<p class="listing-loc"><img src="/static/img/icons/home.png" alt="" width="13" height="13"> {{ e.location }}</p>{% endif %}
+    {% if e.description %}<p class="desc">{{ e.description }}</p>{% endif %}
+    <ul class="channel-list" aria-label="Contact details">
+      {% for ch in e.channels[:4] %}
+      <li>
+        <span class="ch-label">{{ ch.label }}</span>
+        {% if ch.href %}<a href="{{ ch.href }}" {% if ch.external %}target="_blank" rel="noopener"{% endif %}>{{ ch.value }}</a>{% else %}<span>{{ ch.value }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <a class="btn btn-small" href="/entry/{{ e.id }}">View listing</a>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+
+<section class="card add-cta">
+  <img src="/static/img/icons/seedling.png" alt="" width="48" height="48">
+  <div>
+    <h2>Not listed yet?</h2>
+    <p class="hint">Add yourself, your business, or a group. It appears right away, and only an admin can edit or remove it afterwards.</p>
+  </div>
+  <a class="btn btn-primary" href="/add">Add a listing</a>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/community.js" defer></script>{% endblock %}

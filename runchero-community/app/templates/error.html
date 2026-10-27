@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ code }}{% endblock %}
+
+{% block body %}
+<section class="card prose">
+  <p class="eyebrow">Error {{ code }}</p>
+  <h1>{% if code == 404 %}Page not found{% else %}Something went wrong{% endif %}</h1>
+  <p class="lede">{{ message }}</p>
+  <div class="actions">
+    <a class="btn btn-primary" href="/">Back to the directory</a>
+    <a class="btn" href="/add">Add a listing</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_name }}{% endblock %} | {{ site_name }}</title>
+<meta name="description" content="{% block description %}{{ site_tagline }}{% endblock %}">
+<meta name="theme-color" content="#1b1b23">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/img/icons/chat.png" type="image/png">
+<link rel="stylesheet" href="/static/css/community.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<div class="wrap">
+  <header class="topbar">
+    <a class="brand" href="/">
+      <img src="/static/img/icons/chat.png" alt="" width="42" height="42">
+      <span class="name">{{ site_name }}<small>{{ site_tagline }}</small></span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Main">
+      <a href="/" {% if path == '/' %}aria-current="page"{% endif %}>
+        <img src="/static/img/icons/list.png" alt="" width="16" height="16"> Directory
+      </a>
+      <a href="/add" {% if path == '/add' %}aria-current="page"{% endif %}>
+        <img src="/static/img/icons/star.png" alt="" width="16" height="16"> Add a listing
+      </a>
+      {% if is_admin %}
+      <a href="/admin" {% if path.startswith('/admin') %}aria-current="page"{% endif %}>
+        <img src="/static/img/icons/info.png" alt="" width="16" height="16"> Admin
+      </a>
+      {% endif %}
+    </nav>
+    <span class="badge">{{ site_badge }}</span>
+  </header>
+
+  <main id="main" tabindex="-1">
+    {% block body %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <p>Built by and for the Runchero community. Everything here runs on the local network.</p>
+    <p class="foot-links">
+      <a href="/add">Add a listing</a>
+      <span aria-hidden="true">·</span>
+      <a href="/admin">Admin</a>
+      <span aria-hidden="true">·</span>
+      {{ site_name }} v{{ site_version }}
+    </p>
+  </footer>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

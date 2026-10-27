@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ entry.name }}{% endblock %}
+
+{% block body %}
+<section class="request-layout">
+  <div class="card">
+    <p class="eyebrow"><a href="/admin">← Back to the admin panel</a></p>
+    <h1>Edit listing</h1>
+    <p class="hint">Changes go live immediately. The submitter cannot edit this entry themselves.</p>
+
+    {% if errors %}
+    <div class="callout callout-error" role="alert">
+      <strong>Please fix this:</strong>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/admin/entries/{{ entry.id }}" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <div class="field">
+        <label class="label" for="name">Name</label>
+        <input id="name" name="name" type="text" maxlength="{{ max_name }}" value="{{ values.name }}" required>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="kind">Kind</label>
+          <select id="kind" name="kind">
+            {% for kind in kinds %}
+            <option value="{{ kind }}" {% if values.kind == kind %}selected{% endif %}>{{ kind }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="category">Category</label>
+          <select id="category" name="category">
+            {% for category in categories %}
+            <option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="description">Description</label>
+        <textarea id="description" name="description" rows="6" maxlength="{{ max_description }}">{{ values.description }}</textarea>
+        <p class="counter"><span id="desc-count">0</span> / {{ max_description }}</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="location">Area or address</label>
+        <input id="location" name="location" type="text" maxlength="{{ max_location }}" value="{{ values.location }}">
+      </div>
+
+      <h2 class="section-title"><img src="/static/img/icons/chat.png" alt="" width="19" height="19"> Public contact details</h2>
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="phone">Phone</label>
+          <input id="phone" name="phone" type="tel" maxlength="{{ max_channel_value }}" value="{{ fixed.phone }}">
+        </div>
+        <div class="field">
+          <label class="label" for="email">Email</label>
+          <input id="email" name="email" type="email" maxlength="{{ max_channel_value }}" value="{{ fixed.email }}">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="facebook">Facebook</label>
+          <input id="facebook" name="facebook" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.facebook }}">
+        </div>
+        <div class="field">
+          <label class="label" for="instagram">Instagram</label>
+          <input id="instagram" name="instagram" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.instagram }}">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="website">Website</label>
+          <input id="website" name="website" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.website }}">
+        </div>
+        <div class="field">
+          <label class="label" for="address">Address</label>
+          <input id="address" name="address" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.address }}">
+        </div>
+      </div>
+
+      <h2 class="section-title"><img src="/static/img/icons/list.png" alt="" width="19" height="19"> Other ways to reach them</h2>
+      {% for row in custom %}
+      <div class="custom-row">
+        <div class="field">
+          <label class="label" for="custom_label_{{ loop.index }}">Label</label>
+          <input id="custom_label_{{ loop.index }}" name="custom_label_{{ loop.index }}" type="text" maxlength="{{ max_channel_label }}" value="{{ row.label }}">
+        </div>
+        <div class="field">
+          <label class="label" for="custom_value_{{ loop.index }}">Value</label>
+          <input id="custom_value_{{ loop.index }}" name="custom_value_{{ loop.index }}" type="text" maxlength="{{ max_channel_value }}" value="{{ row.value }}">
+        </div>
+      </div>
+      {% endfor %}
+
+      <h2 class="section-title"><img src="/static/img/icons/info.png" alt="" width="19" height="19"> Admin only</h2>
+      <div class="field">
+        <label class="label" for="submitter_contact">Submitter contact</label>
+        <input id="submitter_contact" name="submitter_contact" type="text" maxlength="{{ max_submitter }}" value="{{ values.submitter_contact }}">
+        <p class="hint">Never shown on the public listing.</p>
+      </div>
+      <div class="field">
+        <label class="label" for="admin_note">Private admin note</label>
+        <textarea id="admin_note" name="admin_note" rows="3" maxlength="{{ max_admin_note }}" placeholder="Only admins see this.">{{ values.admin_note }}</textarea>
+      </div>
+
+      <label class="check-row" for="published">
+        <input id="published" name="published" type="checkbox" value="1" {% if values.published %}checked{% endif %}>
+        <span>Published (visible in the public directory)</span>
+      </label>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">
+          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Save changes
+        </button>
+        <a class="btn" href="/admin">Cancel</a>
+      </div>
+    </form>
+
+    <form method="post" action="/admin/entries/{{ entry.id }}/delete" class="inline-form danger-zone"
+          data-confirm="Delete “{{ entry.name }}” permanently? This cannot be undone.">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn btn-small btn-danger" type="submit">Delete this listing</button>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Listing details</h2>
+    <dl class="admin-meta">
+      <dt>ID</dt><dd>#{{ entry.id }}</dd>
+      <dt>Added</dt><dd>{{ entry.created_at|dt }}</dd>
+      <dt>Updated</dt><dd>{{ entry.updated_at|dt }}</dd>
+    </dl>
+    <h3>Reminder</h3>
+    <p class="hint">At least one public contact detail is required. Hiding a listing keeps the record but removes it from the public directory.</p>
+  </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/community.js" defer></script>{% endblock %}

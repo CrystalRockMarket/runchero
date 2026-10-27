@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Listing admin{% endblock %}
+
+{% block body %}
+<section class="admin-head">
+  <div>
+    <p class="eyebrow">Admin panel</p>
+    <h1>Community listings</h1>
+    <p class="hint">Edit details, hide a listing from the public directory, or delete it permanently. Submitters cannot edit their own entries.</p>
+  </div>
+  <div class="admin-actions">
+    <a class="btn btn-small" href="/">View directory</a>
+    <form method="post" action="/admin/logout" class="inline-form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <button class="btn btn-small" type="submit">Sign out</button>
+    </form>
+  </div>
+</section>
+
+{% if message %}
+<div class="callout callout-ok" role="status">{{ message }}</div>
+{% endif %}
+
+<nav class="tabs" aria-label="Filter by visibility">
+  <a class="tab {% if active_status == 'all' %}is-active{% endif %}" href="/admin">
+    All <span class="tab-count">{{ stats.total }}</span>
+  </a>
+  <a class="tab {% if active_status == 'published' %}is-active{% endif %}" href="/admin?status=published">
+    Published <span class="tab-count">{{ stats.published }}</span>
+  </a>
+  <a class="tab {% if active_status == 'hidden' %}is-active{% endif %}" href="/admin?status=hidden">
+    Hidden <span class="tab-count">{{ stats.hidden }}</span>
+  </a>
+</nav>
+
+<form method="get" action="/admin" class="admin-search">
+  <input type="hidden" name="status" value="{{ active_status }}">
+  <label class="sr-only" for="q">Search listings</label>
+  <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search name, description, place, or contact">
+  <select id="kind" name="kind" aria-label="Kind">
+    <option value="">Any kind</option>
+    {% for kind in kinds %}
+    <option value="{{ kind }}" {% if active_kind == kind %}selected{% endif %}>{{ kind }}</option>
+    {% endfor %}
+  </select>
+  <select id="category" name="category" aria-label="Category">
+    <option value="">Any category</option>
+    {% for category in categories %}
+    <option value="{{ category }}" {% if active_category == category %}selected{% endif %}>{{ category }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-small" type="submit">Search</button>
+  {% if q or active_kind or active_category %}
+  <a class="btn btn-small btn-ghost" href="/admin?status={{ active_status }}">Clear</a>
+  {% endif %}
+</form>
+
+{% if not entries %}
+<div class="card empty-state">
+  <img src="/static/img/icons/chat.png" alt="" width="48" height="48">
+  <h2>No listings here</h2>
+  <p class="hint">{% if q or active_kind or active_category or active_status != 'all' %}No entries match these filters.{% else %}When someone adds a listing it will appear here.{% endif %}</p>
+</div>
+{% endif %}
+
+<div class="request-list">
+  {% for e in entries %}
+  <article class="request-card" id="entry-{{ e.id }}">
+    <header class="request-head">
+      <span class="request-id">#{{ e.id }}</span>
+      <span class="pill {% if e.published %}status-built{% else %}status-declined{% endif %}">
+        {% if e.published %}Published{% else %}Hidden{% endif %}
+      </span>
+      <span class="pill">{{ e.kind }}</span>
+      <span class="pill">{{ e.category }}</span>
+      <span class="request-date">{{ e.created_at|dt }}</span>
+    </header>
+    <h2>{{ e.name }}</h2>
+    {% if e.location %}<p class="request-meta">{{ e.location }}</p>{% endif %}
+    {% if e.description %}<p class="request-desc">{{ e.description }}</p>{% endif %}
+
+    <ul class="channel-list">
+      {% for ch in e.channels %}
+      <li>
+        <span class="ch-label">{{ ch.label }}</span>
+        {% if ch.href %}<a href="{{ ch.href }}" {% if ch.external %}target="_blank" rel="noopener"{% endif %}>{{ ch.value }}</a>{% else %}<span>{{ ch.value }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <dl class="admin-meta">
+      <dt>Submitter contact</dt>
+      <dd>{{ e.submitter_contact or '—' }}</dd>
+      <dt>Private note</dt>
+      <dd>{{ e.admin_note or '—' }}</dd>
+    </dl>
+
+    <div class="request-controls">
+      <div class="admin-control-actions">
+        <a class="btn btn-small btn-primary" href="/admin/entries/{{ e.id }}/edit">Edit</a>
+        <form method="post" action="/admin/entries/{{ e.id }}/publish" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn btn-small" type="submit">{% if e.published %}Hide{% else %}Publish{% endif %}</button>
+        </form>
+        <form method="post" action="/admin/entries/{{ e.id }}/delete" class="inline-form"
+              data-confirm="Delete “{{ e.name }}” permanently? This cannot be undone.">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn btn-small btn-danger" type="submit">Delete</button>
+        </form>
+        <a class="btn btn-small btn-ghost" href="/entry/{{ e.id }}">View public page</a>
+      </div>
+    </div>
+    {% if e.updated_at and e.updated_at != e.created_at %}
+    <p class="hint updated">Last updated {{ e.updated_at|dt }}</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/community.js" defer></script>{% endblock %}

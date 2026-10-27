@@ -14,7 +14,7 @@ class ProjectListTests(unittest.TestCase):
         slugs = [p.slug for p in projects.visible_projects()]
         self.assertEqual(
             slugs,
-            ["info-depo", "shop", "map", "mirrors", "links"],
+            ["info-depo", "shop", "map", "mirrors", "links", "community"],
         )
 
     def test_excluded_tokens_are_never_present(self):

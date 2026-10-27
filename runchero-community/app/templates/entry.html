@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.name }}{% endblock %}
+{% block description %}{{ entry.name }} in the Runchero community directory.{% endblock %}
+
+{% block body %}
+<section class="entry-layout">
+  <article class="card entry-main">
+    <p class="eyebrow"><a href="/">← Back to the directory</a></p>
+    {% if not entry.published %}
+    <div class="callout callout-error" role="alert">
+      <strong>This listing is hidden.</strong> Only signed-in admins can see it.
+    </div>
+    {% endif %}
+    <header class="entry-head">
+      <img src="/static/img/icons/{{ kind_icons.get(entry.kind, 'star.png') }}" alt="" width="44" height="44">
+      <div>
+        <h1>{{ entry.name }}</h1>
+        <p class="pill-row">
+          <span class="pill">{{ entry.kind }}</span>
+          <span class="pill">{{ entry.category }}</span>
+        </p>
+      </div>
+    </header>
+
+    {% if entry.location %}
+    <p class="entry-loc"><img src="/static/img/icons/home.png" alt="" width="15" height="15"> {{ entry.location }}</p>
+    {% endif %}
+
+    {% if entry.description %}
+    <div class="entry-copy">{{ entry.description }}</div>
+    {% endif %}
+
+    <h2 class="section-title"><img src="/static/img/icons/chat.png" alt="" width="19" height="19"> Get in touch</h2>
+    <ul class="channel-list channel-list-full">
+      {% for ch in entry.channels %}
+      <li>
+        <span class="ch-label">{{ ch.label }}</span>
+        {% if ch.href %}<a href="{{ ch.href }}" {% if ch.external %}target="_blank" rel="noopener"{% endif %}>{{ ch.value }}</a>{% else %}<span>{{ ch.value }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <p class="hint entry-date">Added {{ entry.created_at|dt }}
+      {% if entry.updated_at and entry.updated_at != entry.created_at %}
+      · Updated {{ entry.updated_at|dt }}
+      {% endif %}
+    </p>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="/">Back to the directory</a>
+      <a class="btn" href="/add">Add another listing</a>
+    </div>
+  </article>
+
+  <aside class="card side-card">
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> About this directory</h2>
+    <ul class="plain-list">
+      <li>Anyone on the local network can add a listing.</li>
+      <li>Listings are locked after submission.</li>
+      <li>Only an admin can edit, hide, or delete one.</li>
+      <li>Contact details are shown publicly.</li>
+    </ul>
+    <p class="hint">Only share contact details you have permission to publish. Ask an admin if something needs changing.</p>
+
+    {% if is_admin %}
+    <div class="admin-aside">
+      <h3>Admin</h3>
+      <p class="hint"><strong>Submitter contact:</strong> {{ entry.submitter_contact or '—' }}</p>
+      {% if entry.admin_note %}<p class="hint"><strong>Private note:</strong> {{ entry.admin_note }}</p>{% endif %}
+      <a class="btn btn-small" href="/admin/entries/{{ entry.id }}/edit">Edit this listing</a>
+    </div>
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

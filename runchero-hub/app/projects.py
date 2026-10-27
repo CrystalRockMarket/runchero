@@ -99,6 +99,20 @@ PROJECTS: list[Project] = [
         screenshot="links.png",
         tags=("Affiliate", "Tools", "Money"),
     ),
+    Project(
+        slug="community",
+        name="Runchero Community Directory",
+        tagline="Neighbours, businesses, and groups, all in one place.",
+        description=(
+            "A local noticeboard for people, businesses, groups, and services. Anyone "
+            "can add a listing with phone, email, social links, and a website. Listings "
+            "are locked after submission, and an admin can edit, hide, or remove them."
+        ),
+        port=8093,
+        icon="chat.png",
+        screenshot="community.png",
+        tags=("People", "Contact", "Community"),
+    ),
 ]
 
 

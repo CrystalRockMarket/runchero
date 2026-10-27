@@ -60,6 +60,8 @@ def main() -> int:
         "RHUB_PORT": str(PORT),
         "RHUB_DB_PATH": str(Path(tmp) / "hub.db"),
         "RHUB_DATA_DIR": tmp,
+        "RHUB_PID_PATH": str(Path(tmp) / "smoke.pid"),
+        "RHUB_LOG_PATH": str(Path(tmp) / "smoke.log"),
         "RHUB_ADMIN_PASSWORD": PASSWORD,
         "RHUB_SUBMISSIONS_PER_HOUR": "100",
     })
@@ -94,6 +96,8 @@ def main() -> int:
         check("home lists info depo", "Runchero Information Depo" in body)
         check("home lists shop", "Runchero Beef" in body)
         check("home lists hub links tool", "Runchero Links" in body)
+        check("home lists community directory", "Runchero Community Directory" in body)
+        check("community link uses port 8093", "127.0.0.1:8093" in body)
         check("home shows request CTA", "Request a new app" in body)
         check("excluded earth.love absent", "earth.love" not in body.lower())
         check("excluded games-earth absent", "games-earth" not in body.lower())
@@ -102,6 +106,8 @@ def main() -> int:
 
         status, _, headers, _ = fetch(opener, "/static/img/shots/info-depo.png")
         check("screenshot served", status == 200 and headers.get("Content-Type") == "image/png", str(status))
+        status, _, headers, _ = fetch(opener, "/static/img/shots/community.png")
+        check("community screenshot served", status == 200 and headers.get("Content-Type") == "image/png", str(status))
 
         status, _, _, form = fetch(opener, "/request")
         check("request form responds 200", status == 200, str(status))
