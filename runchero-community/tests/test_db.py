@@ -42,11 +42,11 @@ class DatabaseTests(unittest.TestCase):
         self.conn.close()
         self.tmp.cleanup()
 
-    def test_entries_table_has_no_kind_column(self) -> None:
+    def test_entries_table_has_kind_column(self) -> None:
         columns = {row["name"] for row in self.conn.execute(
             "PRAGMA table_info(entries)"
         )}
-        self.assertNotIn("kind", columns)
+        self.assertIn("kind", columns)
 
     def test_create_and_get(self) -> None:
         entry_id = db.create_entry(self.conn, listing(), CHANNELS)

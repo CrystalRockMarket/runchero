@@ -19,6 +19,9 @@ STATIC_ROOT = config.STATIC_DIR.resolve()
 
 ROUTES = [
     ("GET", re.compile(r"^/$"), views.home),
+    ("GET", re.compile(r"^/places$"), views.places),
+    ("GET", re.compile(r"^/places/add$"), views.place_add_form),
+    ("POST", re.compile(r"^/places/add$"), views.place_add_submit),
     ("GET", re.compile(r"^/entry/(?P<entry_id>\d+)$"), views.entry_detail),
     ("GET", re.compile(r"^/add$"), views.add_form),
     ("POST", re.compile(r"^/add$"), views.add_submit),

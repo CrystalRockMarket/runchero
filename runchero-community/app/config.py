@@ -54,7 +54,7 @@ MAX_CUSTOM = 3
 SUBMISSIONS_PER_HOUR = int(os.environ.get("RDIR_SUBMISSIONS_PER_HOUR", "5"))
 LOGIN_ATTEMPTS_PER_15_MIN = 12
 
-CATEGORIES = [
+PEOPLE_CATEGORIES = [
     "Neighbours",
     "Skills & Help",
     "Garden & Farm",
@@ -66,6 +66,35 @@ CATEGORIES = [
     "Community",
     "Emergency",
     "Other",
+]
+
+PLACE_CATEGORIES = [
+    "Business",
+    "Shop",
+    "Farm & Garden",
+    "Venue & Space",
+    "Home",
+    "Community Space",
+    "Trades & Services",
+    "Other",
+]
+
+KINDS = {
+    "person": {
+        "label": "People",
+        "singular": "person",
+        "categories": PEOPLE_CATEGORIES,
+    },
+    "place": {
+        "label": "Places",
+        "singular": "place",
+        "categories": PLACE_CATEGORIES,
+    },
+}
+
+CATEGORIES = PEOPLE_CATEGORIES
+ALL_CATEGORIES = PEOPLE_CATEGORIES + [
+    category for category in PLACE_CATEGORIES if category not in PEOPLE_CATEGORIES
 ]
 
 ADMIN_COOKIE = "rdir_admin"

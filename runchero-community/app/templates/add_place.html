@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Add a place{% endblock %}
+{% block description %}Add a place to the Runchero community directory. No account needed.{% endblock %}
+
+{% block body %}
+<section class="request-layout">
+  <div class="card">
+    <p class="eyebrow"><a href="/places">← Back to places</a></p>
+    <h1>Add a place to the directory</h1>
+    <p class="lede small">List a business, farm, home, venue, or community space. No account needed. The listing appears immediately.</p>
+
+    <div class="callout callout-note" role="note">
+      <strong>This is the places section of the directory. Once submitted, the listing is locked.</strong>
+      You will not be able to edit it yourself. Only an admin can change or remove it, so double-check the details before sending.
+    </div>
+
+    {% if errors %}
+    <div class="callout callout-error" role="alert">
+      <strong>Please fix this:</strong>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form method="post" action="/add" class="form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <div class="field">
+        <label class="label" for="name">Place or business name</label>
+        <input id="name" name="name" type="text" maxlength="{{ max_name }}" value="{{ values.name }}" placeholder="e.g. Crea Downtown, Riverside Farm" required autofocus>
+      </div>
+
+      <div class="field">
+        <label class="label" for="category">What kind of place is this?</label>
+        <select id="category" name="category">
+          {% for category in categories %}
+          <option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="description">What should neighbours know about this place? <span class="optional">(optional)</span></label>
+        <textarea id="description" name="description" rows="5" maxlength="{{ max_description }}" placeholder="What happens here, opening times, who it is for, and anything a visitor should know.">{{ values.description }}</textarea>
+        <p class="counter"><span id="desc-count">0</span> / {{ max_description }}</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="location">Address or area <span class="optional">(optional)</span></label>
+        <input id="location" name="location" type="text" maxlength="{{ max_location }}" value="{{ values.location }}" placeholder="e.g. 12 Main St, Runchero">
+      </div>
+
+      <h2 class="section-title"><img src="/static/img/icons/chat.png" alt="" width="19" height="19"> How to reach this place</h2>
+      <p class="hint">These are shown to everyone. Add at least one: phone, email, link, or address.</p>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="phone">Phone <span class="optional">(optional)</span></label>
+          <input id="phone" name="phone" type="tel" maxlength="{{ max_channel_value }}" value="{{ fixed.phone }}" placeholder="e.g. 555 0100" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label class="label" for="email">Email <span class="optional">(optional)</span></label>
+          <input id="email" name="email" type="email" maxlength="{{ max_channel_value }}" value="{{ fixed.email }}" placeholder="name@example.com" autocomplete="email">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="facebook">Facebook <span class="optional">(optional)</span></label>
+          <input id="facebook" name="facebook" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.facebook }}" placeholder="@page or full link">
+        </div>
+        <div class="field">
+          <label class="label" for="instagram">Instagram <span class="optional">(optional)</span></label>
+          <input id="instagram" name="instagram" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.instagram }}" placeholder="@handle or full link">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="label" for="website">Website <span class="optional">(optional)</span></label>
+          <input id="website" name="website" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.website }}" placeholder="example.com">
+        </div>
+        <div class="field">
+          <label class="label" for="address">Address <span class="optional">(optional)</span></label>
+          <input id="address" name="address" type="text" maxlength="{{ max_channel_value }}" value="{{ fixed.address }}" placeholder="Street or pickup address" autocomplete="street-address">
+        </div>
+      </div>
+
+      <h2 class="section-title"><img src="/static/img/icons/list.png" alt="" width="19" height="19"> Other ways to reach you <span class="optional">(optional)</span></h2>
+      <p class="hint">A label and a value. Values starting with <code>https://</code> become links.</p>
+      {% for row in custom %}
+      <div class="custom-row">
+        <div class="field">
+          <label class="label" for="custom_label_{{ loop.index }}">Label</label>
+          <input id="custom_label_{{ loop.index }}" name="custom_label_{{ loop.index }}" type="text" maxlength="{{ max_channel_label }}" value="{{ row.label }}" placeholder="e.g. Signal, Market stall">
+        </div>
+        <div class="field">
+          <label class="label" for="custom_value_{{ loop.index }}">Value</label>
+          <input id="custom_value_{{ loop.index }}" name="custom_value_{{ loop.index }}" type="text" maxlength="{{ max_channel_value }}" value="{{ row.value }}" placeholder="Number, address, or https:// link">
+        </div>
+      </div>
+      {% endfor %}
+
+      <h2 class="section-title"><img src="/static/img/icons/info.png" alt="" width="19" height="19"> Private details <span class="optional">(optional)</span></h2>
+      <div class="field">
+        <label class="label" for="submitter_contact">Your contact for admin follow-up</label>
+        <input id="submitter_contact" name="submitter_contact" type="text" maxlength="{{ max_submitter }}" value="{{ values.submitter_contact }}" placeholder="Email or phone">
+        <p class="hint">Only admins see this. It is never shown publicly.</p>
+      </div>
+
+      <div class="hp" aria-hidden="true">
+        <label for="company_hp">Company</label>
+        <input id="company_hp" name="company" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="submit">
+          <img src="/static/img/icons/check.png" alt="" width="15" height="15"> Publish this place
+        </button>
+        <span class="hint">Locked after publishing. An admin can help with changes.</span>
+      </div>
+    </form>
+  </div>
+
+  <aside class="card side-card">
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Good to know</h2>
+    <ul class="plain-list">
+      <li>No account and no sign-up.</li>
+      <li>Your entry is public the moment you send it.</li>
+      <li>It is locked afterwards. Only an admin can edit or remove it.</li>
+      <li>At least one public contact detail is required.</li>
+      <li>This directory is for people, not businesses.</li>
+      <li>Your private follow-up contact is admin-only.</li>
+    </ul>
+    <h3>What makes a good introduction?</h3>
+    <p class="hint">Say who you are, what you are happy to help with, and where you are. Keep contact details current so neighbours can reach you.</p>
+  </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/js/community.js" defer></script>{% endblock %}

@@ -46,6 +46,96 @@ def _directory_stats(conn) -> dict:
         "signatures": db.guestbook_count(conn),
     }
 
+
+def _directory_meta(kind: str) -> dict:
+    if kind == "place":
+        return {
+            "kind": kind,
+            "page_title": "Places directory",
+            "page_description": (
+                "Businesses, farms, homes, and shared spaces in the Runchero "
+                "community. Browse locations or add one to the directory."
+            ),
+            "hero_eyebrow": "Businesses, farms, homes, and shared spaces",
+            "hero_heading": "Find places to shop, visit, stay, or gather.",
+            "hero_lede": (
+                "A directory of the places that make Runchero work: shops, "
+                "farms, workshops, venues, homes, and community spaces. Add a "
+                "place in a minute. No account needed."
+            ),
+            "card_icon": "home.png",
+            "view_label": "View place",
+            "empty_title_filtered": "No places match that search",
+            "empty_hint_filtered": "Try a different word, or clear the filters to see every place.",
+            "empty_title_empty": "No places listed yet",
+            "empty_hint_empty": "Know a business, farm, home, or shared space? Add the first place.",
+            "cta_title": "Know a place that should be listed?",
+            "cta_text": (
+                "Add a business, farm, home, or community space so neighbours "
+                "can find it. It appears right away; only an admin can edit it."
+            ),
+        }
+    return {
+        "kind": "person",
+        "page_title": "Community directory",
+        "page_description": (
+            "Meet the people of the Runchero community. Browse neighbours and "
+            "add yourself to the local directory."
+        ),
+        "hero_eyebrow": "The people of Runchero, on the local network",
+        "hero_heading": "Find your neighbours. Share what you can offer.",
+        "hero_lede": (
+            "A directory of people in the Runchero community. Browse freely, "
+            "or add yourself in a minute. No account needed."
+        ),
+        "card_icon": "person.png",
+        "view_label": "View profile",
+        "empty_title_filtered": "No neighbours match that search",
+        "empty_hint_filtered": "Try a different word, or clear the filters to see everyone.",
+        "empty_title_empty": "No people here yet",
+        "empty_hint_empty": "The directory is empty. Be the first neighbour to add yourself.",
+        "cta_title": "Not listed yet?",
+        "cta_text": (
+            "Add yourself to the neighbourhood directory. It appears right "
+            "away, and only an admin can edit or remove it afterwards."
+        ),
+    }
+
+
+def _directory_page(req: web.Request, kind: str):
+    kind = _kind(kind)
+    meta = _directory_meta(kind)
+    categories = config.KINDS[kind]["categories"]
+    filters = _filters(req, categories)
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        entries = db.list_entries(
+            conn,
+            q=filters["q"],
+            category=filters["active_category"],
+            kind=kind,
+            published_only=True,
+        )
+        stats = _directory_stats(conn)
+        letter_groups = _group_by_letter(entries)
+    finally:
+        conn.close()
+    entries = [_decorate(entry) for entry in entries]
+    return _html(
+        "directory.html", req, entries=entries, stats=stats, categories=categories,
+        letter_groups=letter_groups, filtered=bool(filters["q"] or filters["active_category"]),
+        **meta, **filters,
+    )
+
+
+def places(req: web.Request, **_):
+    return _directory_page(req, "place")
+
+
+def _kind(kind: str) -> str:
+    return kind if kind in config.KINDS else "person"
+
 def _client(req: web.Request) -> str:
     return req.client_ip or "unknown"
 
@@ -60,25 +150,30 @@ def _decorate(entry: dict) -> dict:
     return entry
 
 
-def _filters(req: web.Request) -> dict:
+def _filters(req: web.Request, categories: list[str] | None = None) -> dict:
+    if categories is None:
+        categories = config.CATEGORIES
     category = req.query.get("category", "")
     return {
         "q": _clean(req.query.get("q", ""), 100),
-        "active_category": category if category in config.CATEGORIES else "",
+        "active_category": category if category in categories else "",
     }
 
 
-def _parse(form: dict[str, str]) -> tuple[dict, dict, list[dict], list[str], list[dict]]:
+def _parse(form: dict[str, str], kind: str = "person") -> tuple[dict, dict, list[dict], list[str], list[dict]]:
+    kind = _kind(kind)
+    categories = config.KINDS[kind]["categories"]
     values = {
         "name": _clean(form.get("name", ""), config.MAX_NAME),
-        "category": form.get("category", "Neighbours"),
+        "kind": kind,
+        "category": form.get("category", categories[0]),
         "description": _clean(form.get("description", ""), config.MAX_DESCRIPTION),
         "location": _clean(form.get("location", ""), config.MAX_LOCATION),
         "submitter_contact": _clean(form.get("submitter_contact", ""), config.MAX_SUBMITTER),
         "admin_note": _clean(form.get("admin_note", ""), config.MAX_ADMIN_NOTE),
         "published": form.get("published") is not None,
     }
-    if values["category"] not in config.CATEGORIES:
+    if values["category"] not in categories:
         values["category"] = "Other"
 
     fixed = {
@@ -117,25 +212,7 @@ def _entry_to_form(entry: dict) -> tuple[dict, dict, list[dict]]:
 
 
 def home(req: web.Request, **_):
-    filters = _filters(req)
-    conn = db.connect()
-    try:
-        db.init_db(conn)
-        entries = db.list_entries(
-            conn,
-            q=filters["q"],
-            category=filters["active_category"],
-            published_only=True,
-        )
-        stats = db.counts(conn)
-    finally:
-        conn.close()
-    entries = [_decorate(entry) for entry in entries]
-    return _html(
-        "home.html", req, entries=entries, stats=stats,
-        filtered=bool(filters["q"] or filters["active_category"]),
-        **filters,
-    )
+    return _directory_page(req, "person")
 
 
 def entry_detail(req: web.Request, entry_id: str = "", **_):
@@ -199,6 +276,62 @@ def add_submit(req: web.Request, **_):
     if errors:
         return _html(
             "add.html", req, status=429 if too_many else 400,
+            csrf=req.csrf_token(), values=values, fixed=fixed, custom=custom,
+            errors=errors,
+        )
+
+    conn = db.connect()
+    try:
+        db.init_db(conn)
+        entry_id = db.create_entry(conn, values, parsed_channels)
+    finally:
+        conn.close()
+    return _redirect(f"/added/{entry_id}")
+
+
+def place_add_form(req: web.Request, **_):
+    values = {"name": "", "category": "Community Space",
+              "description": "", "location": "", "submitter_contact": "",
+              "admin_note": "", "published": True}
+    fixed = {field: "" for field in
+             ("phone", "email", "facebook", "instagram", "website", "address")}
+    custom = [{"label": "", "value": ""} for _ in range(config.MAX_CUSTOM)]
+    return _html(
+        "add_place.html", req, csrf=req.csrf_token(), values=values, fixed=fixed,
+        custom=custom, errors=[],
+    )
+
+
+def place_add_submit(req: web.Request, **_):
+    if not req.csrf_ok():
+        values = {"name": "", "category": "Community Space",
+                  "description": "", "location": "", "submitter_contact": "",
+                  "admin_note": "", "published": True}
+        fixed = {field: "" for field in
+                 ("phone", "email", "facebook", "instagram", "website", "address")}
+        custom = [{"label": "", "value": ""} for _ in range(config.MAX_CUSTOM)]
+        return _html(
+            "add_place.html", req, status=400, csrf=req.csrf_token(), values=values,
+            fixed=fixed, custom=custom,
+            errors=["Your form session expired. Reload the page and try again."],
+        )
+
+    if req.form.get("company"):
+        return _redirect("/places")
+
+    values, fixed, custom, errors, parsed_channels = _parse(req.form, "place")
+    values["published"] = True
+    values["admin_note"] = ""
+    too_many = False
+    if not errors and not limits.allow(
+        f"add:{_client(req)}", config.SUBMISSIONS_PER_HOUR, 3600
+    ):
+        errors.append("Too many listings from this device. Please wait an hour and try again.")
+        too_many = True
+
+    if errors:
+        return _html(
+            "add_place.html", req, status=429 if too_many else 400,
             csrf=req.csrf_token(), values=values, fixed=fixed, custom=custom,
             errors=errors,
         )

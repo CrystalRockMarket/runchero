@@ -27,6 +27,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             name TEXT NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'person',
             category TEXT NOT NULL DEFAULT 'Neighbours',
             description TEXT NOT NULL DEFAULT '',
             location TEXT NOT NULL DEFAULT '',
@@ -57,9 +58,10 @@ def init_db(conn: sqlite3.Connection) -> None:
         """
     )
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(entries)")}
-    if "kind" in columns:
-        conn.execute("DROP INDEX IF EXISTS idx_entries_kind")
-        conn.execute("ALTER TABLE entries DROP COLUMN kind")
+    if "kind" not in columns:
+        conn.execute("ALTER TABLE entries ADD COLUMN kind TEXT NOT NULL DEFAULT 'person'")
+    conn.execute("UPDATE entries SET kind = 'person' WHERE kind NOT IN ('person', 'place')")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_entries_kind ON entries(kind)")
     conn.commit()
 
 
@@ -122,12 +124,13 @@ def create_entry(conn: sqlite3.Connection, data: dict, channels: list[dict]) -> 
     cursor = conn.execute(
         """
         INSERT INTO entries
-            (created_at, updated_at, name, category, description,
+            (created_at, updated_at, name, kind, category, description,
              location, published, submitter_contact, admin_note)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            stamp, stamp, data["name"], data.get("category", "Neighbours"),
+            stamp, stamp, data["name"], data.get("kind", "person"),
+            data.get("category", "Neighbours"),
             data.get("description", ""), data.get("location", ""),
             1 if data.get("published", True) else 0,
             data.get("submitter_contact", ""), data.get("admin_note", ""),
@@ -143,13 +146,14 @@ def update_entry(conn: sqlite3.Connection, entry_id: int, data: dict,
                  channels: list[dict]) -> None:
     conn.execute(
         """
-        UPDATE entries SET updated_at = ?, name = ?, category = ?,
+        UPDATE entries SET updated_at = ?, name = ?, kind = ?, category = ?,
             description = ?, location = ?, published = ?, submitter_contact = ?,
             admin_note = ?
         WHERE id = ?
         """,
         (
-            _now(), data["name"], data.get("category", "Neighbours"),
+            _now(), data["name"], data.get("kind", "person"),
+            data.get("category", "Neighbours"),
             data.get("description", ""), data.get("location", ""),
             1 if data.get("published", True) else 0,
             data.get("submitter_contact", ""), data.get("admin_note", ""),
@@ -201,12 +205,15 @@ def get_entry(conn: sqlite3.Connection, entry_id: int,
 
 
 def list_entries(conn: sqlite3.Connection, *, q: str = "", category: str = "",
-                 published_only: bool = True, order: str = "name",
+                 kind: str = "", published_only: bool = True, order: str = "name",
                  limit: int = 300) -> list[dict]:
     clauses = []
     params: list[object] = []
     if published_only:
         clauses.append("e.published = 1")
+    if kind:
+        clauses.append("e.kind = ?")
+        params.append(kind)
     if category:
         clauses.append("e.category = ?")
         params.append(category)
@@ -227,9 +234,12 @@ def list_entries(conn: sqlite3.Connection, *, q: str = "", category: str = "",
     return [_entry(row, channels_for(conn, row["id"])) for row in rows]
 
 
-def counts(conn: sqlite3.Connection) -> dict[str, int]:
-    total = int(conn.execute("SELECT COUNT(*) FROM entries").fetchone()[0])
-    published = int(conn.execute(
-        "SELECT COUNT(*) FROM entries WHERE published = 1"
-    ).fetchone()[0])
+def counts(conn: sqlite3.Connection, kind: str | None = None) -> dict[str, int]:
+    where = " WHERE kind = ?" if kind else ""
+    params = (kind,) if kind else ()
+    total = int(conn.execute(f"SELECT COUNT(*) FROM entries{where}", params).fetchone()[0])
+    published_where = " WHERE published = 1"
+    if kind:
+        published_where += " AND kind = ?"
+    published = int(conn.execute(f"SELECT COUNT(*) FROM entries{published_where}", params).fetchone()[0])
     return {"total": total, "published": published, "hidden": total - published}
