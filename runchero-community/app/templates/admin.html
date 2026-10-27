@@ -5,8 +5,8 @@
 <section class="admin-head">
   <div>
     <p class="eyebrow">Admin panel</p>
-    <h1>Community listings</h1>
-    <p class="hint">Edit details, hide a listing from the public directory, or delete it permanently. Submitters cannot edit their own entries.</p>
+    <h1>People in the directory</h1>
+    <p class="hint">Edit details, hide a person from the public directory, or delete an entry permanently. Submitters cannot edit their own entries.</p>
   </div>
   <div class="admin-actions">
     <a class="btn btn-small" href="/">View directory</a>
@@ -37,12 +37,6 @@
   <input type="hidden" name="status" value="{{ active_status }}">
   <label class="sr-only" for="q">Search listings</label>
   <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search name, description, place, or contact">
-  <select id="kind" name="kind" aria-label="Kind">
-    <option value="">Any kind</option>
-    {% for kind in kinds %}
-    <option value="{{ kind }}" {% if active_kind == kind %}selected{% endif %}>{{ kind }}</option>
-    {% endfor %}
-  </select>
   <select id="category" name="category" aria-label="Category">
     <option value="">Any category</option>
     {% for category in categories %}
@@ -50,7 +44,7 @@
     {% endfor %}
   </select>
   <button class="btn btn-small" type="submit">Search</button>
-  {% if q or active_kind or active_category %}
+  {% if q or active_category %}
   <a class="btn btn-small btn-ghost" href="/admin?status={{ active_status }}">Clear</a>
   {% endif %}
 </form>
@@ -58,8 +52,8 @@
 {% if not entries %}
 <div class="card empty-state">
   <img src="/static/img/icons/chat.png" alt="" width="48" height="48">
-  <h2>No listings here</h2>
-  <p class="hint">{% if q or active_kind or active_category or active_status != 'all' %}No entries match these filters.{% else %}When someone adds a listing it will appear here.{% endif %}</p>
+  <h2>No people here</h2>
+  <p class="hint">{% if q or active_category or active_status != 'all' %}No entries match these filters.{% else %}When someone adds themselves they will appear here.{% endif %}</p>
 </div>
 {% endif %}
 
@@ -71,7 +65,6 @@
       <span class="pill {% if e.published %}status-built{% else %}status-declined{% endif %}">
         {% if e.published %}Published{% else %}Hidden{% endif %}
       </span>
-      <span class="pill">{{ e.kind }}</span>
       <span class="pill">{{ e.category }}</span>
       <span class="request-date">{{ e.created_at|dt }}</span>
     </header>

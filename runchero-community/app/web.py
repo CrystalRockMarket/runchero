@@ -97,8 +97,6 @@ def environment() -> Environment:
             site_tagline=config.SITE_TAGLINE,
             site_badge=config.SITE_BADGE,
             site_version=config.SITE_VERSION,
-            kinds=config.KINDS,
-            kind_icons=config.KIND_ICONS,
             categories=config.CATEGORIES,
             admin_user=config.ADMIN_USER,
             max_name=config.MAX_NAME,

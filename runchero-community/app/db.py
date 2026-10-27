@@ -27,8 +27,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             name TEXT NOT NULL,
-            kind TEXT NOT NULL DEFAULT 'Person',
-            category TEXT NOT NULL DEFAULT 'Community',
+            category TEXT NOT NULL DEFAULT 'Neighbours',
             description TEXT NOT NULL DEFAULT '',
             location TEXT NOT NULL DEFAULT '',
             published INTEGER NOT NULL DEFAULT 1,
@@ -48,6 +47,9 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_channels_entry ON channels(entry_id);
         """
     )
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(entries)")}
+    if "kind" in columns:
+        conn.execute("ALTER TABLE entries DROP COLUMN kind")
     conn.commit()
 
 
@@ -73,14 +75,14 @@ def create_entry(conn: sqlite3.Connection, data: dict, channels: list[dict]) -> 
     cursor = conn.execute(
         """
         INSERT INTO entries
-            (created_at, updated_at, name, kind, category, description,
+            (created_at, updated_at, name, category, description,
              location, published, submitter_contact, admin_note)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            stamp, stamp, data["name"], data.get("kind", "Person"),
-            data.get("category", "Community"), data.get("description", ""),
-            data.get("location", ""), 1 if data.get("published", True) else 0,
+            stamp, stamp, data["name"], data.get("category", "Neighbours"),
+            data.get("description", ""), data.get("location", ""),
+            1 if data.get("published", True) else 0,
             data.get("submitter_contact", ""), data.get("admin_note", ""),
         ),
     )
@@ -94,15 +96,15 @@ def update_entry(conn: sqlite3.Connection, entry_id: int, data: dict,
                  channels: list[dict]) -> None:
     conn.execute(
         """
-        UPDATE entries SET updated_at = ?, name = ?, kind = ?, category = ?,
+        UPDATE entries SET updated_at = ?, name = ?, category = ?,
             description = ?, location = ?, published = ?, submitter_contact = ?,
             admin_note = ?
         WHERE id = ?
         """,
         (
-            _now(), data["name"], data.get("kind", "Person"),
-            data.get("category", "Community"), data.get("description", ""),
-            data.get("location", ""), 1 if data.get("published", True) else 0,
+            _now(), data["name"], data.get("category", "Neighbours"),
+            data.get("description", ""), data.get("location", ""),
+            1 if data.get("published", True) else 0,
             data.get("submitter_contact", ""), data.get("admin_note", ""),
             entry_id,
         ),
@@ -152,8 +154,8 @@ def get_entry(conn: sqlite3.Connection, entry_id: int,
 
 
 def list_entries(conn: sqlite3.Connection, *, q: str = "", category: str = "",
-                 kind: str = "", published_only: bool = True,
-                 order: str = "name", limit: int = 300) -> list[dict]:
+                 published_only: bool = True, order: str = "name",
+                 limit: int = 300) -> list[dict]:
     clauses = []
     params: list[object] = []
     if published_only:
@@ -161,9 +163,6 @@ def list_entries(conn: sqlite3.Connection, *, q: str = "", category: str = "",
     if category:
         clauses.append("e.category = ?")
         params.append(category)
-    if kind:
-        clauses.append("e.kind = ?")
-        params.append(kind)
     if q:
         like = f"%{q.strip()}%"
         clauses.append(

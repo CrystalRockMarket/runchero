@@ -18,7 +18,6 @@ def _html(template: str, req: web.Request, status: int = 200, **extra):
         "is_admin": req.admin_logged_in(),
         "q": "",
         "active_category": "",
-        "active_kind": "",
     }
     context.update(extra)
     return status, "text/html; charset=utf-8", web.render(template, **context)
@@ -40,27 +39,22 @@ def _decorate(entry: dict) -> dict:
 
 def _filters(req: web.Request) -> dict:
     category = req.query.get("category", "")
-    kind = req.query.get("kind", "")
     return {
         "q": _clean(req.query.get("q", ""), 100),
         "active_category": category if category in config.CATEGORIES else "",
-        "active_kind": kind if kind in config.KINDS else "",
     }
 
 
 def _parse(form: dict[str, str]) -> tuple[dict, dict, list[dict], list[str], list[dict]]:
     values = {
         "name": _clean(form.get("name", ""), config.MAX_NAME),
-        "kind": form.get("kind", "Person"),
-        "category": form.get("category", "Community"),
+        "category": form.get("category", "Neighbours"),
         "description": _clean(form.get("description", ""), config.MAX_DESCRIPTION),
         "location": _clean(form.get("location", ""), config.MAX_LOCATION),
         "submitter_contact": _clean(form.get("submitter_contact", ""), config.MAX_SUBMITTER),
         "admin_note": _clean(form.get("admin_note", ""), config.MAX_ADMIN_NOTE),
         "published": form.get("published") is not None,
     }
-    if values["kind"] not in config.KINDS:
-        values["kind"] = "Other"
     if values["category"] not in config.CATEGORIES:
         values["category"] = "Other"
 
@@ -89,7 +83,6 @@ def _entry_to_form(entry: dict) -> tuple[dict, dict, list[dict]]:
     split = channel_rules.split_for_edit(entry["channels"])
     values = {
         "name": entry["name"],
-        "kind": entry["kind"],
         "category": entry["category"],
         "description": entry["description"],
         "location": entry["location"],
@@ -109,7 +102,6 @@ def home(req: web.Request, **_):
             conn,
             q=filters["q"],
             category=filters["active_category"],
-            kind=filters["active_kind"],
             published_only=True,
         )
         stats = db.counts(conn)
@@ -118,7 +110,7 @@ def home(req: web.Request, **_):
     entries = [_decorate(entry) for entry in entries]
     return _html(
         "home.html", req, entries=entries, stats=stats,
-        filtered=bool(filters["q"] or filters["active_category"] or filters["active_kind"]),
+        filtered=bool(filters["q"] or filters["active_category"]),
         **filters,
     )
 
@@ -142,7 +134,7 @@ def entry_detail(req: web.Request, entry_id: str = "", **_):
 
 
 def add_form(req: web.Request, **_):
-    values = {"name": "", "kind": "Person", "category": "Community",
+    values = {"name": "", "category": "Neighbours",
               "description": "", "location": "", "submitter_contact": "",
               "admin_note": "", "published": True}
     fixed = {field: "" for field in
@@ -156,7 +148,7 @@ def add_form(req: web.Request, **_):
 
 def add_submit(req: web.Request, **_):
     if not req.csrf_ok():
-        values = {"name": "", "kind": "Person", "category": "Community",
+        values = {"name": "", "category": "Neighbours",
                   "description": "", "location": "", "submitter_contact": "",
                   "admin_note": "", "published": True}
         fixed = {field: "" for field in
@@ -264,7 +256,6 @@ def admin_home(req: web.Request, **_):
             conn,
             q=filters["q"],
             category=filters["active_category"],
-            kind=filters["active_kind"],
             published_only=False,
             order="created",
         )

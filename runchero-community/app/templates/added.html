@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Listing published{% endblock %}
+{% block title %}You are in the directory{% endblock %}
 
 {% block body %}
 <section class="card prose success-card">
-  <p class="eyebrow">Listing published</p>
-  <h1>{{ entry.name }} is in the directory.</h1>
-  <p class="lede">It is public now. The entry is locked: you cannot edit it yourself, but an admin can update or remove it if something is wrong.</p>
+  <p class="eyebrow">You are in the directory</p>
+  <h1>Thanks, {{ entry.name }}.</h1>
+  <p class="lede">Your entry is public now. It is locked: you cannot edit it yourself, but an admin can update or remove it if something is wrong.</p>
 
   <ul class="channel-list channel-list-full">
     {% for ch in entry.channels %}
@@ -19,7 +19,6 @@
   <div class="actions">
     <a class="btn btn-primary" href="/entry/{{ entry.id }}">View the listing</a>
     <a class="btn" href="/">Back to the directory</a>
-    <a class="btn" href="/add">Add another listing</a>
   </div>
   {% if is_admin %}
   <p class="hint"><a href="/admin/entries/{{ entry.id }}/edit">Edit this listing in the admin panel</a></p>

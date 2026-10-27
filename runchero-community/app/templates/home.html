@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Community directory{% endblock %}
-{% block description %}Find neighbours, local businesses, groups, and services in the Runchero community.{% endblock %}
+{% block description %}Meet the people of the Runchero community. Browse neighbours and add yourself to the local directory.{% endblock %}
 
 {% block body %}
 <section class="hero">
   <div class="hero-text">
-    <p class="eyebrow">The community's own noticeboard, on the local network</p>
-    <h1>Find your neighbours. Share what you do.</h1>
-    <p class="lede">A directory of people, businesses, groups, and services in the Runchero community. Browse freely, or add your own listing in a minute. No account needed.</p>
+    <p class="eyebrow">The people of Runchero, on the local network</p>
+    <h1>Find your neighbours. Share what you can offer.</h1>
+    <p class="lede">A directory of people in the Runchero community. Browse freely, or add yourself in a minute. No account needed, and no businesses listed.</p>
     <div class="actions">
       <a class="btn btn-primary" href="/add">
-        <img src="/static/img/icons/star.png" alt="" width="15" height="15"> Add your listing
+        <img src="/static/img/icons/star.png" alt="" width="15" height="15"> Add yourself
       </a>
       <a class="btn" href="#listings">Browse the directory</a>
     </div>
@@ -25,7 +25,7 @@
 <section class="directory-head" id="listings">
   <div>
     <h2><img src="/static/img/icons/list.png" alt="" width="20" height="20"> Community listings</h2>
-    <p class="hint"><strong>{{ stats.published }}</strong> published listings. Entries are added by neighbours and can only be edited by an admin.</p>
+    <p class="hint"><strong>{{ stats.published }}</strong> neighbours listed. Entries are added by people and can only be edited by an admin.</p>
   </div>
 </section>
 
@@ -34,15 +34,6 @@
     <img src="/static/img/icons/magnifier.png" alt="" width="18" height="18">
     <label class="sr-only" for="q">Search listings</label>
     <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search names, services, or places" autocomplete="off">
-  </div>
-  <div class="field">
-    <label class="label" for="kind">Kind</label>
-    <select id="kind" name="kind">
-      <option value="">Any kind</option>
-      {% for kind in kinds %}
-      <option value="{{ kind }}" {% if active_kind == kind %}selected{% endif %}>{{ kind }}</option>
-      {% endfor %}
-    </select>
   </div>
   <div class="field">
     <label class="label" for="category">Category</label>
@@ -67,8 +58,8 @@
   <p class="hint">Try a different word, or clear the filters to see everyone.</p>
   <a class="btn btn-small" href="/">Show all listings</a>
   {% else %}
-  <p class="hint">The directory is empty. Be the first to add a neighbour, business, or group.</p>
-  <a class="btn btn-primary" href="/add">Add the first listing</a>
+  <p class="hint">The directory is empty. Be the first neighbour to add yourself.</p>
+  <a class="btn btn-primary" href="/add">Add yourself</a>
   {% endif %}
 </div>
 {% else %}
@@ -76,11 +67,10 @@
   {% for e in entries %}
   <article class="listing-card">
     <header class="listing-head">
-      <img class="app-icon" src="/static/img/icons/{{ kind_icons.get(e.kind, 'star.png') }}" alt="" width="30" height="30">
+      <img class="app-icon" src="/static/img/icons/person.png" alt="" width="30" height="30">
       <h3><a href="/entry/{{ e.id }}">{{ e.name }}</a></h3>
     </header>
     <p class="pill-row">
-      <span class="pill">{{ e.kind }}</span>
       <span class="pill">{{ e.category }}</span>
     </p>
     {% if e.location %}<p class="listing-loc"><img src="/static/img/icons/home.png" alt="" width="13" height="13"> {{ e.location }}</p>{% endif %}
@@ -103,9 +93,9 @@
   <img src="/static/img/icons/seedling.png" alt="" width="48" height="48">
   <div>
     <h2>Not listed yet?</h2>
-    <p class="hint">Add yourself, your business, or a group. It appears right away, and only an admin can edit or remove it afterwards.</p>
+    <p class="hint">Add yourself to the neighbourhood directory. It appears right away, and only an admin can edit or remove it afterwards.</p>
   </div>
-  <a class="btn btn-primary" href="/add">Add a listing</a>
+  <a class="btn btn-primary" href="/add">Add yourself</a>
 </section>
 {% endblock %}
 

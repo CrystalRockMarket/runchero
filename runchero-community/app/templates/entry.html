@@ -12,11 +12,10 @@
     </div>
     {% endif %}
     <header class="entry-head">
-      <img src="/static/img/icons/{{ kind_icons.get(entry.kind, 'star.png') }}" alt="" width="44" height="44">
+      <img src="/static/img/icons/person.png" alt="" width="44" height="44">
       <div>
         <h1>{{ entry.name }}</h1>
         <p class="pill-row">
-          <span class="pill">{{ entry.kind }}</span>
           <span class="pill">{{ entry.category }}</span>
         </p>
       </div>
@@ -55,9 +54,10 @@
   <aside class="card side-card">
     <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> About this directory</h2>
     <ul class="plain-list">
-      <li>Anyone on the local network can add a listing.</li>
+      <li>Anyone on the local network can add themselves.</li>
       <li>Listings are locked after submission.</li>
       <li>Only an admin can edit, hide, or delete one.</li>
+      <li>This directory is for people, not businesses.</li>
       <li>Contact details are shown publicly.</li>
     </ul>
     <p class="hint">Only share contact details you have permission to publish. Ask an admin if something needs changing.</p>

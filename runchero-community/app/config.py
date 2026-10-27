@@ -10,9 +10,9 @@ PROJECT_DIR = APP_DIR.parent
 SITE_NAME = os.environ.get("RDIR_SITE_NAME", "Runchero Community Directory")
 SITE_SHORT = os.environ.get("RDIR_SITE_SHORT", "Community")
 SITE_TAGLINE = os.environ.get(
-    "RDIR_SITE_TAGLINE", "Neighbours, businesses, and groups, all in one place."
+    "RDIR_SITE_TAGLINE", "The people of Runchero, all in one place."
 )
-SITE_BADGE = os.environ.get("RDIR_BADGE", "COMMUNITY BOARD")
+SITE_BADGE = os.environ.get("RDIR_BADGE", "NEIGHBOURS")
 SITE_VERSION = "0.1.0"
 
 DATA_DIR = Path(os.environ.get("RDIR_DATA_DIR", "/home/barn/data")).resolve()
@@ -54,18 +54,12 @@ MAX_CUSTOM = 3
 SUBMISSIONS_PER_HOUR = int(os.environ.get("RDIR_SUBMISSIONS_PER_HOUR", "5"))
 LOGIN_ATTEMPTS_PER_15_MIN = 12
 
-KINDS = ["Person", "Business", "Group", "Service", "Other"]
-KIND_ICONS = {
-    "Person": "person.png",
-    "Business": "tag.png",
-    "Group": "home.png",
-    "Service": "check.png",
-    "Other": "star.png",
-}
 CATEGORIES = [
-    "Farm",
-    "Food",
-    "Trades",
+    "Neighbours",
+    "Skills & Help",
+    "Garden & Farm",
+    "Trades & Repairs",
+    "Care & Support",
     "Health",
     "Education",
     "Faith",

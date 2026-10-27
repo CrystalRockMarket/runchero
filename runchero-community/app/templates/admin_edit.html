@@ -5,7 +5,7 @@
 <section class="request-layout">
   <div class="card">
     <p class="eyebrow"><a href="/admin">← Back to the admin panel</a></p>
-    <h1>Edit listing</h1>
+    <h1>Edit person</h1>
     <p class="hint">Changes go live immediately. The submitter cannot edit this entry themselves.</p>
 
     {% if errors %}
@@ -23,23 +23,13 @@
         <input id="name" name="name" type="text" maxlength="{{ max_name }}" value="{{ values.name }}" required>
       </div>
 
-      <div class="field-row">
-        <div class="field">
-          <label class="label" for="kind">Kind</label>
-          <select id="kind" name="kind">
-            {% for kind in kinds %}
-            <option value="{{ kind }}" {% if values.kind == kind %}selected{% endif %}>{{ kind }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label class="label" for="category">Category</label>
-          <select id="category" name="category">
-            {% for category in categories %}
-            <option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>
-            {% endfor %}
-          </select>
-        </div>
+      <div class="field">
+        <label class="label" for="category">What they are happy to be contacted about</label>
+        <select id="category" name="category">
+          {% for category in categories %}
+          <option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>
+          {% endfor %}
+        </select>
       </div>
 
       <div class="field">
@@ -103,7 +93,7 @@
       <div class="field">
         <label class="label" for="submitter_contact">Submitter contact</label>
         <input id="submitter_contact" name="submitter_contact" type="text" maxlength="{{ max_submitter }}" value="{{ values.submitter_contact }}">
-        <p class="hint">Never shown on the public listing.</p>
+        <p class="hint">Never shown publicly.</p>
       </div>
       <div class="field">
         <label class="label" for="admin_note">Private admin note</label>
@@ -126,19 +116,19 @@
     <form method="post" action="/admin/entries/{{ entry.id }}/delete" class="inline-form danger-zone"
           data-confirm="Delete “{{ entry.name }}” permanently? This cannot be undone.">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
-      <button class="btn btn-small btn-danger" type="submit">Delete this listing</button>
+      <button class="btn btn-small btn-danger" type="submit">Delete this person</button>
     </form>
   </div>
 
   <aside class="card side-card">
-    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Listing details</h2>
+    <h2><img src="/static/img/icons/info.png" alt="" width="20" height="20"> Person details</h2>
     <dl class="admin-meta">
       <dt>ID</dt><dd>#{{ entry.id }}</dd>
       <dt>Added</dt><dd>{{ entry.created_at|dt }}</dd>
       <dt>Updated</dt><dd>{{ entry.updated_at|dt }}</dd>
     </dl>
     <h3>Reminder</h3>
-    <p class="hint">At least one public contact detail is required. Hiding a listing keeps the record but removes it from the public directory.</p>
+    <p class="hint">At least one public contact detail is required. Hiding a person keeps the record but removes it from the public directory.</p>
   </aside>
 </section>
 {% endblock %}
