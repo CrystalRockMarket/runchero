@@ -1,0 +1,52 @@
+{% raw %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Verify – {{ config.PROJECT_NAME }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+<style>
+:root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+h1{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
+.card{background:var(--paper);border-radius:16px;padding:48px;box-shadow:0 0 0 1px var(--line);max-width:480px;width:100%;text-align:center}
+.card h1{font-size:2rem;margin-bottom:16px}
+.card p{color:var(--mute);margin-bottom:24px}
+.btn{margin-top:16px}
+.spinner{width:48px;height:48px;border:4px solid var(--line);border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 24px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="spinner" id="spinner"></div>
+  <h1>Signing you in…</h1>
+  <p>Please wait while we verify your magic link.</p>
+</div>
+<script>
+  (async function(){
+    var params = new URLSearchParams(location.search);
+    var token = params.get('token');
+    if (!token) {
+      document.getElementById('card').innerHTML = '<h1>Invalid Link</h1><p>This magic link is missing or expired.</p><a class="btn" href="/login">Try again</a>';
+      return;
+    }
+    try {
+      var res = await fetch('/auth/magic/verify?token=' + encodeURIComponent(token));
+      var data = await res.json();
+      if (data.ok) {
+        document.getElementById('card').innerHTML = '<h1>Welcome back!</h1><p>You\'re now signed in.</p><a class="btn" href="/dashboard">Go to Dashboard</a>';
+      } else {
+        document.getElementById('card').innerHTML = '<h1>Link Expired</h1><p>This magic link has expired or was already used.</p><a class="btn" href="/login">Request a new one</a>';
+      }
+    } catch (e) {
+      document.getElementById('card').innerHTML = '<h1>Error</h1><p>Something went wrong.</p><a class="btn" href="/login">Try again</a>';
+    }
+  })();
+</script>
+</body>
+</html>{% endraw %}

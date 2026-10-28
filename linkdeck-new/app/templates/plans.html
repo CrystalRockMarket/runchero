@@ -1,0 +1,44 @@
+{% raw %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pricing – {{ config.PROJECT_NAME }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+<style>
+:root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif}
+h1,h2{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
+.plans-wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+.plans-wrap h1{font-size:clamp(2.3rem,9vw,4.4rem);font-weight:800;letter-spacing:-.03em;max-width:13ch}
+.plans{max-width:1080px;margin:0 auto;padding:40px 18px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.plan{background:var(--paper);border-radius:16px;padding:20px;box-shadow:0 0 0 1px var(--line);display:flex;flex-direction:column;gap:10px}
+.plan.hot{box-shadow:0 0 0 2px var(--pri)}
+.price{font:800 2.2rem 'Bricolage Grotesque',serif;letter-spacing:-.02em}
+.price small{font:400 .95rem Figtree;color:var(--mute)}
+.plan ul{margin:0;padding-left:18px;color:var(--mute);flex:1}
+.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:10px;padding:12px 18px;min-height:44px;cursor:pointer;background:var(--pri);color:var(--priink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+.hint{color:var(--mute);font-size:.88rem;margin:0;font-weight:400}
+</style>
+</head>
+<body>
+<div class="plans-wrap">
+  <h1>Better odds, if you want them</h1>
+  <p class="hint">Everyone is in the deck. Plans only change how often you're dealt.</p>
+  <div class="plans">
+    <div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>1 active code</li><li>Standard odds (1×)</li></ul><a class="btn alt" href="/submit">Start free</a></div>
+    <div class="plan hot"><h3>Plus</h3><div class="price">$5<small> / month</small></div><ul><li>5 active links</li><li>3× odds</li></ul><button class="btn" data-buy="Plus monthly" type="button">Choose Plus</button></div>
+    <div class="plan"><h3>Pro</h3><div class="price">$15<small> / month</small></div><ul><li>20 active links</li><li>8× odds</li><li>Views, copies, and success rate</li></ul><button class="btn" data-buy="Pro monthly" type="button">Choose Pro</button></div>
+    <div class="plan"><h3>One-time boost</h3><div class="price">$3<small> / 24 hours</small></div><ul><li>10× odds on one link</li><li>Or 7 days for $10</li><li>No subscription</li></ul><button class="btn alt" data-buy="One-time boost" type="button">Boost a link</button></div>
+  </div>
+  <p class="hint" style="margin-top:12px">Boosted cards are labeled. Payments are not connected in this prototype.</p>
+</div>
+<div id="toast" role="status"></div>
+<script src="{{ url_for('static', path='js/main.js') }}"></script>
+</body>
+</html>{% endraw %}
