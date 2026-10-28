@@ -1,7 +1,6 @@
 """Database engine and session management."""
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -31,7 +30,6 @@ async_session_maker = async_sessionmaker(
 )
 
 
-@asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         try:

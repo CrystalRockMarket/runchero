@@ -1,64 +1,101 @@
-{% raw %}<!DOCTYPE html>
-<html lang="en" data-theme="{{ config.PROJECT_SHORT }}">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{% block title %}{{ config.PROJECT_NAME }} – {{ config.PROJECT_TAGLINE }}{% endblock %}</title>
+<title>LinkDeck – Fair-shuffled affiliate & referral links</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-{% block head_extra %}{% endblock %}
 </head>
 <body>
 <div class="wrap">
-<nav class="nav">
-  <span class="logo">{{ config.PROJECT_SHORT }}</span>
-  <span class="nr">
-    <a href="/">Home</a>
-    <a class="keep" href="/#how">About</a>
-    <a href="/dashboard">My Dashboard</a>
-    <a href="/submit">Submit</a>
-  </span>
-  {% if user %}
-    <a class="btn alt" href="/logout">Logout</a>
-  {% else %}
-    <a class="btn alt" href="/login">Sign In</a>
-  {% endif %}
-</span>
-{% block content %}{% endblock %}
+<nav class="nav"><span class="logo">LD</span><span class="nr">
+<span class="nl"><a href="/">Home</a><a class="keep" href="#how">Win prizes</a><a href="/plans">Pricing</a></span>
+{% if user %}<a class="btn alt" href="/dashboard">My Dashboard</a><a class="btn alt" href="/logout">Logout</a>{% else %}<a class="btn alt" href="/login">Sign In</a>{% endif %}</span></nav>
+
+<header class="hero">
+<h1>Find deals. Share your links.</h1>
+<p>Affiliate and referral links, shuffled fairly. Open one to save, or add yours to earn.</p>
+<div class="chips" id="modes" role="group" aria-label="Quick find" style="margin-top:16px">
+<button class="chip" type="button" data-m="top" aria-pressed="false">🔥 Top deals</button>
+<button class="chip" type="button" data-m="new" aria-pressed="false">🆕 Newest</button>
+<button class="chip" type="button" data-m="one" aria-pressed="false">🎲 Surprise me</button>
 </div>
-{% if user %}
-<div id="my-dashboard">
-  <h2>My Links</h2>
-  <div id="my-offers">
-    {% for offer in offers %}
-    <article class="offer-card" data-id="{{ offer.id }}">
-      <div class="offer-card__brand">{{ offer.brand }}</div>
-      <div class="offer-card__domain">{{ offer.domain }}</div>
-      <div class="offer-card__headline">{{ offer.headline }}</div>
-      <div class="offer-card__promo">{{ offer.promo }}</div>
-      <div class="offer-card__category">{{ offer.category }}</div>
-      <div class="offer-card__plan">{{ offer.plan }}</div>
-      <div class="offer-card__url">{{ offer.url }}</div>
-    </article>
-    {% endfor %}
-  </div>
+<div class="bar">
+<input class="search" id="q" type="search" placeholder="Search a brand or offer" aria-label="Search codes">
+<button class="btn alt" id="shuf" type="button">Shuffle</button>
+<a class="btn" href="/submit">Add your link</a>
 </div>
-{% endif %}
-{% if user %}
-<div id="my-stats">
-  <h2>Stats</h2>
-  <div id="my-stats-grid">
-    {% for stat in stats %}
-    <div class="stat-card">
-      <div class="stat-card__label">{{ stat.label }}</div>
-      <div class="stat-card__value">{{ stat.value }}</div>
-    </div>
-    {% endfor %}
-  </div>
+<div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+</header>
+
+<main>
+<p class="meta" id="meta"></p>
+<div class="grid" id="grid" aria-live="polite"></div>
+
+<div class="cta"><div><h3>Got an affiliate link sitting unused?</h3><p>Add it free. It takes three fields and under a minute.</p></div><a class="btn" href="/submit">Add your link</a></div>
+
+<section id="how">
+<h2>What LinkDeck is, in plain terms</h2>
+<p class="lede">Affiliate and referral programs pay you when someone signs up or buys through your link. The hard part is getting people to see it. LinkDeck is a shared place for those links: visitors find deals, and link owners get seen. Each visit shows a different random hand, so every link gets a turn.</p>
+<div class="steps">
+<div class="step"><h3>You submit</h3><p>Add your link and what the deal offers. It joins the deck right away.</p></div>
+<div class="step"><h3>It gets shuffled in</h3><p>Visitors see a random hand. Your odds go up with newer codes, good "Worked" votes, and a paid plan if you want one.</p></div>
+<div class="step"><h3>Visitors click it</h3><p>Every page load deals a new hand. Dead links get voted down and fade out.</p></div>
 </div>
-{% endif %}
-{% block scripts %}{% endblock %}
+</section>
+
+<section id="race">
+<h2>Referral race</h2>
+<p class="lede">Invite people to LinkDeck. Every sign-up through your link counts. Top referrers win.</p>
+<div class="prizes">
+<div class="prize"><b>👑 Monthly #1</b><p>Your link is shown in every hand for 7 days.</p></div>
+<div class="prize"><b>💵 First to 100</b><p>$100 USD to the first person to reach 100 referrals.</p></div>
+</div>
+<div class="board" id="board"></div>
+<button class="btn" id="inv" type="button">Get my invite link</button>
+<p class="hint" style="margin-top:10px">Sample leaderboard. Real counts start when sign-ups go live.</p>
+</section>
+
+<section id="plans">
+<h2>Better odds, if you want them</h2>
+<p class="hint">Everyone is in the deck. Plans only change how often youre dealt.</p>
+<div class="plans">
+<div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>1 active code</li><li>Standard odds (1×)</li></ul><a class="btn alt" href="/submit">Start free</a></div>
+<div class="plan hot"><h3>Plus</h3><div class="price">$5<small> / month</small></div><ul><li>5 active links</li><li>3× odds</li></ul><button class="btn" data-buy="Plus monthly" type="button">Choose Plus</button></div>
+<div class="plan"><h3>Pro</h3><div class="price">$15<small> / month</small></div><ul><li>20 active links</li><li>8× odds</li><li>Views, copies, and success rate</li></ul><button class="btn" data-buy="Pro monthly" type="button">Choose Pro</button></div>
+<div class="plan"><h3>One-time boost</h3><div class="price">$3<small> / 24 hours</small></div><ul><li>10× odds on one link</li><li>Or 7 days for $10</li><li>No subscription</li></ul><button class="btn alt" data-buy="One-time boost" type="button">Boost a link</button></div>
+</div>
+<p class="hint" style="margin-top:12px">Boosted cards are labeled. Payments are not connected in this prototype.</p>
+</section>
+
+<section id="submit">
+<h2>Add your link</h2>
+<p class="hint" style="margin-top:8px">Free and live right away. You'll need the brand, your link, and a short line about what it gives people.</p>
+<form class="form" id="f" novalidate>
+<div class="two">
+<label>Brand<input id="fb" maxlength="40" autocomplete="off" placeholder="e.g. Uber Eats"></label>
+<label>Category<select id="fc"></select></label>
+</div>
+<div class="two">
+<label style="grid-column:1/-1">Your affiliate link<input id="fk" type="url" maxlength="300" autocomplete="off" placeholder="https://"><span class="hint">Paste your tracking or referral link. You may earn when visitors use it.</span></label>
+</div>
+<label>What does it give people?<input id="fo" maxlength="70" placeholder="e.g. $20 off your first order"></label>
+<label>Plan<select id="fp"><option value="free">Free – 1× odds</option><option value="plus">Plus – 3× odds</option><option value="pro">Pro – 8× odds</option><option value="boost">One-time boost – 10× odds</option></select></label>
+<div><div class="odds"><i id="ob"></i></div><p class="hint" id="ot"></p></div>
+<p class="err" id="er" role="alert"></p>
+<button class="btn" type="submit">Add my link</button>
+<p class="ok" id="ok" role="status" hidden><span id="okt"></span> <a href="#grid">See the deck</a> · <a href="/plans">Get better odds</a></p>
+</form>
+</section>
+</main>
+
+<footer style="padding-bottom:80px">LinkDeck lists user-submitted affiliate and referral links. Posters may earn a commission when you use a link, and we may earn from boosts and memberships. Some programs ban posting links publicly, so check each program's rules first. Report a dead or abusive link with the "Didn't work" button.</footer>
+</div>
+<a class="stick" id="stick" href="/submit">Add your link</a>
+<div id="toast" role="status"></div>
+<script src="{{ url_for('static', path='js/main.js') }}"></script>
 </body>
-</html>{% endraw %}
+</html>

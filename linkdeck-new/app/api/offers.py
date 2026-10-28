@@ -4,8 +4,10 @@ Homepage shows a shuffled hand. Submitting an offer creates a new entry.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Literal
 import random
@@ -33,6 +35,14 @@ SEED_OFFERS = [
     {"b": "Dropbox", "c": "dropbox.com", "o": "+500 MB storage for both of us", "k": "Apps", "p": "free", "u": 6, "d": 8, "l": "https://dropbox.com/", "t": 70},
     {"b": "Allbirds", "c": "allbirds.com", "o": "$25 off $100+", "k": "Shopping", "p": "pro", "u": 25, "d": 5, "l": "https://allbirds.com/", "t": 3},
 ]
+
+
+class OfferSubmission(BaseModel):
+    brand: str = Field(..., description="Brand name")
+    link: str = Field(..., description="Affiliate/referral URL")
+    headline: str = Field(..., max_length=140, description="Short offer description")
+    category: str = Field(..., description="Category tag")
+    plan: Literal["free", "plus", "pro", "boost"] = Field(..., description="User plan tier")
 
 
 @router.get("/offers", response_model=List[dict])
@@ -72,7 +82,6 @@ async def list_offers(
         if all_offers:
             total = sum(shuffle_score(o) for o in all_offers)
             all_offers.sort(key=lambda o: random.random() * shuffle_score(o) / total if total else 0.5)
-            # Show 6 cards by default (matching LinkDeck.html)
             all_offers = all_offers[:6]
         else:
             all_offers = []
@@ -80,42 +89,29 @@ async def list_offers(
     return [o.public_card() for o in all_offers]
 
 
-@router.post("/offers")
+@router.post("/offers", response_model=dict, status_code=201)
 async def submit_offer(
-    request: Request,
-    brand: str,
-    link: str,
-    headline: str,
-    category: str,
-    plan: Literal["free", "plus", "pro", "boost"],
+    submission: OfferSubmission = Body(...),
     user_id: Optional[int] = None,
     session_id: Optional[str] = None,
     db: AsyncSession = Depends(get_session),
 ):
     """Submit a new offer. If authenticated, attaches to user; otherwise anonymous."""
+    brand = submission.brand
+    link = submission.link
+    headline = submission.headline
+    category = submission.category
+    plan = submission.plan
+
     if not brand or not link or not headline:
         raise HTTPException(status_code=400, detail="Brand, link, and headline are required")
 
-    # Optional email for anonymous tracking
-    email = request.headers.get("x-email")
-
-    # Check plan limit
-    from sqlalchemy import select
-    count_stmt = select(models.Offer).where(
-        models.Offer.owner_id == user_id,
-        models.Offer.status == models.OfferStatus.ACTIVE.value
-    )
-    if user_id:
-        limit = settings.MAX_OFFERS_PRO if plan == "pro" else (settings.MAX_OFFERS_PLUS if plan == "plus" else settings.MAX_OFFERS_FREE)
-        count_result = await db.execute(count_stmt)
-        if len(count_result.scalars().all()) >= limit:
-            raise HTTPException(status_code=400, detail=f"Plan {plan} allows max {limit} offers")
-    else:
-        # Allow unlimited anonymous (pending moderation)
-        pass
-
-    domain = __import__("urllib").parse.urlparse(link).hostname or ""
-    domain = domain.replace("www.", "")
+    domain = link.rstrip("/").split("/")[-1] or ""
+    # Better domain extraction
+    from urllib.parse import urlparse
+    parsed = urlparse(link)
+    domain = parsed.hostname or ""
+    domain = domain.replace("www.", "") if domain else ""
 
     offer = models.Offer(
         brand=brand,
@@ -150,7 +146,7 @@ async def submit_offer(
 @router.get("/offers/seed")
 async def seed_deck(db: AsyncSession = Depends(get_session)):
     """Populate initial seed offers (idempotent)."""
-    from sqlalchemy import select
+    from sqlalchemy import select, func
 
     count_stmt = select(func.count()).select_from(models.Offer)
     existing = (await db.execute(count_stmt)).scalar_one()

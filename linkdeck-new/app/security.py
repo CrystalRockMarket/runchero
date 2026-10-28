@@ -60,6 +60,20 @@ def create_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def get_current_user_id(request: Request) -> int:
+    """Extract current user ID from session cookie. Returns 0 if not logged in."""
+    try:
+        token = request.cookies.get("ld_session")
+        if not token:
+            return 0
+        payload = decode_token(token)
+        if not payload:
+            return 0
+        return int(payload.get("sub", 0))
+    except Exception:
+        return 0
+
+
 # SlowAPI rate limiter (configured in httpd; imported lazily where needed)
 from slowapi import Limiter
 from slowapi.util import get_remote_address

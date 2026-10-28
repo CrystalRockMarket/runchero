@@ -64,34 +64,34 @@ templates = Jinja2Templates(directory=str(settings.TEMPLATES_DIR))
 
 app.mount("/static", StaticFiles(directory=str(settings.STATIC_DIR)), name="static")
 
-app.include_router(auth_router.router)
-app.include_router(offers.router)
-app.include_router(tracking.router)
+app.include_router(auth_router.router, prefix="/auth")
+app.include_router(offers.router, prefix="/api")
+app.include_router(tracking.router, prefix="/api")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/submit", response_class=HTMLResponse)
 async def submit(request: Request):
-    return templates.TemplateResponse("submit.html", {"request": request})
+    return templates.TemplateResponse(request, "submit.html")
 
 
 @app.get("/plans", response_class=HTMLResponse)
 async def plans(request: Request):
-    return templates.TemplateResponse("plans.html", {"request": request})
+    return templates.TemplateResponse(request, "plans.html")
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: get_session = Depends(get_session)):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(request, "dashboard.html")
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html")
 
 
 @app.get("/logout", response_class=HTMLResponse)
@@ -101,12 +101,12 @@ async def logout(request: Request):
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin(request: Request):
-    return templates.TemplateResponse("admin_login.html", {"request": request})
+    return templates.TemplateResponse(request, "admin_login.html")
 
 
 @app.get("/admin/login", response_class=HTMLResponse)
 async def admin_login(request: Request):
-    return templates.TemplateResponse("admin_login.html", {"request": request})
+    return templates.TemplateResponse(request, "admin_login.html")
 
 
 @app.get("/admin/panel", response_class=HTMLResponse)
@@ -118,19 +118,15 @@ async def admin_panel(request: Request, db: get_session = Depends(get_session)):
     user_count = (await db.execute(select(func.count()).select_from(models.User))).scalar_one()
 
     return templates.TemplateResponse(
+        request,
         "admin.html",
-        {
-            "request": request,
-            "stats": {"offers": offer_count, "clicks": click_count, "users": user_count, "clicks_last_7d": 0},
-            "offers": [],
-            "users": [],
-        },
+        {"stats": {"offers": offer_count, "clicks": click_count, "users": user_count, "clicks_last_7d": 0}, "offers": [], "users": []},
     )
 
 
 @app.get("/magic/verify", response_class=HTMLResponse)
 async def magic_verify(request: Request):
-    return templates.TemplateResponse("magic_verify.html", {"request": request})
+    return templates.TemplateResponse(request, "magic_verify.html")
 
 
 @app.get("/health")
