@@ -95,6 +95,7 @@ class Offer(Base):
     domain: Mapped[str] = mapped_column(String(63))
     headline: Mapped[str] = mapped_column(String(140))
     promo: Mapped[str] = mapped_column(String(140))
+    code: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
     category: Mapped[str] = mapped_column(String(40), default="Apps")
     plan: Mapped[str] = mapped_column(String(10), default="free")
     url: Mapped[str] = mapped_column(String(500))
@@ -134,6 +135,7 @@ class Offer(Base):
             "domain": self.domain,
             "offer": self.headline,
             "promo": self.promo,
+            "code": self.code or self.domain or ("LD-" + str(self.id)),
             "category": self.category,
             "plan": self.plan,
             "url": self.url,

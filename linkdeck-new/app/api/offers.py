@@ -11,6 +11,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Literal
 import random
+import re
+import secrets
 from datetime import datetime, timedelta
 
 from app.db import get_session
@@ -21,21 +23,28 @@ from app.security import limiter
 
 router = APIRouter(tags=["offers"])
 
+
+def make_code(brand: str) -> str:
+    """Generate a short, uppercase promo code from a brand name."""
+    slug = re.sub(r"[^A-Z0-9]", "", (brand or "").upper())[:8] or "LINK"
+    return f"{slug}{secrets.randbelow(90) + 10}"
+
+
 # Seed deck data for initial load (copied from LinkDeck.html)
 SEED_OFFERS = [
-    {"b": "DoorDash", "c": "doordash.com", "o": "$25 off your first order", "k": "Food", "p": "pro", "u": 41, "d": 3, "l": "https://doordash.com/", "t": 2},
-    {"b": "Uber Eats", "c": "ubereats.com", "o": "$20 off, orders over $25", "k": "Food", "p": "free", "u": 18, "d": 5, "l": "https://ubereats.com/", "t": 6},
-    {"b": "Chime", "c": "chime.com", "o": "$100 when direct deposit hits", "k": "Banking", "p": "plus", "u": 33, "d": 7, "l": "https://chime.com/", "t": 10},
-    {"b": "SoFi", "c": "sofi.com", "o": "Up to $300 sign-up bonus", "k": "Banking", "p": "free", "u": 12, "d": 6, "l": "https://sofi.com/", "t": 25},
-    {"b": "Airbnb", "c": "airbnb.com", "o": "$40 off your first stay", "k": "Travel", "p": "boost", "u": 27, "d": 4, "l": "https://airbnb.com/", "t": 1},
-    {"b": "Lyft", "c": "lyft.com", "o": "15% off your first 3 rides", "k": "Travel", "p": "free", "u": 9, "d": 3, "l": "https://lyft.com/", "t": 40},
-    {"b": "Mint Mobile", "c": "mintmobile.com", "o": "First month on us", "k": "Phone", "p": "plus", "u": 22, "d": 5, "l": "https://mintmobile.com/", "t": 14},
-    {"b": "Visible", "c": "visible.com", "o": "$20 off your first bill", "k": "Phone", "p": "free", "u": 7, "d": 3, "l": "https://visible.com/", "t": 60},
-    {"b": "Coinbase", "c": "coinbase.com", "o": "$10 in crypto after first trade", "k": "Crypto", "p": "free", "u": 14, "d": 6, "l": "https://coinbase.com/", "t": 30},
-    {"b": "Robinhood", "c": "robinhood.com", "o": "One free stock on signup", "k": "Crypto", "p": "plus", "u": 30, "d": 4, "l": "https://robinhood.com/", "t": 9},
-    {"b": "Duolingo", "c": "duolingo.com", "o": "2 weeks of Super free", "k": "Apps", "p": "free", "u": 11, "d": 2, "l": "https://duolingo.com/", "t": 50},
-    {"b": "Dropbox", "c": "dropbox.com", "o": "+500 MB storage for both of us", "k": "Apps", "p": "free", "u": 6, "d": 8, "l": "https://dropbox.com/", "t": 70},
-    {"b": "Allbirds", "c": "allbirds.com", "o": "$25 off $100+", "k": "Shopping", "p": "pro", "u": 25, "d": 5, "l": "https://allbirds.com/", "t": 3},
+    {"b": "DoorDash", "c": "doordash.com", "x": "DASH25", "o": "$25 off your first order", "k": "Food", "p": "pro", "u": 41, "d": 3, "l": "https://doordash.com/", "t": 2},
+    {"b": "Uber Eats", "c": "ubereats.com", "x": "EATS20", "o": "$20 off, orders over $25", "k": "Food", "p": "free", "u": 18, "d": 5, "l": "https://ubereats.com/", "t": 6},
+    {"b": "Chime", "c": "chime.com", "x": "CHIME100", "o": "$100 when direct deposit hits", "k": "Banking", "p": "plus", "u": 33, "d": 7, "l": "https://chime.com/", "t": 10},
+    {"b": "SoFi", "c": "sofi.com", "x": "SOFI300", "o": "Up to $300 sign-up bonus", "k": "Banking", "p": "free", "u": 12, "d": 6, "l": "https://sofi.com/", "t": 25},
+    {"b": "Airbnb", "c": "airbnb.com", "x": "AIRBNB40", "o": "$40 off your first stay", "k": "Travel", "p": "boost", "u": 27, "d": 4, "l": "https://airbnb.com/", "t": 1},
+    {"b": "Lyft", "c": "lyft.com", "x": "LYFT15", "o": "15% off your first 3 rides", "k": "Travel", "p": "free", "u": 9, "d": 3, "l": "https://lyft.com/", "t": 40},
+    {"b": "Mint Mobile", "c": "mintmobile.com", "x": "MINTFREE", "o": "First month on us", "k": "Phone", "p": "plus", "u": 22, "d": 5, "l": "https://mintmobile.com/", "t": 14},
+    {"b": "Visible", "c": "visible.com", "x": "VISIBLE20", "o": "$20 off your first bill", "k": "Phone", "p": "free", "u": 7, "d": 3, "l": "https://visible.com/", "t": 60},
+    {"b": "Coinbase", "c": "coinbase.com", "x": "COIN10", "o": "$10 in crypto after first trade", "k": "Crypto", "p": "free", "u": 14, "d": 6, "l": "https://coinbase.com/", "t": 30},
+    {"b": "Robinhood", "c": "robinhood.com", "x": "STOCK1", "o": "One free stock on signup", "k": "Crypto", "p": "plus", "u": 30, "d": 4, "l": "https://robinhood.com/", "t": 9},
+    {"b": "Duolingo", "c": "duolingo.com", "x": "DUO2WEEKS", "o": "2 weeks of Super free", "k": "Apps", "p": "free", "u": 11, "d": 2, "l": "https://duolingo.com/", "t": 50},
+    {"b": "Dropbox", "c": "dropbox.com", "x": "DROP500", "o": "+500 MB storage for both of us", "k": "Apps", "p": "free", "u": 6, "d": 8, "l": "https://dropbox.com/", "t": 70},
+    {"b": "Allbirds", "c": "allbirds.com", "x": "BIRDS25", "o": "$25 off $100+", "k": "Shopping", "p": "pro", "u": 25, "d": 5, "l": "https://allbirds.com/", "t": 3},
 ]
 
 
@@ -120,6 +129,7 @@ async def submit_offer(
         domain=domain[:63],
         headline=headline[:140],
         promo=headline[:70],
+        code=make_code(brand),
         category=category if category in models.CATS else "Apps",
         plan=plan,
         url=link[:500],
@@ -163,6 +173,7 @@ async def seed_deck(db: AsyncSession = Depends(get_session)):
                 domain=domain,
                 headline=s["o"],
                 promo=s["o"],
+                code=s.get("x") or make_code(s["b"]),
                 category=s["k"],
                 plan=s["p"],
                 url=s["l"],

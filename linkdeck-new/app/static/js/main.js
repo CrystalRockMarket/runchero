@@ -73,7 +73,19 @@
     c.appendChild(top);
 
     var st = el('div', 'stub');
-    st.appendChild(el('span', 'code', x.promo || ('LD-' + x.id)));
+    var codeText = x.code || x.promo || ('LD-' + x.id);
+    var codeRow = el('div', 'code-row');
+    var codeEl = el('span', 'code', codeText);
+    codeEl.title = 'Click to copy';
+    codeEl.style.cursor = 'pointer';
+    var copyBtn = el('button', 'copybtn', 'Copy code');
+    copyBtn.type = 'button';
+    copyBtn.setAttribute('aria-label', 'Copy code ' + codeText + ' for ' + x.brand);
+    codeEl.onclick = function() { copyCode(codeText, copyBtn); };
+    copyBtn.onclick = function() { copyCode(codeText, copyBtn); };
+    codeRow.appendChild(codeEl);
+    codeRow.appendChild(copyBtn);
+    st.appendChild(codeRow);
 
     var a = el('div', 'acts');
     var b = el('a', 'btn cp', 'Get the deal →');
@@ -269,6 +281,38 @@
   }
 
   function siteUrl() { return location.href.split('#')[0]; }
+
+  function copyCode(text, btn) {
+    var label = btn.getAttribute('data-label') || btn.textContent;
+    btn.setAttribute('data-label', label);
+    var done = function() {
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('done');
+      setTimeout(function() {
+        btn.textContent = label;
+        btn.classList.remove('done');
+      }, 1600);
+    };
+    var fallback = function() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); }
+      catch (e) { toast('Select the code and copy it by hand'); }
+      ta.remove();
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+    } catch (e) { fallback(); }
+  }
 
   function voterKey() {
     var k = 'ld_voter';

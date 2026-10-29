@@ -31,11 +31,15 @@ nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visibl
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .brand{font:800 1.25rem 'Bricolage Grotesque',serif}
 .tag{font:600 .75rem Figtree;background:var(--gold);color:var(--goldink);border-radius:6px;padding:3px 8px;white-space:nowrap}
-.offer{margin:6px 0 0;color:var(--mute)}
+.offer{margin:8px 0 0;font-family:'Bricolage Grotesque',Georgia,serif;font-weight:600;font-size:1.18rem;line-height:1.28;letter-spacing:-.01em;color:var(--ink)}
 .stub{position:relative;border-top:2px dashed var(--line);padding:16px 18px 14px}
 .stub::before,.stub::after{content:"";position:absolute;top:-11px;width:20px;height:20px;border-radius:50%;background:var(--bg)}
 .stub::before{left:-10px}.stub::after{right:-10px}
-.code{display:block;font:500 1.15rem 'DM Mono',ui-monospace,monospace;letter-spacing:.04em;word-break:break-all;margin-bottom:12px}
+.code-row{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+.code{display:block;font:500 1.1rem 'DM Mono',ui-monospace,monospace;letter-spacing:.04em;word-break:break-all;margin:0;flex:1 1 auto;min-width:0}
+.copybtn{flex:none;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;min-height:34px;padding:0 12px;font:600 .8rem Figtree,sans-serif;cursor:pointer;white-space:nowrap;transition:border-color .15s,background .15s}
+.copybtn:hover{border-color:var(--ink)}
+.copybtn.done{background:var(--ok);color:#fff;border-color:var(--ok)}
 .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .cp{flex:1 1 auto}
 .cp.done{background:var(--ok);color:#fff}

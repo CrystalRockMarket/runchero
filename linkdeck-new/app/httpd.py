@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 async def _bootstrap() -> None:
     """Seed the deck and create the default admin if configured."""
     from app import auth as auth_service
-    from app.api.offers import SEED_OFFERS
+    from app.api.offers import SEED_OFFERS, make_code
 
     async with async_session_maker() as db:
         try:
@@ -73,6 +73,7 @@ async def _bootstrap() -> None:
                         domain=s["c"].replace("www.", ""),
                         headline=s["o"],
                         promo=s["o"],
+                        code=s.get("x") or make_code(s["b"]),
                         category=s["k"],
                         plan=s["p"],
                         url=s["l"],
@@ -85,6 +86,12 @@ async def _bootstrap() -> None:
                     )
                     for s in SEED_OFFERS
                 ])
+            # Backfill promo codes for offers created before the code column existed.
+            missing = (
+                await db.execute(select(models.Offer).where(models.Offer.code.is_(None)))
+            ).scalars().all()
+            for offer in missing:
+                offer.code = make_code(offer.brand)
             await auth_service.bootstrap_admin(db)
             await db.commit()
         except Exception:

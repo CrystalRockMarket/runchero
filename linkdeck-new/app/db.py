@@ -46,3 +46,8 @@ async def init_db() -> None:
     from app.models import Base
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight forward-only migration: add offers.code to older databases.
+        result = await conn.exec_driver_sql("PRAGMA table_info(offers)")
+        columns = {row[1] for row in result.fetchall()}
+        if "code" not in columns:
+            await conn.exec_driver_sql("ALTER TABLE offers ADD COLUMN code VARCHAR(40)")
