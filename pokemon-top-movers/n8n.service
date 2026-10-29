@@ -1,0 +1,37 @@
+[Unit]
+Description=n8n - Workflow Automation
+After=network.target postgresql.service gotenberg.service
+Wants=postgresql.service gotenberg.service
+
+[Service]
+Type=simple
+User=barn
+WorkingDirectory=/home/barn
+Environment=N8N_USER_FOLDER=/home/barn/.n8n
+Environment=N8N_PORT=5678
+Environment=N8N_HOST=0.0.0.0
+Environment=N8N_PROTOCOL=http
+Environment=WEBHOOK_URL=https://el-comms0001.taile79dec.ts.net:8443
+Environment=N8N_EDITOR_BASE_URL=https://el-comms0001.taile79dec.ts.net:8443
+Environment=N8N_RESTRICT_FILE_ACCESS_TO=/data/output
+Environment=TZ=America/New_York
+Environment=GENERIC_TIMEZONE=America/New_York
+Environment=N8N_RUNNERS_MODE=internal
+Environment=N8N_UNVERIFIED_PACKAGES_ENABLED=true
+Environment=N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES=2147483648
+Environment=N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES=1000
+Environment=N8N_RUNNERS_TASK_TIMEOUT=300
+Environment=N8N_ENCRYPTION_KEY_PASSWORD_FILE=/home/barn/.n8n/.n8n/config
+Environment=NODE_PATH=/home/linuxbrew/.linuxbrew/lib/node_modules/n8n/node_modules
+Environment=PATH=/home/linuxbrew/.linuxbrew/opt/node@24/bin:/home/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/linuxbrew/.linuxbrew/opt/node@24/bin/node /home/linuxbrew/.linuxbrew/lib/node_modules/n8n/bin/n8n start
+Restart=always
+RestartSec=5
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStartSec=180
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

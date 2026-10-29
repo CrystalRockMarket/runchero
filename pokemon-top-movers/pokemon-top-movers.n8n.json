@@ -1,0 +1,303 @@
+{
+  "name": "Pokemon Top Movers - nightly snapshot + daily image",
+  "nodes": [
+    {
+      "id": "694f165f-d95f-45ce-b3a9-d22c19c165db",
+      "name": "Run once: init DB",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "4f54b66c-60ae-4610-95c0-3eb6829c347c",
+      "name": "Create table",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [240, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS card_prices (\n  snap_date date NOT NULL DEFAULT CURRENT_DATE,\n  card_id text NOT NULL,\n  variant text NOT NULL,\n  name text, set_name text, number text, rarity text,\n  image_small text, image_large text,\n  market numeric(10,2),\n  tcg_updated text,\n  PRIMARY KEY (snap_date, card_id, variant)\n);",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "",
+          "name": "Postgres - cardsdb"
+        }
+      }
+    },
+    {
+      "id": "201dd684-0ce3-458f-bf2f-9c94d068d0af",
+      "name": "Nightly snapshot 3AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 220],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "69e91108-18e2-409c-9f61-95da7617c2c7",
+      "name": "Config Snapshot",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 220],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e4319a5d-2d3f-42de-9c01-c0efeaa215c1",
+              "name": "apiKey",
+              "value": "PASTE_POKEMONTCG_API_KEY",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f6ce4199-6506-45dd-bbee-86f09300afba",
+      "name": "Page list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 220],
+      "parameters": {
+        "jsCode": "// 120 pages x 250 cards = 30,000 card capacity. Empty pages return no data.\nreturn Array.from({ length: 120 }, (_, i) => ({ json: { page: i + 1 } }));"
+      }
+    },
+    {
+      "id": "3404023d-c3eb-4b66-a7c0-7212c1a6e2da",
+      "name": "Fetch cards page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 220],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "https://api.pokemontcg.io/v2/cards",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "page", "value": "={{ $json.page }}"},
+            {"name": "pageSize", "value": "250"},
+            {"name": "select", "value": "id,name,number,rarity,set,images,tcgplayer"}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "X-Api-Key", "value": "={{ $('Config Snapshot').first().json.apiKey }}"}
+          ]
+        },
+        "options": {
+          "timeout": 90000,
+          "batching": {"batch": {"batchSize": 1, "batchInterval": 700}}
+        }
+      }
+    },
+    {
+      "id": "0b75d9f1-d631-4cbe-b36a-03f042796821",
+      "name": "Flatten prices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 220],
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const item of $input.all()) {\n  for (const c of (item.json.data || [])) {\n    const prices = c.tcgplayer?.prices;\n    if (!prices) continue;\n    for (const [variant, p] of Object.entries(prices)) {\n      const m = Number(p?.market);\n      if (!m || m <= 0) continue;\n      out.push({ json: {\n        card_id: c.id,\n        variant,\n        name: c.name,\n        set_name: c.set?.name ?? '',\n        number: c.number ?? '',\n        rarity: c.rarity ?? '',\n        image_small: c.images?.small ?? '',\n        image_large: c.images?.large ?? '',\n        market: m,\n        tcg_updated: c.tcgplayer?.updatedAt ?? '',\n      }});\n    }\n  }\n}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "a8e77598-4960-4599-93c2-3ae348c8fe9e",
+      "name": "Save snapshot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1100, 220],
+      "parameters": {
+        "operation": "insert",
+        "schema": {"__rl": true, "mode": "list", "value": "public"},
+        "table": {"__rl": true, "mode": "name", "value": "card_prices"},
+        "columns": {"mappingMode": "autoMapInputData", "value": {}, "matchingColumns": [], "schema": []},
+        "options": {"skipOnConflict": true}
+      },
+      "credentials": {
+        "postgres": {"id": "", "name": "Postgres - cardsdb"}
+      }
+    },
+    {
+      "id": "d45920fe-3134-4174-b8fb-e72aee710f13",
+      "name": "Daily movers 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 440],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {"field": "cronExpression", "expression": "0 8 * * *"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "9f6224d1-d244-41db-98fa-6bca6879531b",
+      "name": "Config Movers",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 440],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "b87a4ff9-3f1d-4adf-9389-c18e02032eda", "name": "windowDays", "value": 1, "type": "number"},
+            {"id": "256cc323-ed48-46b3-9e41-bfe7ee40003b", "name": "minPrice", "value": 5, "type": "number"},
+            {"id": "e16278bf-cf23-4fc6-8b51-254a95a0ca99", "name": "outputDir", "value": "/data/output", "type": "string"},
+            {"id": "de3fb843-c3a7-40aa-bea6-636f68bfdbde", "name": "gotenbergUrl", "value": "http://gotenberg:3000", "type": "string"}
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "cde58582-e56a-48a1-92a0-bfe8398d8c32",
+      "name": "Query movers",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [440, 440],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=WITH latest AS (SELECT max(snap_date) AS d FROM card_prices),\nbase_day AS (\n  SELECT max(snap_date) AS d FROM card_prices, latest\n  WHERE snap_date <= latest.d - make_interval(days => {{ $json.windowDays }})\n),\nm AS (\n  SELECT c.card_id, c.variant, c.name, c.set_name, c.number, c.rarity,\n         c.image_small, c.image_large,\n         c.snap_date::text AS cur_date, b.snap_date::text AS base_date,\n         b.market AS old_price, c.market AS new_price,\n         ROUND((c.market - b.market) / b.market * 100, 1) AS pct\n  FROM card_prices c\n  JOIN card_prices b ON b.card_id = c.card_id AND b.variant = c.variant\n  WHERE c.snap_date = (SELECT d FROM latest)\n    AND b.snap_date = (SELECT d FROM base_day)\n    AND b.market >= {{ $json.minPrice }}\n    AND c.market >= {{ $json.minPrice }}\n)\n(SELECT * FROM m ORDER BY pct DESC LIMIT 8)\nUNION ALL\n(SELECT * FROM m ORDER BY pct ASC LIMIT 8);",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {"id": "", "name": "Postgres - cardsdb"}
+      }
+    },
+    {
+      "id": "5bc67c85-142c-49c1-9bdc-0669bae0ccfa",
+      "name": "Build HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 440],
+      "parameters": {
+        "jsCode": "const cfg = $('Config Movers').first().json;\nconst rows0 = $input.all().map(i => i.json);\nif (!rows0.length) {\n  throw new Error('No comparable snapshots yet. Need two nightly snapshots at least windowDays apart.');\n}\n\n// De-duplicate (the two SQL halves can overlap when data is small)\nconst seen = new Map();\nfor (const r of rows0) {\n  seen.set(r.card_id + '|' + r.variant, {\n    ...r,\n    pct: Number(r.pct),\n    old_price: Number(r.old_price),\n    new_price: Number(r.new_price),\n  });\n}\nconst rows = [...seen.values()];\nconst gain = rows.filter(r => r.pct > 0).sort((a, b) => b.pct - a.pct).slice(0, 5);\nconst fall = rows.filter(r => r.pct < 0).sort((a, b) => a.pct - b.pct).slice(0, 3);\nif (!gain.length) throw new Error('No gainers found for this window.');\n\nconst curDate = rows[0].cur_date;\nconst baseDate = rows[0].base_date;\nconst days = Math.max(1, Math.round((new Date(curDate) - new Date(baseDate)) / 86400000));\nconst windowLabel = days === 1 ? 'LAST 24 HOURS' : 'LAST ' + days + ' DAYS';\n\nconst esc = s => String(s ?? '').replace(/[&<>\\\"]/g, c => ({ '&': '&', '<': '<', '>': '>', '\"': '\"' }[c]));\nconst money = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\nconst pctFmt = p => (p > 0 ? '+' : '') + p.toFixed(1) + '%';\nconst vLabel = v => String(v).replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());\nconst img = (src, h) => src ? '<img src=\"' + esc(src) + '\" style=\"height:' + h + 'px\">' : '';\n\nconst hero = gain[0];\nconst rest = gain.slice(1);\n\nconst heroHtml = `\n<div class=\"hero\">\n  ${img(hero.image_large, 464)}\n  <div class=\"info\">\n    <div class=\"tag\">#1 BIGGEST GAINER</div>\n    <div class=\"hname\">${esc(hero.name)}</div>\n    <div class=\"meta\">${esc(hero.set_name)} \u00b7 #${esc(hero.number)} \u00b7 ${esc(vLabel(hero.variant))}</div>\n    <div class=\"big\">${pctFmt(hero.pct)}</div>\n    <div class=\"prices\">${money(hero.old_price)} \u2192 <b>${money(hero.new_price)}</b></div>\n  </div>\n</div>`;\n\nconst rowsHtml = rest.map((r, i) => `\n<div class=\"row\">\n  <div class=\"rank\">${i + 2}</div>\n  ${img(r.image_small, 70)}\n  <div class=\"rname\"><div class=\"n\">${esc(r.name)}</div><div class=\"s\">${esc(r.set_name)} \u00b7 ${esc(vLabel(r.variant))}</div></div>\n  <div class=\"rp\">${money(r.old_price)} \u2192 ${money(r.new_price)}</div>\n  <div class=\"rpct up\">${pctFmt(r.pct)}</div>\n</div>`).join('');\n\nconst fallHtml = fall.length ? `\n<div class=\"sec\">BIGGEST DROPS</div>\n<div class=\"fall\">${fall.map(r => `\n  <div class=\"fc\">\n    ${img(r.image_small, 128)}\n    <div class=\"fi\">\n      <div class=\"n\">${esc(r.name)}</div>\n      <div class=\"s\">${esc(r.set_name)}</div>\n      <div class=\"fp\">${pctFmt(r.pct)}</div>\n      <div class=\"s\">${money(r.old_price)} \u2192 ${money(r.new_price)}</div>\n    </div>\n  </div>`).join('')}\n</div>` : '';\n\nconst html = `<!doctype html><html><head><meta charset=\"utf-8\"><style>\n* { box-sizing: border-box; margin: 0; padding: 0 }\nbody { width: 1080px; height: 1350px; overflow: hidden; font-family: 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif; color: #fff; background: radial-gradient(circle at 20% 0%, #1d2f6b 0, #0b1230 55%, #070b1d 100%); display: flex; flex-direction: column; padding: 44px 52px }\n.head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 26px }\n.title { font-size: 80px; font-weight: 900; letter-spacing: 2px; color: #ffd23f; line-height: 1 }\n.sub { font-size: 27px; color: #9fb0e6; text-align: right; line-height: 1.35 }\n.hero { display: flex; gap: 36px; background: rgba(255, 255, 255, .06); border: 2px solid rgba(255, 210, 63, .35); border-radius: 28px; padding: 28px; height: 520px }\n.hero img { border-radius: 14px; box-shadow: 0 0 60px rgba(255, 210, 63, .35) }\n.info { display: flex; flex-direction: column; justify-content: center; flex: 1 }\n.tag { font-size: 23px; color: #ffd23f; letter-spacing: 3px; font-weight: 700 }\n.hname { font-size: 50px; font-weight: 800; margin: 10px 0 6px; line-height: 1.05 }\n.meta { font-size: 25px; color: #9fb0e6; margin-bottom: 20px }\n.big { font-size: 116px; font-weight: 900; color: #3ddc84; line-height: 1 }\n.prices { font-size: 34px; margin-top: 14px; color: #dfe6ff }\n.sec { font-size: 24px; letter-spacing: 3px; color: #9fb0e6; font-weight: 700; margin: 22px 0 8px }\n.row { display: flex; align-items: center; gap: 18px; height: 86px; border-bottom: 1px solid rgba(255, 255, 255, .1) }\n.row img { border-radius: 6px }\n.rank { width: 40px; font-size: 34px; font-weight: 900; color: #ffd23f; text-align: center }\n.rname { flex: 1; min-width: 0 }\n.n { font-size: 28px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }\n.s { font-size: 20px; color: #9fb0e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }\n.rp { font-size: 24px; color: #dfe6ff }\n.rpct { font-size: 36px; font-weight: 900; width: 170px; text-align: right }\n.up { color: #3ddc84 }\n.fall { display: flex; gap: 16px }\n.fc { flex: 1; min-width: 0; display: flex; gap: 14px; align-items: center; background: rgba(255, 90, 90, .08); border: 2px solid rgba(255, 90, 90, .3); border-radius: 18px; padding: 12px }\n.fc img { border-radius: 6px }\n.fi { min-width: 0; flex: 1 }\n.fp { font-size: 36px; font-weight: 900; color: #ff5c5c }\n.foot { margin-top: auto; font-size: 18px; color: #6f7fb3; line-height: 1.35 }\n</style></head><body>\n<div class=\"head\">\n  <div class=\"title\">TOP MOVERS</div>\n  <div class=\"sub\">${windowLabel}<br>${esc(curDate)} \u00b7 Pok\u00e9mon cards</div>\n</div>\n${heroHtml}\n<div class=\"sec\">MORE GAINERS</div>\n${rowsHtml}\n${fallHtml}\n<div class=\"foot\">Prices are TCGplayer market estimates via pokemontcg.io, compared ${esc(baseDate)} to ${esc(curDate)}. Not financial advice. Not affiliated with Nintendo or The Pok\u00e9mon Company.</div>\n</body></html>`;\n\nconst fileName = 'top-movers_' + curDate + '_' + days + 'd.png';\nconst bin = await this.helpers.prepareBinaryData(Buffer.from(html, 'utf8'), 'index.html', 'text/html');\nreturn [{ json: { fileName, outputDir: cfg.outputDir, gotenbergUrl: cfg.gotenbergUrl }, binary: { data: bin } }];\n"
+      }
+    },
+    {
+      "id": "427c4947-8798-4772-903f-e333523d18ea",
+      "name": "Render PNG (Gotenberg)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 440],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.gotenbergUrl }}/forms/chromium/screenshot/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {"parameterType": "formBinaryData", "name": "files", "inputDataFieldName": "data"},
+            {"name": "width", "value": "1080"},
+            {"name": "height", "value": "1350"},
+            {"name": "format", "value": "png"},
+            {"name": "waitDelay", "value": "3s"}
+          ]
+        },
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Post to Facebook",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 2,
+      "position": [1100, 440],
+      "parameters": {
+        "operation": "post",
+        "resource": "feed",
+        "contentType": "image",
+        "image": {"binaryPropertyName": "data"},
+        "message": "={{ 'Pokemon Top Movers (' + $('Config Movers').first().json.windowDays + 'd window): ' + $json.fileName }}",
+        "published": true,
+        "options": {}
+      },
+      "credentials": {
+        "facebookGraphApiOAuth2Api": {"id": "", "name": "Facebook"}
+      }
+    },
+    {
+      "id": "e4d08d9d-cd1d-4f10-8c56-fb3cf99025aa",
+      "name": "Save PNG to folder",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1340, 440],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Build HTML').first().json.outputDir }}/{{ $('Build HTML').first().json.fileName }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Run once: init DB": {
+      "main": [[{"node": "Create table", "type": "main", "index": 0}]]
+    },
+    "Nightly snapshot 3AM": {
+      "main": [[{"node": "Config Snapshot", "type": "main", "index": 0}]]
+    },
+    "Config Snapshot": {
+      "main": [[{"node": "Page list", "type": "main", "index": 0}]]
+    },
+    "Page list": {
+      "main": [[{"node": "Fetch cards page", "type": "main", "index": 0}]]
+    },
+    "Fetch cards page": {
+      "main": [[{"node": "Flatten prices", "type": "main", "index": 0}]]
+    },
+    "Flatten prices": {
+      "main": [[{"node": "Save snapshot", "type": "main", "index": 0}]]
+    },
+    "Daily movers 8AM": {
+      "main": [[{"node": "Config Movers", "type": "main", "index": 0}]]
+    },
+    "Config Movers": {
+      "main": [[{"node": "Query movers", "type": "main", "index": 0}]]
+    },
+    "Query movers": {
+      "main": [[{"node": "Build HTML", "type": "main", "index": 0}]]
+    },
+    "Build HTML": {
+      "main": [[{"node": "Render PNG (Gotenberg)", "type": "main", "index": 0}]]
+    },
+    "Render PNG (Gotenberg)": {
+      "main": [
+        [{"node": "Post to Facebook", "type": "main", "index": 0}]
+      ],
+      "secondary": [
+        [{"node": "Save PNG to folder", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "active": false,
+  "pinData": {}
+}

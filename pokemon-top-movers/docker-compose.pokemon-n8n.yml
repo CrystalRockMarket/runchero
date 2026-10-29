@@ -1,0 +1,35 @@
+# docker compose -f docker-compose.pokemon-n8n.yml up -d
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cards
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: cardsdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: America/New_York
+      TZ: America/New_York
+      N8N_RESTRICT_FILE_ACCESS_TO: /data/output
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./output:/data/output   # finished images land here
+    depends_on:
+      - postgres
+      - gotenberg
+
+volumes:
+  pgdata:
+  n8n_data:
