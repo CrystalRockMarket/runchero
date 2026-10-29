@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -39,6 +39,42 @@ async def record_click(offer_id: int, request: Request, db: AsyncSession = Depen
 
     await db.flush()
     return {"ok": True, "offer_id": offer_id, "clicked": True}
+
+
+@router.post("/vote/{offer_id}")
+async def vote(
+    offer_id: int,
+    request: Request,
+    is_up: bool = True,
+    voter_key: Optional[str] = None,
+    db: AsyncSession = Depends(get_session),
+):
+    """Record a worked / didn't-work vote. Deduplicated per offer+voter."""
+    offer = (await db.execute(select(models.Offer).where(models.Offer.id == offer_id))).scalar_one_or_none()
+    if offer is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+
+    key = (voter_key or "").strip()[:64]
+    if not key:
+        key = security.sha256(security.client_ip(request) + (request.headers.get("user-agent") or ""))
+
+    existing = (
+        await db.execute(
+            select(models.Vote).where(
+                models.Vote.offer_id == offer_id, models.Vote.voter_key == key
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        return {"ok": True, "already": True, "upvotes": offer.upvotes, "downvotes": offer.downvotes}
+
+    db.add(models.Vote(offer_id=offer_id, voter_key=key, is_up=bool(is_up)))
+    if is_up:
+        offer.upvotes = (offer.upvotes or 0) + 1
+    else:
+        offer.downvotes = (offer.downvotes or 0) + 1
+    await db.flush()
+    return {"ok": True, "upvotes": offer.upvotes, "downvotes": offer.downvotes}
 
 
 @router.get("/stats/offer/{offer_id}")

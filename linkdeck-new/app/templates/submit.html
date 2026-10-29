@@ -1,170 +1,111 @@
-{% raw %}{# Submit form page #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Add your link – {{ config.PROJECT_NAME }}</title>
+<title>Add your link – {{ settings.PROJECT_NAME }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-<style>
-  :root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1626;--ink:#eaf0fb;--mute:#9aa8c2;--paper:#17223a;--line:#2b3957;--pri:#5fd4e3;--priink:#04222a;--gold:#ffc83d;--ok:#4cd28f;--bad:#ff8a80;color-scheme:dark}}
-  :root[data-theme="dark"]{--bg:#0e1626;--ink:#eaf0fb;--mute:#9aa8c2;--paper:#17223a;--line:#2b3957;--pri:#5fd4e3;--priink:#04222a;--gold:#ffc83d;--ok:#4cd28f;--bad:#ff8a80;color-scheme:dark}
-  html{scroll-behavior:smooth}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif}
-  h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
-  h1{font-size:clamp(2.3rem,9vw,4.4rem);font-weight:800;letter-spacing:-.03em;max-width:13ch}
-  h2{font-size:clamp(1.6rem,5vw,2.3rem);font-weight:800;letter-spacing:-.02em}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
-  nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:10px}
-  .logo{font:800 1.3rem 'Bricolage Grotesque',serif;letter-spacing:-.02em}
-  nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;font-size:.95rem}
-  .hero{padding:26px 0 8px}
-  .hero p{max-width:46ch;color:var(--mute);font-size:1.1rem;margin:14px 0 0}
-  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:22px 0 8px}
-  .btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:10px;padding:12px 18px;min-height:44px;cursor:pointer;background:var(--pri);color:var(--priink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-  .btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
-  .search{flex:1 1 200px;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--paper);color:var(--ink);padding:0 14px;font:inherit}
-  .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:4px 0 12px}
-  .chip{flex:none;border:2px solid var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:7px 14px;min-height:40px;font:600 .9rem Figtree;cursor:pointer}
-  .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-  .meta{color:var(--mute);font-size:.9rem;margin:4px 0 16px}
-  .form{display:grid;gap:14px;background:var(--paper);border-radius:16px;padding:20px;box-shadow:0 0 0 1px var(--line);margin-top:18px;max-width:640px}
-  label{display:grid;gap:5px;font-weight:600;font-size:.92rem}
-  input,select{min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);padding:0 12px;font:400 1rem Figtree}
-  .err{color:var(--bad);font-weight:600;min-height:1.2em;margin:0}
-  .two{display:grid;gap:14px;grid-template-columns:1fr 1fr}
-  @media(max-width:520px){.two{grid-template-columns:1fr}}
-  .odds{height:12px;border-radius:99px;background:var(--line);overflow:hidden}
-  .odds i{display:block;height:100%;background:var(--pri);width:0;transition:width .3s}
-  .hint{color:var(--mute);font-size:.88rem;margin:0;font-weight:400}
-  footer{padding:44px 0 36px;color:var(--mute);font-size:.88rem}
-  footer{padding-bottom:96px}
-  .empty{padding:30px;border:2px dashed var(--line);border-radius:16px;color:var(--mute)}
-  .cta{margin-top:26px;background:var(--ink);color:var(--bg);border-radius:16px;padding:22px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-  .cta h3{font-size:1.3rem}.cta p{margin:4px 0 0;opacity:.8}
-  .cta .btn{background:var(--gold);color:var(--goldink)}
-  .ok{background:var(--paper);border-left:4px solid var(--ok);padding:12px 14px;border-radius:8px;margin:0;font-weight:600}
-  .ok a{color:var(--pri)}
-  .prizes{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:18px 0}
-  .prize{background:var(--paper);border-radius:16px;padding:16px;box-shadow:0 0 0 2px var(--gold)}
-  .prize b{font:800 1.1rem 'Bricolage Grotesque',serif}.prize p{margin:6px 0 0;color:var(--mute)}
-  .board{display:grid;gap:10px;margin:0 0 16px;max-width:640px}
-  .rw{display:grid;grid-template-columns:110px 1fr 54px;gap:10px;align-items:center;font-weight:600;font-size:.92rem}
-  .rw span:last-child{text-align:right;color:var(--mute)}
-</style>
 </head>
 <body>
 <div class="wrap">
-<nav class="nav"><span class="logo">{{ config.PROJECT_SHORT }}</span><span class="nr">
-<span class="nl"><a href="/">Home</a><a class="keep" href="#how">About</a><a href="/submit">Submit</a></span><button class="btn alt" id="shs" type="button" style="margin-left:14px;min-height:40px;padding:8px 14px">Share</button>
+<nav class="nav"><span class="logo">{{ settings.PROJECT_SHORT }}</span><span class="nr">
+<span class="nl"><a href="/">Home</a><a class="keep" href="/#how">About</a><a href="/dashboard">Dashboard</a></span>
+{% if user %}<a class="btn alt" href="/logout">Logout</a>{% else %}<a class="btn alt" href="/login">Sign In</a>{% endif %}
 </span></nav>
 
 <header class="hero">
-<h1>Find deals. Share your links.</h1>
-<p>Affiliate and referral links, shuffled fairly. Open one to save, or add yours to earn.</p>
-<div class="chips" id="modes" role="group" aria-label="Quick find" style="margin-top:16px">
-<button class="chip" type="button" data-m="top" aria-pressed="false">🔥 Top deals</button>
-<button class="chip" type="button" data-m="new" aria-pressed="false">🆕 Newest</button>
-<button class="chip" type="button" data-m="one" aria-pressed="false">🎲 Surprise me</button>
-</div>
-<div class="bar">
-<input class="search" id="q" type="search" placeholder="Search a brand or offer" aria-label="Search codes">
-<button class="btn alt" id="shuf" type="button">Shuffle</button>
-<a class="btn" href="#submit">Add your link</a>
-</div>
-<div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+<h1>Add your link</h1>
+<p>Free and live after review. You'll need the brand, your link, and a short line about what it gives people.</p>
+{% if not user %}
+<p class="hint">Submitting without an account? Your link goes in for review. <a href="/login">Sign in</a> to track clicks and earnings.</p>
+{% endif %}
 </header>
 
 <main>
-<p class="meta" id="meta"></p>
-<div class="grid" id="grid" aria-live="polite"></div>
-
-<div class="cta"><div><h3>Got an affiliate link sitting unused?</h3><p>Add it free. It takes three fields and under a minute.</p></div><a class="btn" href="#submit">Add your link</a></div>
-
-<section id="submit">
-<h2>Add your link</h2>
-<p class="hint" style="margin-top:8px">Free and live right away. You'll need the brand, your link, and a short line about what it gives people.</p>
 <form class="form" id="f" novalidate>
 <div class="two">
 <label>Brand<input id="fb" maxlength="40" autocomplete="off" placeholder="e.g. Uber Eats"></label>
-<label>Category<select id="fc"></select></label>
+<label>Category<select id="fc">
+<option value="Food">Food</option><option value="Banking">Banking</option><option value="Travel">Travel</option>
+<option value="Phone">Phone</option><option value="Crypto">Crypto</option><option value="Apps">Apps</option><option value="Shopping">Shopping</option>
+</select></label>
 </div>
-<div class="two">
-<label style="grid-column:1/-1">Your affiliate link<input id="fk" type="url" maxlength="300" autocomplete="off" placeholder="https://"><span class="hint">Paste your tracking or referral link. You may earn when visitors use it.</span></label>
-</div>
+<label>Your affiliate link<input id="fk" type="url" maxlength="300" autocomplete="off" placeholder="https://"><span class="hint">Paste your tracking or referral link. You may earn when visitors use it.</span></label>
 <label>What does it give people?<input id="fo" maxlength="70" placeholder="e.g. $20 off your first order"></label>
 <label>Plan<select id="fp"><option value="free">Free – 1× odds</option><option value="plus">Plus – 3× odds</option><option value="pro">Pro – 8× odds</option><option value="boost">One-time boost – 10× odds</option></select></label>
-<div><div class="odds"><i id="ob"></i></div><p class="hint" id="ot"></p></div>
 <p class="err" id="er" role="alert"></p>
-<button class="btn" type="submit">Add my link</button>
-<p class="ok" id="ok" role="status" hidden><span id="okt"></span> <a href="#grid">See the deck</a> · <a href="/plans">Get better odds</a></p>
+<button class="btn" type="submit" id="sub">Add my link</button>
+<p class="ok" id="ok" role="status" hidden></p>
 </form>
-</section>
 
-<section id="how">
-<h2>What LinkDeck is, in plain terms</h2>
-<p class="lede">Affiliate and referral programs pay you when someone signs up or buys through your link. The hard part is getting people to see it. LinkDeck is a shared place for those links: visitors find deals, and link owners get seen. Each visit shows a different random hand, so every link gets a turn.</p>
+<section id="how" style="padding-top:36px">
+<h2>What happens next</h2>
 <div class="steps">
-<div class="step"><h3>You submit</h3><p>Add your link and what the deal offers. It joins the deck right away.</p></div>
-<div class="step"><h3>It gets shuffled in</h3><p>Visitors see a random hand. Your odds go up with newer codes, good "Worked" votes, and a paid plan if you want one.</p></div>
-<div class="step"><h3>Visitors click it</h3><p>Every page load deals a new hand. Dead links get voted down and fade out.</p></div>
+<div class="step"><h3>You submit</h3><p>Add your brand, link, and a one-line offer.</p></div>
+<div class="step"><h3>We review</h3><p>Links are checked for spam and dead endpoints before going live.</p></div>
+<div class="step"><h3>You earn</h3><p>Visitors click, you get tracked stats and share of the deck.</p></div>
 </div>
-</section>
-
-<section id="plans">
-<h2>Better odds, if you want them</h2>
-<p class="hint">Everyone is in the deck. Plans only change how often you're dealt.</p>
-<div class="plans">
-<div class="plan"><h3>Free</h3><div class="price">$0</div><ul><li>1 active code</li><li>Standard odds (1×)</li></ul><a class="btn alt" href="/submit">Start free</a></div>
-<div class="plan hot"><h3>Plus</h3><div class="price">$5<small> / month</small></div><ul><li>5 active links</li><li>3× odds</li></ul><button class="btn" data-buy="Plus monthly" type="button">Choose Plus</button></div>
-<div class="plan"><h3>Pro</h3><div class="price">$15<small> / month</small></div><ul><li>20 active links</li><li>8× odds</li><li>Views, copies, and success rate</li></ul><button class="btn" data-buy="Pro monthly" type="button">Choose Pro</button></div>
-<div class="plan"><h3>One-time boost</h3><div class="price">$3<small> / 24 hours</small></div><ul><li>10× odds on one link</li><li>Or 7 days for $10</li><li>No subscription</li></ul><button class="btn alt" data-buy="One-time boost" type="button">Boost a link</button></div>
-</div>
-<p class="hint" style="margin-top:12px">Boosted cards are labeled. Payments are not connected in this prototype.</p>
 </section>
 </main>
 
-<footer>LinkDeck lists user-submitted affiliate and referral links. Posters may earn a commission when you use a link, and we may earn from boosts and memberships. Some programs ban posting links publicly, so check each program's rules first. Report a dead or abusive link with the "Didn't work" button.</footer>
-
+<footer>LinkDeck lists user-submitted affiliate and referral links. Posters may earn a commission when you use a link, and we may earn from boosts and memberships. Some programs ban posting links publicly, so check each program's rules first.</footer>
+</div>
 <div id="toast" role="status"></div>
-
 <script>
-var CATS=['Food','Banking','Travel','Phone','Crypto','Apps','Shopping'];
-var MULT={free:1,plus:3,pro:8,boost:10};
-var D=86400000,now=Date.now();
-var mode='shuffle',seen={},query='';
+(function(){
+  var f = document.getElementById('f');
+  var userSignedIn = {{ 'true' if user else 'false' }};
+  f.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var er = document.getElementById('er');
+    var ok = document.getElementById('ok');
+    var sub = document.getElementById('sub');
+    var v = function(id){ return document.getElementById(id).value.trim(); };
+    er.textContent = ''; ok.hidden = true;
 
-function w(x){var fresh=1+Math.max(0,1-(now-x.at)/(14*D));var rate=(x.up+2)/(x.up+x.dn+4);
- return MULT[x.p]*fresh*(0.4+rate)*(seen[x.id]?0.3:1)}
-function deal(n){var pool=codes.filter(function(x){return (cat==='All'||x.k===cat)&&(!query||(x.b+' '+x.o).toLowerCase().indexOf(query)>-1)});
- if(mode==='top'||mode==='new'){pool.sort(function(a,b){return mode==='top'?b.up-a.up:b.at-a.at});var o=pool.slice(0,n);o.forEach(function(x){seen[x.id]=1});return o}
- var out=n>1?pool.filter(function(x){return x.pin}).slice(0,1):[];out.forEach(function(x){pool.splice(pool.indexOf(x),1);seen[x.id]=1});while(out.length<n&&pool.length){var tot=pool.reduce(function(a,x){return a+w(x)},0),r=Math.random()*tot,i=0;
- for(;i<pool.length-1;i++){r-=w(pool[i]);if(r<=0)break}out.push(pool.splice(i,1)[0])}
- out.forEach(function(x){seen[x.id]=1});return out}
-function ago(t){var h=Math.round((now-t)/3600000);return h<1?'just now':h<24?h+'h ago':Math.round(h/24)+'d ago'}
-function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='on';clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=''},2200)}
-function copy(x,btn){var done=function(){btn.textContent='Copied ✓';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy '+x.b+' code';btn.classList.remove('done')},1800)};
- try{navigator.clipboard.writeText(x.c).then(done,function(){fb()})}catch(e){fb()}
- function fb(){var a=document.createElement('textarea');a.value=x.c;document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(e){toast('Select the code and copy it by hand')}a.remove()}}
- function card(x,i){var c=el('article','tk'+(x.p!=='free'&&x.p!=='plus'?' boost':''));c.style.animationDelay=(i*70)+'ms';
- var top=el('div','top'),r=el('div','row');r.appendChild(el('span','brand',x.b));
- if(x.pin)r.appendChild(el('span','tag','👑 Top referrer'));
- if(x.p==='boost'||x.p==='pro')r.appendChild(el('span','tag','Boosted'));
- top.appendChild(r);top.appendChild(el('p','offer',x.o));var af=el('p','hint','Affiliate link. The poster may earn a commission.');af.style.marginTop='6px';top.appendChild(af);c.appendChild(top);
- var st=el('div','stub');st.appendChild(el('span','code',x.c));
- var a=el('div','acts'),b=el('a','btn cp','Get the deal →');b.href=x.l;b.target='_blank';b.rel='noopener noreferrer sponsored';a.appendChild(b);
- var sh=el('button','btn alt','Share');sh.type='button';sh.setAttribute('aria-label','Share '+x.b+' link');sh.onclick=function(){share(x.b+': '+x.o+'.',siteUrl())};a.appendChild(sh);
- st.appendChild(a);
- var v=el('div','vote');var u=el('button','', '👍 Worked '+x.up),d=el('button','','👎 Didn't work '+x.dn);u.type=d.type='button';
- var voted=false;u.onclick=function(){if(voted)return;voted=true;x.up++;u.textContent='👍 Worked '+x.up};
- d.onclick=function(){if(voted)return;voted=true;x.dn++;d.textContent='👎 Didn\'t work '+x.dn;toast('Thanks. Low-rated codes show up less.')};
- v.appendChild(u);v.appendChild(d);v.appendChild(el('span','age',ago(x.at)));st.appendChild(v);c.appendChild(st);return c}
+    var payload = {
+      brand: v('fb'),
+      link: v('fk'),
+      headline: v('fo'),
+      category: v('fc'),
+      plan: v('fp')
+    };
+    if (!payload.brand || !payload.link || !payload.headline) {
+      er.textContent = 'Add a brand, your link, and what it offers.';
+      return;
+    }
+    if (!/^https?:\/\//i.test(payload.link)) {
+      er.textContent = 'Start the link with http:// or https://';
+      return;
+    }
+    sub.disabled = true;
+    sub.textContent = 'Submitting…';
+    try {
+      var res = await fetch('/api/offers', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (res.ok) {
+        ok.hidden = false;
+        ok.textContent = 'Submitted! Your link is queued for review (#' + data.id + '). ' +
+          (userSignedIn ? 'Track it on your dashboard.' : 'Sign in to track clicks and earnings.');
+        f.reset();
+      } else {
+        er.textContent = (data.detail && data.detail[0] && data.detail[0].msg) || data.detail || 'Something went wrong.';
+      }
+    } catch (e) {
+      er.textContent = 'Network error. Try again.';
+    } finally {
+      sub.disabled = false;
+      sub.textContent = 'Add my link';
+    }
+  });
+})();
 </script>
 </body>
-</html>{% endraw %}
+</html>

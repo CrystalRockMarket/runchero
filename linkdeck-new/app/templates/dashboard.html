@@ -1,52 +1,19 @@
-{% raw %}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>My Dashboard – {{ config.PROJECT_NAME }}</title>
+<title>My Dashboard – {{ settings.PROJECT_NAME }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-<style>
-:root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1626;--ink:#eaf0fb;--mute:#9aa8c2;--paper:#17223a;--line:#2b3957;--pri:#5fd4e3;--priink:#04222a;--gold:#ffc83d;--ok:#4cd28f;--bad:#ff8a80;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1626;--ink:#eaf0fb;--mute:#9aa8c2;--paper:#17223a;--line:#2b3957;--pri:#5fd4e3;--priink:#04222a;--gold:#ffc83d;--ok:#4cd28f;--bad:#ff8a80;color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif}
-h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
-.dashboard{max-width:1080px;margin:0 auto;padding:0 18px}
-.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:10px}
-.logo{font:800 1.3rem 'Bricolage Grotesque',serif;letter-spacing:-.02em}
-nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;font-size:.95rem}
-.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:10px;padding:12px 18px;min-height:44px;cursor:pointer;background:var(--pri);color:var(--priink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
-.dashboard h1{margin-bottom:20px}
-.stat-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-.stat-card{background:var(--paper);border-radius:16px;padding:20px;box-shadow:0 0 0 1px var(--line);flex:1;min-width:180px;display:flex;flex-direction:column}
-.stat-card .label{color:var(--mute);font-size:.9rem}
-.stat-card .value{font-family:'Bricolage Grotesque',Georgia,serif;font-weight:800;font-size:2.4rem;color:var(--pri)}
-.table{width:100%;border-collapse:collapse;margin-bottom:20px;background:var(--paper);border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
-.table th,.table td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--line)}
-.table th{background:var(--bg);font-weight:800;color:var(--ink)}
-.table tr:last-child td{border-bottom:none}
-.cta{margin-top:26px;background:var(--ink);color:var(--bg);border-radius:16px;padding:22px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.cta h3{font-size:1.3rem}.cta p{margin:4px 0 0;opacity:.8}
-.cta .btn{background:var(--gold);color:var(--goldink)}
-.offer-card{background:var(--paper);border-radius:16px;padding:18px;box-shadow:0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.offer-card__brand{font-weight:800;font-size:1.2rem;font-family:'Bricolage Grotesque',serif}
-.offer-card__domain{color:var(--mute);font-size:.85rem}
-.offer-card__headline{font-size:1rem;font-weight:600}
-.offer-card__promo{color:var(--pri);font-weight:700}
-.offer-card__category,.offer-card__plan{color:var(--mute);font-size:.85rem}
-.offer-card__url{color:var(--ink);font-size:.9rem;word-break:break-all}
-</style>
 </head>
 <body>
 <div class="dashboard">
   <nav class="nav">
-    <span class="logo">{{ config.PROJECT_SHORT }}</span>
-    <span class="nr"><a href="/">Home</a><a class="keep" href="/#how">About</a><a href="/submit">Submit</a></span>
+    <span class="logo">{{ settings.PROJECT_SHORT }}</span>
+    <span class="nr"><a href="/">Home</a><a class="keep" href="/#how">About</a><a href="/submit">Submit</a>{% if user and user.is_admin %}<a href="/admin/panel">Admin</a>{% endif %}</span>
     <span class="btn-group">
       <a class="btn" href="/">Back to Deck</a>
       <a class="btn alt" href="/logout">Logout</a>
@@ -54,19 +21,24 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
   </nav>
 
   <h1>My Dashboard</h1>
+  <p class="hint" style="margin-bottom:20px">Signed in as {{ user.email }}</p>
 
   <div class="stat-row">
     <div class="stat-card">
       <div class="label">My Links</div>
-      <div class="value">{{ user.offers|length }}</div>
+      <div class="value">{{ stats.offers }}</div>
     </div>
     <div class="stat-card">
-      <div class="label">My Promo Codes</div>
-      <div class="value">{{ user.promo_codes|length }}</div>
+      <div class="label">Total Clicks</div>
+      <div class="value">{{ stats.clicks }}</div>
     </div>
     <div class="stat-card">
-      <div class="label">My Referrals</div>
-      <div class="value">{{ user.referrals|length }}</div>
+      <div class="label">Unique Visitors</div>
+      <div class="value">{{ stats.unique_visitors }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Est. Earnings</div>
+      <div class="value">${{ (stats.clicks * 5.5)|round(2) }}</div>
     </div>
   </div>
 
@@ -83,9 +55,9 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
           <td>{{ offer.brand }}</td>
           <td>{{ offer.headline }}</td>
           <td>{{ offer.plan }}</td>
-          <td>{{ offer.status }}</td>
+          <td><span class="status-badge {{ offer.status }}">{{ offer.status }}</span></td>
           <td>{{ offer.clicks }}</td>
-          <td>${{ (offer.clicks * 5.5) |round(2) }}</td>
+          <td>${{ (offer.clicks * 5.5)|round(2) }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -96,12 +68,49 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
   </section>
 
   <section>
-    <h2>Stats &amp; Earnings</h2>
-    <div class="cta">
-      <div><h3>Track your links, earn when they convert.</h3><p>Every click on your offers is logged and attributed to your account.</p></div>
-      <a class="btn" href="#/stats">View full stats</a>
-    </div>
+    <h2>Recent Clicks</h2>
+    {% if stats.recent %}
+    <table class="table">
+      <thead><tr><th>Offer ID</th><th>When</th><th>Referrer</th></tr></thead>
+      <tbody>
+        {% for click in stats.recent %}
+        <tr>
+          <td>{{ click.offer_id }}</td>
+          <td>{{ click.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ click.referrer or 'direct' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No clicks recorded yet. Share your links to start earning.</div>
+    {% endif %}
   </section>
+
+  <section>
+    <h2>My Promo Codes</h2>
+    {% if user.promo_codes %}
+    <table class="table">
+      <thead><tr><th>Code</th><th>Offer</th><th>Clicks</th></tr></thead>
+      <tbody>
+        {% for promo in user.promo_codes %}
+        <tr>
+          <td><code>{{ promo.code }}</code></td>
+          <td>{{ promo.offer.brand if promo.offer else promo.offer_id }}</td>
+          <td>{{ promo.clicks }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No promo codes yet.</div>
+    {% endif %}
+  </section>
+
+  <div class="cta">
+    <div><h3>Grow your audience</h3><p>Share your dashboard link and climb the referral leaderboard.</p></div>
+    <a class="btn" href="/submit">Add another link</a>
+  </div>
 </div>
 </body>
-</html>{% endraw %}
+</html>

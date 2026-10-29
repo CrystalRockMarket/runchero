@@ -168,12 +168,13 @@ class ClickEvent(Base):
 class Vote(Base):
     __tablename__ = "votes"
     __table_args__ = (
-        UniqueConstraint("offer_id", "user_id", name="uq_votes_offer_user"),
+        UniqueConstraint("offer_id", "voter_key", name="uq_votes_offer_voter"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     offer_id: Mapped[int] = mapped_column(ForeignKey("offers.id", ondelete="CASCADE"), index=True)
-    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    voter_key: Mapped[str] = mapped_column(String(64), index=True)
     is_up: Mapped[bool] = mapped_column(Boolean)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 

@@ -1,35 +1,67 @@
-"""Auth router: Google, Facebook OAuth, magic link, email sign-in, logout."""
+"""Auth routes: Google, Facebook OAuth, magic link, admin login, logout.
+
+Included with prefix /auth, so paths here are relative (e.g. "/google" -> /auth/google).
+"""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, status, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import models, security, auth
-from app.db import get_session
+from app import auth as auth_service, models, security
 from app.config import settings
+from app.db import get_session
 
-router = APIRouter(tags=["auth"], prefix="/auth")
+router = APIRouter(tags=["auth"])
+
+
+def _set_session_cookie(response, token: str) -> None:
+    secure = settings.FRONTEND_BASE_URL.startswith("https")
+    response.set_cookie(
+        security.SESSION_COOKIE,
+        token,
+        max_age=30 * 24 * 3600,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        path="/",
+    )
+
+
+async def _finish_login(request: Request, db: AsyncSession, user: models.User):
+    raw = await auth_service.create_session(
+        db, user, security.client_ip(request), request.headers.get("user-agent", "")
+    )
+    resp = RedirectResponse(url="/dashboard", status_code=302)
+    _set_session_cookie(resp, raw)
+    return resp
 
 
 @router.get("/google")
-async def google_login(request: Request, db: AsyncSession = Depends(get_session)):
-    """Start Google OAuth flow."""
+async def google_login(request: Request):
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
-        return JSONResponse(
-            {"error": "google_oauth_not_configured"},
-            status_code=501,
-        )
-    return JSONResponse({"redirect": f"https://accounts.google.com/o/oauth2/v2/auth?client_id={settings.GOOGLE_CLIENT_ID}&redirect_uri={settings.GOOGLE_REDIRECT_URI}&response_type=code&scope=openid%20email%20profile&prompt=select_account"})
+        return RedirectResponse(url="/login?error=google_not_configured", status_code=302)
+    from urllib.parse import urlencode
+
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "prompt": "select_account",
+    }
+    return RedirectResponse(
+        "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params), status_code=302
+    )
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: AsyncSession = Depends(get_session)):
-    """Exchange Google authorization code for access token and user."""
+async def google_callback(code: str, request: Request, db: AsyncSession = Depends(get_session)):
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        return RedirectResponse(url="/login?error=google_not_configured", status_code=302)
     import httpx
-    from httpx import AsyncClient
 
-    async with AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15) as client:
         token_res = await client.post(
             "https://oauth2.googleapis.com/token",
             data={
@@ -37,42 +69,53 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_session)):
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
                 "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         token_data = token_res.json()
-        userinfo_res = await client.get(
+        access = token_data.get("access_token")
+        if not access:
+            return RedirectResponse(url="/login?error=google_token", status_code=302)
+        info_res = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {token_data.get('access_token', '')}"},
+            headers={"Authorization": f"Bearer {access}"},
         )
-        userinfo = userinfo_res.json()
-        email = userinfo.get("email", "")
-        display_name = userinfo.get("name", "Google User")
+        info = info_res.json()
 
-    user = await auth.create_or_get_user(db, email, display_name, "google", str(userinfo.get("sub", "")))
-    token = security.new_token()
-    # session issuance stub; real token store below
-    return {"ok": True, "user": user.public_dict()}
+    email = info.get("email", "")
+    if not email:
+        return RedirectResponse(url="/login?error=google_email", status_code=302)
+    user = await auth_service.create_or_get_user(
+        db, email, info.get("name", ""), "google", str(info.get("sub", ""))
+    )
+    user.picture_url = info.get("picture")
+    return await _finish_login(request, db, user)
 
 
 @router.get("/facebook")
-async def facebook_login(request: Request, db: AsyncSession = Depends(get_session)):
-    """Start Facebook OAuth flow."""
+async def facebook_login(request: Request):
     if not settings.FACEBOOK_APP_ID or not settings.FACEBOOK_APP_SECRET:
-        return JSONResponse(
-            {"error": "facebook_oauth_not_configured"},
-            status_code=501,
-        )
-    return JSONResponse({"redirect": f"https://www.facebook.com/v18.0/dialog/oauth?client_id={settings.FACEBOOK_APP_ID}&redirect_uri={settings.FACEBOOK_REDIRECT_URI}&scope=email&response_type=code"})
+        return RedirectResponse(url="/login?error=facebook_not_configured", status_code=302)
+    from urllib.parse import urlencode
+
+    params = {
+        "client_id": settings.FACEBOOK_APP_ID,
+        "redirect_uri": settings.FACEBOOK_REDIRECT_URI,
+        "scope": "email",
+        "response_type": "code",
+    }
+    return RedirectResponse(
+        "https://www.facebook.com/v18.0/dialog/oauth?" + urlencode(params), status_code=302
+    )
 
 
 @router.get("/facebook/callback")
-async def facebook_callback(code: str, db: AsyncSession = Depends(get_session)):
-    """Exchange Facebook authorization code for access token and user."""
+async def facebook_callback(code: str, request: Request, db: AsyncSession = Depends(get_session)):
+    if not settings.FACEBOOK_APP_ID or not settings.FACEBOOK_APP_SECRET:
+        return RedirectResponse(url="/login?error=facebook_not_configured", status_code=302)
     import httpx
-    from httpx import AsyncClient
 
-    async with AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15) as client:
         token_res = await client.get(
             "https://graph.facebook.com/v18.0/oauth/access_token",
             params={
@@ -83,50 +126,84 @@ async def facebook_callback(code: str, db: AsyncSession = Depends(get_session)):
             },
         )
         token_data = token_res.json()
-        userinfo_res = await client.get(
+        access = token_data.get("access_token")
+        if not access:
+            return RedirectResponse(url="/login?error=facebook_token", status_code=302)
+        info_res = await client.get(
             "https://graph.facebook.com/me",
-            params={"fields": "id,name,email,picture"},
+            params={"fields": "id,name,email,picture", "access_token": access},
         )
-        userinfo = userinfo_res.json()
-        email = userinfo.get("email", "")
-        display_name = userinfo.get("name", "Facebook User")
+        info = info_res.json()
 
-    user = await auth.create_or_get_user(db, email, display_name, "facebook", str(userinfo.get("id", "")))
-    token = security.new_token()
-    return {"ok": True, "user": user.public_dict()}
+    email = info.get("email", "")
+    if not email:
+        return RedirectResponse(url="/login?error=facebook_email", status_code=302)
+    user = await auth_service.create_or_get_user(
+        db, email, info.get("name", ""), "facebook", str(info.get("id", ""))
+    )
+    return await _finish_login(request, db, user)
 
 
 @router.post("/magic/send")
-async def magic_send(request: Request, email: str, db: AsyncSession = Depends(get_session)):
-    """Request magic sign-in link via email."""
+async def magic_send(
+    request: Request,
+    email: str = Form(...),
+    db: AsyncSession = Depends(get_session),
+):
     email = email.strip().lower()
-    user = await auth.get_or_create_user(db, email, email, "email_link", email)
-    token = await auth.issue_magic_token(db, user.id, user.email, user.display_name, str(request.client.host or ""))
-    return {"ok": True, "sent": True, "dev_link": None if not settings.DEBUG else f"http://{settings.HOST}:{settings.PORT}/auth/magic/verify?token={token}"}
+    if "@" not in email:
+        return RedirectResponse(url="/login?error=email", status_code=302)
+    user = await auth_service.create_or_get_user(db, email, "", "email_link", "")
+    token = await auth_service.issue_magic_token(db, user, security.client_ip(request))
+    msg = "Check your email for a sign-in link."
+    dev = None
+    if not auth_service._smtp_configured():
+        # Dev fallback: expose the link so the flow is testable without SMTP.
+        dev = f"{settings.FRONTEND_BASE_URL}/auth/magic/verify?token={token}"
+        msg = "SMTP is not configured. Use the development link below."
+    return JSONResponse({"ok": True, "sent": True, "message": msg, "dev_link": dev})
 
 
 @router.get("/magic/verify")
-async def magic_verify(token: str, db: AsyncSession = Depends(get_session)):
-    """Verify magic token and establish session."""
-    user = await auth.consume_magic_token(db, token)
+async def magic_verify(
+    token: str,
+    request: Request,
+    db: AsyncSession = Depends(get_session),
+):
+    user = await auth_service.consume_magic_token(db, token)
     if user is None:
-        return JSONResponse({"ok": False, "error": "invalid_or_expired"}, status_code=400)
-    return {"ok": True, "user": user.public_dict()}
+        return RedirectResponse(url="/login?error=magic_expired", status_code=302)
+    return await _finish_login(request, db, user)
+
+
+@router.post("/admin/login")
+async def admin_login(
+    request: Request,
+    password: str = Form(...),
+    db: AsyncSession = Depends(get_session),
+):
+    admin = await auth_service.bootstrap_admin(db)
+    if admin is None or not admin.hashed_password or not security.verify_password(password, admin.hashed_password):
+        return RedirectResponse(url="/admin?error=1", status_code=302)
+    return await _finish_login(request, db, admin)
 
 
 @router.get("/me")
-async def me(db: AsyncSession = Depends(get_session), user_id: int = 0):
-    """Return current user (placeholder until session middleware added)."""
-    from sqlalchemy import select
+async def me(request: Request, db: AsyncSession = Depends(get_session)):
+    from app.deps import get_current_user
 
-    stmt = select(models.User).where(models.User.id == user_id)
-    res = await db.execute(stmt)
-    user = res.scalar_one_or_none()
+    user = await get_current_user(request, db)
     if user is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return {"user": user.public_dict()}
+        return JSONResponse({"authenticated": False}, status_code=200)
+    return {"authenticated": True, "user": user.public_dict()}
 
 
 @router.post("/logout")
-async def logout(db: AsyncSession = Depends(get_session)):
-    return {"ok": True}
+@router.get("/logout")
+async def logout(request: Request, db: AsyncSession = Depends(get_session)):
+    token = request.cookies.get(security.SESSION_COOKIE)
+    if token:
+        await auth_service.revoke_session(db, token)
+    resp = RedirectResponse(url="/", status_code=302)
+    resp.delete_cookie(security.SESSION_COOKIE, path="/")
+    return resp

@@ -1,40 +1,19 @@
-{% raw %}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Admin – {{ config.PROJECT_NAME }}</title>
+<title>Admin – {{ settings.PROJECT_NAME }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-<style>
-:root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif}
-h1,h2,h3{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
-.admin{max-width:1080px;margin:0 auto;padding:0 18px}
-.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0;gap:10px}
-.logo{font:800 1.3rem 'Bricolage Grotesque',serif;letter-spacing:-.02em}
-nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;font-size:.95rem}
-.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:10px;padding:12px 18px;min-height:44px;cursor:pointer;background:var(--pri);color:var(--priink);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
-.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
-.admin h1{margin-bottom:20px}
-.table{width:100%;border-collapse:collapse;margin-bottom:20px;background:var(--paper);border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px var(--line);}
-.table th,.table td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--line);}
-.table th{background:var(--bg);font-weight:800;color:var(--ink)}
-.empty{padding:30px;border:2px dashed var(--line);border-radius:16px;color:var(--mute)}
-.status-badge{display:inline-block;padding:4px 10px;border-radius:99px;font-size:.8rem;font-weight:700;background:var(--gold);color:var(--goldink)}
-.status-badge.active{background:var(--ok);color:#fff}
-.status-badge.rejected{background:var(--bad);color:#fff}
-.status-badge.pending{background:var(--line);color:var(--ink)}
-</style>
 </head>
 <body>
-<div class="admin">
+<div class="dashboard">
   <nav class="nav">
-    <span class="logo">{{ config.PROJECT_SHORT }}</span>
-    <span class="nr"><a href="/">Home</a><a class="keep" href="/admin">Admin</a><a href="/submit">Submit</a></span>
+    <span class="logo">{{ settings.PROJECT_SHORT }}</span>
+    <span class="nr"><a href="/">Home</a><a class="keep" href="/admin/panel">Admin</a><a href="/dashboard">Dashboard</a></span>
     <span class="btn-group">
       <a class="btn" href="/">Back to Deck</a>
       <a class="btn alt" href="/logout">Logout</a>
@@ -47,9 +26,9 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
     <h2>Global Stats</h2>
     <div class="stat-row">
       <div class="stat-card"><div class="label">Total Offers</div><div class="value">{{ stats.offers }}</div></div>
+      <div class="stat-card"><div class="label">Pending Review</div><div class="value">{{ stats.pending }}</div></div>
       <div class="stat-card"><div class="label">Total Clicks</div><div class="value">{{ stats.clicks }}</div></div>
-      <div class="stat-card"><div class="label">Unique Visitors</div><div class="value">{{ stats.users }}</div></div>
-      <div class="stat-card"><div class="label">Clicks (7d)</div><div class="value">{{ stats.clicks_last_7d }}</div></div>
+      <div class="stat-card"><div class="label">Users</div><div class="value">{{ stats.users }}</div></div>
     </div>
   </section>
 
@@ -58,16 +37,21 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
     {% if offers %}
     <table class="table">
       <thead>
-        <tr><th>ID</th><th>Brand</th><th>Status</th><th>Clicks</th><th>Created</th></tr>
+        <tr><th>ID</th><th>Brand</th><th>Offer</th><th>Plan</th><th>Status</th><th>Clicks</th><th>Actions</th></tr>
       </thead>
       <tbody>
         {% for offer in offers %}
-        <tr>
+        <tr data-id="{{ offer.id }}">
           <td>{{ offer.id }}</td>
           <td>{{ offer.brand }}</td>
+          <td>{{ offer.headline }}</td>
+          <td>{{ offer.plan }}</td>
           <td><span class="status-badge {{ offer.status }}">{{ offer.status }}</span></td>
           <td>{{ offer.clicks }}</td>
-          <td>{{ offer.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <button class="btn" style="min-height:32px;padding:4px 10px;font-size:.8rem" data-act="active" data-id="{{ offer.id }}">Approve</button>
+            <button class="btn alt" style="min-height:32px;padding:4px 10px;font-size:.8rem" data-act="rejected" data-id="{{ offer.id }}">Reject</button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -79,27 +63,52 @@ nav a{color:var(--ink);text-decoration:none;font-weight:600;margin-left:16px;fon
 
   <section>
     <h2>Users</h2>
-    <div class="table-wrap">
-      {% if users %}
-      <table class="table">
-        <thead><tr><th>ID</th><th>Email</th><th>Display</th><th>Provider</th><th>Admin</th></tr></thead>
-        <tbody>
-          {% for user in users %}
-          <tr>
-            <td>{{ user.id }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.display_name }}</td>
-            <td>{{ user.auth_provider }}</td>
-            <td>{{ 'yes' if user.is_admin }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <div class="empty">No users.</div>
-      {% endif %}
-    </div>
+    {% if users %}
+    <table class="table">
+      <thead><tr><th>ID</th><th>Email</th><th>Display</th><th>Provider</th><th>Admin</th><th>Joined</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.display_name }}</td>
+          <td>{{ u.auth_provider }}</td>
+          <td>{{ 'yes' if u.is_admin else 'no' }}</td>
+          <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No users.</div>
+    {% endif %}
   </section>
 </div>
+<div id="toast" role="status"></div>
+<script>
+(function(){
+  document.querySelectorAll('[data-act]').forEach(function(b){
+    b.addEventListener('click', async function(){
+      var id = b.getAttribute('data-id');
+      var act = b.getAttribute('data-act');
+      try {
+        var res = await fetch('/api/admin/offers/' + id + '/status', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status: act})
+        });
+        if (res.ok) {
+          var row = b.closest('tr');
+          var badge = row.querySelector('.status-badge');
+          badge.className = 'status-badge ' + act;
+          badge.textContent = act;
+        } else {
+          alert('Failed: ' + res.status);
+        }
+      } catch(e) { alert('Network error'); }
+    });
+  });
+})();
+</script>
 </body>
-</html>{% endraw %}
+</html>

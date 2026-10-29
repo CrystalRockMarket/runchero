@@ -81,6 +81,17 @@
     b.target = '_blank';
     b.rel = 'noopener noreferrer sponsored';
     b.dataset.offerId = x.id;
+    b.addEventListener('click', function() {
+      // Record the click without blocking navigation.
+      try {
+        var payload = JSON.stringify({ offer_id: x.id });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/click/' + x.id + '?beacon=1');
+        } else {
+          fetch('/api/click/' + x.id, { method: 'POST', keepalive: true }).catch(function() {});
+        }
+      } catch (e) {}
+    });
     a.appendChild(b);
 
     var sh = el('button', 'btn alt', 'Share');
@@ -100,17 +111,26 @@
     u.onclick = function() {
       if (voted) return;
       voted = true;
-      x.upvotes = (x.upvotes || 0) + 1;
-      u.textContent = '👍 Worked ' + x.upvotes;
-      // API call would go here
+      sendVote(x.id, true).then(function(d) {
+        if (d) { x.upvotes = d.upvotes; x.downvotes = d.downvotes; }
+        else { x.upvotes = (x.upvotes || 0) + 1; }
+        u.textContent = '👍 Worked ' + x.upvotes;
+        d2.textContent = '👎 Didn\'t work ' + x.downvotes;
+      });
+      u.textContent = '👍 Worked ' + ((x.upvotes || 0) + 1);
     };
     d.onclick = function() {
       if (voted) return;
       voted = true;
-      x.downvotes = (x.downvotes || 0) + 1;
-      d.textContent = '👎 Didn\'t work ' + x.downvotes;
+      sendVote(x.id, false).then(function(res) {
+        if (res) { x.upvotes = res.upvotes; x.downvotes = res.downvotes; }
+        else { x.downvotes = (x.downvotes || 0) + 1; }
+        u.textContent = '👍 Worked ' + x.upvotes;
+        d2.textContent = '👎 Didn\'t work ' + x.downvotes;
+      });
       toast('Thanks. Low-rated codes show up less.');
     };
+    var d2 = d;
     v.appendChild(u);
     v.appendChild(d);
     v.appendChild(el('span', 'age', ago(x.at || now)));

@@ -1,67 +1,74 @@
-{% raw %}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sign In – {{ config.PROJECT_NAME }}</title>
+<title>Sign In – {{ settings.PROJECT_NAME }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 <style>
-:root{--bg:#e9eef5;--ink:#101c2e;--mute:#53617a;--paper:#fff;--line:#cdd6e3;--pri:#0b6e7a;--priink:#fff;--gold:#ffc83d;--goldink:#3a2a00;--ok:#127a4b;--bad:#b3261e;}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif}
-h1,h2{font-family:'Bricolage Grotesque',Georgia,serif;line-height:1.08;margin:0}
 .login{max-width:480px;margin:48px auto;padding:0 18px}
 .login h1{font-size:2.4rem;margin-bottom:8px}
-.login p{margin:0 0 26px;color:var(--mute)}
+.login > p{margin:0 0 26px;color:var(--mute)}
 .form{display:grid;gap:14px;background:var(--paper);border-radius:16px;padding:28px;box-shadow:0 0 0 1px var(--line)}
-label{display:grid;gap:5px;font-weight:600;font-size:.92rem}
-input{min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);padding:0 12px;font:400 1rem Figtree}
-.btn{width:100%;margin-top:8px}
+.form label{display:grid;gap:5px;font-weight:600;font-size:.92rem}
+.form input{min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);padding:0 12px;font:400 1rem Figtree}
+.form .btn{width:100%;margin-top:8px}
 .btn.google{background:#fff;color:#202020;box-shadow:0 0 0 1px var(--line)}
 .btn.fb{background:#1877f2;color:#fff}
-.err{color:var(--bad);font-weight:600;min-height:1.2em;margin:0}
 .divider{position:relative;text-align:center;color:var(--mute);font-size:.85rem;margin:10px 0}
 .divider::before{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px solid var(--line)}
-.divider span{background:var(--bg);padding:0 12px}
-a{color:var(--pri)}
-footer{padding:44px 0 36px;color:var(--mute);font-size:.88rem;text-align:center}
+.divider span{background:var(--paper);padding:0 12px;position:relative}
+.err{color:var(--bad);font-weight:600;min-height:1.2em;margin:0}
+.ok{background:rgba(18,122,75,.1);border-left:4px solid var(--ok);padding:12px 14px;border-radius:8px;font-weight:600;word-break:break-all}
+.ok a{color:var(--pri)}
 </style>
 </head>
 <body>
 <div class="login">
   <h1>Sign in</h1>
   <p>Track your links, see clicks, and grow your earnings.</p>
-  <form class="form" id="f" method="post" action="/auth/magic/send">
-    <div class="two">
-      <div style="display:flex;flex-direction:column">
-        <label>Email address<input type="email" name="email" id="email" placeholder="you@site.com" required></label>
-        <div class="divider"><span>or</span></div>
-        <button class="btn google" type="button" onclick="location.href='/auth/google'">
-          <img src="https://www.gstatic.com/firebasejs/marketing/gemini/google-g.svg" alt="" width="18" height="18" style="margin-right:8px">Continue with Google
-        </button>
-        <button class="btn fb" type="button" onclick="location.href='/auth/facebook'">
-          <svg width="18" height="18" viewBox="0 0 320 512" fill="currentColor" style="margin-right:8px"><path d="M279.14 288l14.22-28.43h-28.36v-18.46c0-14.02 6.93-27.84 28.62-27.84h15.88v-55.8h-23.6c-31.29 0-51.56 18.22-51.56 50.08v78.81h-55.8v29.33h55.8v152.1h68.37v-152.1h31.55z"/></svg>Continue with Facebook
-        </button>
-        <button class="btn" type="submit">Send Magic Link</button>
-      </div>
-    </div>
+  <div class="form">
+    <label>Email address<input type="email" id="email" placeholder="you@site.com" required></label>
+    <button class="btn" type="button" id="magic">Send Magic Link</button>
     <p class="err" id="er" role="alert"></p>
-    <p style="font-size:.88rem;text-align:center"><a href="/submit">No account? Submit a link anonymously</a></p>
-  </form>
+    <div class="ok" id="ok" hidden></div>
+    <div class="divider"><span>or</span></div>
+    <button class="btn google" type="button" onclick="location.href='/auth/google'">Continue with Google</button>
+    <button class="btn fb" type="button" onclick="location.href='/auth/facebook'">Continue with Facebook</button>
+    <p style="font-size:.88rem;text-align:center;margin:6px 0 0"><a href="/submit">No account? Submit a link anonymously</a></p>
+  </div>
 </div>
-<footer>By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy</a>.</footer>
 <script>
-  var f = document.getElementById('f');
-  if (f) f.addEventListener('submit', function(e){
-    var email = document.getElementById('email').value.trim();
-    if (!email || !email.includes('@')) {
-      e.preventDefault();
-      document.getElementById('er').textContent = 'Enter a valid email.';
+(function(){
+  var email = document.getElementById('email');
+  var btn = document.getElementById('magic');
+  var er = document.getElementById('er');
+  var ok = document.getElementById('ok');
+  btn.addEventListener('click', async function(){
+    er.textContent = ''; ok.hidden = true;
+    var val = (email.value || '').trim();
+    if (!val || val.indexOf('@') < 1) { er.textContent = 'Enter a valid email.'; return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      var body = new URLSearchParams(); body.append('email', val);
+      var res = await fetch('/auth/magic/send', { method: 'POST', body: body });
+      var data = await res.json();
+      ok.hidden = false;
+      if (data.dev_link) {
+        ok.innerHTML = (data.message || 'Development link:') + '<br><a href="' + data.dev_link + '">' + data.dev_link + '</a>';
+      } else {
+        ok.textContent = data.message || 'Check your email for a sign-in link.';
+      }
+    } catch (e) {
+      er.textContent = 'Network error. Try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send Magic Link';
     }
   });
+})();
 </script>
 </body>
-</html>{% endraw %}
+</html>
