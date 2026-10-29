@@ -13,7 +13,7 @@ fi
 PIDFILE="${LD_PID_PATH:-/home/barn/run/linkdeck.pid}"
 LOGFILE="${LD_LOG_PATH:-/home/barn/logs/linkdeck.log}"
 HOST="${LD_HOST:-0.0.0.0}"
-PORT="${LD_PORT:-8092}"
+PORT="${LD_PORT:-8096}"
 
 mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
 

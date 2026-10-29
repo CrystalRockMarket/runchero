@@ -16,6 +16,7 @@ PIDFILE="${RBS_PID_PATH:-/home/barn/run/runchero-shop.pid}"
 LOGFILE="${RBS_LOG_PATH:-/home/barn/logs/runchero-shop.log}"
 HOST="${RBS_HOST:-0.0.0.0}"
 PORT="${RBS_PORT:-8081}"
+PY="${PYTHON:-/usr/bin/python3}"
 
 mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
 
@@ -30,7 +31,7 @@ start() {
   fi
   cd "$ROOT" || exit 1
   rm -f "$PIDFILE"
-  setsid nohup python3 run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
+  setsid nohup "$PY" run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
   # The server writes its own pid once the port is bound, so wait for that
   # instead of trusting $! (setsid may or may not fork).
   for _ in $(seq 1 50); do
@@ -58,7 +59,7 @@ stop() {
 
 seed() {
   cd "$ROOT" || exit 1
-  python3 run.py --seed-only
+  "$PY" run.py --seed-only
 }
 
 case "${1:-status}" in

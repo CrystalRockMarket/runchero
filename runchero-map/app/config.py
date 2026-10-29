@@ -41,7 +41,7 @@ STATIC_DIR = APP_DIR / "static"
 
 #: Network
 DEFAULT_HOST = os.environ.get("RMP_HOST", "0.0.0.0")
-DEFAULT_PORT = int(os.environ.get("RMP_PORT", "8081"))
+DEFAULT_PORT = int(os.environ.get("RMP_PORT", "8082"))
 
 #: Service files, kept out of the project so a redeploy never eats them.
 RUN_DIR = Path(os.environ.get("RMP_RUN_DIR", "/home/barn/run")).resolve()

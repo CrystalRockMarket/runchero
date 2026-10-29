@@ -15,6 +15,7 @@ PIDFILE="/tmp/runchero-depo.pid"
 LOGFILE="/tmp/runchero-depo.log"
 HOST="${RID_HOST:-0.0.0.0}"
 PORT="${RID_PORT:-8080}"
+PY="${PYTHON:-/usr/bin/python3}"
 
 running() {
   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
@@ -26,7 +27,7 @@ start() {
     return 0
   fi
   cd "$ROOT" || exit 1
-  setsid nohup python3 run.py --host "$HOST" --port "$PORT" >"$LOGFILE" 2>&1 &
+  setsid nohup "$PY" run.py --host "$HOST" --port "$PORT" >"$LOGFILE" 2>&1 &
   echo $! >"$PIDFILE"
   sleep 1
   if running; then

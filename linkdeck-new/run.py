@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dev entry point: python run.py [--port 8092] [--reload]"""
+"""Dev entry point: python run.py [--port 8096] [--reload]"""
 from __future__ import annotations
 
 import argparse

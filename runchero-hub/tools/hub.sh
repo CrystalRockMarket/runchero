@@ -4,6 +4,7 @@ PIDFILE="${RHUB_PID_PATH:-/home/barn/run/runchero-hub.pid}"
 LOGFILE="${RHUB_LOG_PATH:-/home/barn/logs/runchero-hub.log}"
 HOST="${RHUB_HOST:-0.0.0.0}"
 PORT="${RHUB_PORT:-8092}"
+PY="${PYTHON:-/usr/bin/python3}"
 DB="${RHUB_DB_PATH:-/home/barn/data/runchero-hub.db}"
 BACKUP_DIR="${RHUB_BACKUP_DIR:-/home/barn/data/backups}"
 mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
@@ -12,7 +13,7 @@ start() {
   if running; then echo "already running (pid $(cat "$PIDFILE"))"; return 0; fi
   cd "$ROOT" || exit 1
   rm -f "$PIDFILE"
-  setsid nohup python3 run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
+  setsid nohup "$PY" run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
   for _ in $(seq 1 50); do
     if running; then echo "started on http://$HOST:$PORT (pid $(cat "$PIDFILE"))"; return 0; fi
     sleep 0.2
@@ -42,7 +43,7 @@ stop() {
 backup() {
   mkdir -p "$BACKUP_DIR"
   local dest="$BACKUP_DIR/runchero-hub-$(date +%Y%m%d-%H%M%S).db"
-  python3 - "$DB" "$dest" <<'PY'
+  "$PY" - "$DB" "$dest" <<'PY'
 import sqlite3, sys
 src, dest = sys.argv[1], sys.argv[2]
 with sqlite3.connect(src) as source, sqlite3.connect(dest) as target:

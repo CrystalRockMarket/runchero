@@ -4,13 +4,14 @@ PIDFILE="${RLK_PID_PATH:-/home/barn/run/runchero-links.pid}"
 LOGFILE="${RLK_LOG_PATH:-/home/barn/logs/runchero-links.log}"
 HOST="${RLK_HOST:-0.0.0.0}"
 PORT="${RLK_PORT:-8091}"
+PY="${PYTHON:-/usr/bin/python3}"
 mkdir -p "$(dirname "$PIDFILE")" "$(dirname "$LOGFILE")"
 running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
 start() {
   if running; then echo "already running (pid $(cat "$PIDFILE"))"; return 0; fi
   cd "$ROOT" || exit 1
   rm -f "$PIDFILE"
-  setsid nohup python3 run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
+  setsid nohup "$PY" run.py --host "$HOST" --port "$PORT" >>"$LOGFILE" 2>&1 &
   for _ in $(seq 1 50); do
     if running; then echo "started on http://$HOST:$PORT (pid $(cat "$PIDFILE"))"; return 0; fi
     sleep 0.2

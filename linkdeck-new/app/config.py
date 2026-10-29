@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # Network
     HOST: str = os.environ.get("LD_HOST", "0.0.0.0")
-    PORT: int = int(os.environ.get("LD_PORT", "8092"))
+    PORT: int = int(os.environ.get("LD_PORT", "8096"))
 
     # Security
     SECRET_KEY: str = os.environ.get("LD_SECRET_KEY", "dev-secret-change-me")
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = os.environ.get("LD_GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.environ.get(
         "LD_GOOGLE_REDIRECT_URI",
-        f"http://localhost:{os.environ.get('LD_PORT', '8092')}/auth/google/callback",
+        f"http://localhost:{os.environ.get('LD_PORT', '8096')}/auth/google/callback",
     )
 
     # OAuth - Facebook
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     FACEBOOK_APP_SECRET: str = os.environ.get("LD_FACEBOOK_APP_SECRET", "")
     FACEBOOK_REDIRECT_URI: str = os.environ.get(
         "LD_FACEBOOK_REDIRECT_URI",
-        f"http://localhost:{os.environ.get('LD_PORT', '8092')}/auth/facebook/callback",
+        f"http://localhost:{os.environ.get('LD_PORT', '8096')}/auth/facebook/callback",
     )
 
     # Magic Link / Email
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     MAGIC_LINK_TTL_MINUTES: int = int(os.environ.get("LD_MAGIC_LINK_TTL_MINUTES", "15"))
     FRONTEND_BASE_URL: str = os.environ.get(
         "LD_FRONTEND_BASE_URL",
-        f"http://localhost:{os.environ.get('LD_PORT', '8092')}",
+        f"http://localhost:{os.environ.get('LD_PORT', '8096')}",
     )
 
     # Feature flags

@@ -29,10 +29,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 export LD_ADMIN_PASSWORD='choose-a-strong-password'
-python run.py --port 8092 --reload
+python run.py --port 8096 --reload
 ```
 
-Open http://localhost:8092. Admin login is at `/admin`.
+Open http://localhost:8096. Admin login is at `/admin`.
 
 Run the smoke test (uses a throwaway DB):
 
@@ -59,8 +59,8 @@ All settings are environment variables (optionally via `.env`). See
 | `LD_SECRET_KEY` | dev-secret | JWT/session signing key – **set this in production** |
 | `LD_ADMIN_PASSWORD` | *(empty)* | Creates the default admin on first boot |
 | `LD_DB_PATH` | `/home/barn/data/linkdeck.db` | SQLite database path |
-| `LD_HOST` / `LD_PORT` | `0.0.0.0` / `8092` | Bind address |
-| `LD_FRONTEND_BASE_URL` | `http://localhost:8092` | Used in magic links / redirects |
+| `LD_HOST` / `LD_PORT` | `0.0.0.0` / `8096` | Bind address |
+| `LD_FRONTEND_BASE_URL` | `http://localhost:8096` | Used in magic links / redirects |
 | `LD_GOOGLE_CLIENT_ID` / `LD_GOOGLE_CLIENT_SECRET` | *(empty)* | Enables Google login |
 | `LD_FACEBOOK_APP_ID` / `LD_FACEBOOK_APP_SECRET` | *(empty)* | Enables Facebook login |
 | `LD_SMTP_HOST` / `LD_SMTP_USER` / `LD_SMTP_PASSWORD` | *(empty)* | Enables real magic-link email |
