@@ -52,12 +52,18 @@ class Settings(BaseSettings):
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = os.environ.get("LD_GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.environ.get("LD_GOOGLE_CLIENT_SECRET", "")
-    GOOGLE_REDIRECT_URI: str = os.environ.get("LD_GOOGLE_REDIRECT_URI", "http://localhost:8092/auth/google/callback")
+    GOOGLE_REDIRECT_URI: str = os.environ.get(
+        "LD_GOOGLE_REDIRECT_URI",
+        f"http://localhost:{os.environ.get('LD_PORT', '8092')}/auth/google/callback",
+    )
 
     # OAuth - Facebook
     FACEBOOK_APP_ID: str = os.environ.get("LD_FACEBOOK_APP_ID", "")
     FACEBOOK_APP_SECRET: str = os.environ.get("LD_FACEBOOK_APP_SECRET", "")
-    FACEBOOK_REDIRECT_URI: str = os.environ.get("LD_FACEBOOK_REDIRECT_URI", "http://localhost:8092/auth/facebook/callback")
+    FACEBOOK_REDIRECT_URI: str = os.environ.get(
+        "LD_FACEBOOK_REDIRECT_URI",
+        f"http://localhost:{os.environ.get('LD_PORT', '8092')}/auth/facebook/callback",
+    )
 
     # Magic Link / Email
     SMTP_HOST: str = os.environ.get("LD_SMTP_HOST", "")
@@ -68,7 +74,10 @@ class Settings(BaseSettings):
     MAIL_FROM: str = os.environ.get("LD_MAIL_FROM", "noreply@linkdeck.local")
     MAIL_FROM_NAME: str = os.environ.get("LD_MAIL_FROM_NAME", "LinkDeck")
     MAGIC_LINK_TTL_MINUTES: int = int(os.environ.get("LD_MAGIC_LINK_TTL_MINUTES", "15"))
-    FRONTEND_BASE_URL: str = os.environ.get("LD_FRONTEND_BASE_URL", "http://localhost:8092")
+    FRONTEND_BASE_URL: str = os.environ.get(
+        "LD_FRONTEND_BASE_URL",
+        f"http://localhost:{os.environ.get('LD_PORT', '8092')}",
+    )
 
     # Feature flags
     ALLOW_ANONYMOUS_OFFER: bool = os.environ.get("LD_ALLOW_ANONYMOUS_OFFER", "1") not in ("0", "false", "no")

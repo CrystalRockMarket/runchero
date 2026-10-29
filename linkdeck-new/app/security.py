@@ -5,12 +5,10 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SESSION_SECRET = settings.SECRET_KEY
 SESSION_ALGORITHM = "HS256"
@@ -18,13 +16,18 @@ SESSION_COOKIE = settings.SESSION_COOKIE_NAME
 CSRF_COOKIE = settings.CSRF_COOKIE_NAME
 
 
+def _pw_bytes(password: str) -> bytes:
+    # bcrypt only uses the first 72 bytes; truncate explicitly (bcrypt>=4 raises otherwise).
+    return password.encode("utf-8")[:72]
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_pw_bytes(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
     try:
-        return pwd_context.verify(password, hashed)
+        return bcrypt.checkpw(_pw_bytes(password), hashed.encode("utf-8"))
     except Exception:
         return False
 

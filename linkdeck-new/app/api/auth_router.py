@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import auth as auth_service, models, security
 from app.config import settings
 from app.db import get_session
+from app.security import limiter
 
 router = APIRouter(tags=["auth"])
 
@@ -145,6 +146,7 @@ async def facebook_callback(code: str, request: Request, db: AsyncSession = Depe
 
 
 @router.post("/magic/send")
+@limiter.limit("5/minute")
 async def magic_send(
     request: Request,
     email: str = Form(...),
@@ -177,6 +179,7 @@ async def magic_verify(
 
 
 @router.post("/admin/login")
+@limiter.limit("10/minute")
 async def admin_login(
     request: Request,
     password: str = Form(...),

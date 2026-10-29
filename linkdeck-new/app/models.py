@@ -217,7 +217,7 @@ class MagicToken(Base):
     created_ip: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
-    user: Mapped["User"] = relationship("User", back_populates="magic_tokens")
+    user: Mapped["User"] = relationship("User", back_populates="magic_tokens", lazy="joined")
 
 
 class Referral(Base):

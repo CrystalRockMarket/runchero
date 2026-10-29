@@ -17,7 +17,7 @@ router = APIRouter(tags=["tracking"])
 @router.post("/click/{offer_id}")
 async def record_click(offer_id: int, request: Request, db: AsyncSession = Depends(get_session)):
     """Record a click event for an offer. Client posts this from the outbound click handler."""
-    ip_hash = security.sha256(request.client.host or "")
+    ip_hash = security.sha256(security.client_ip(request))
     ua = request.headers.get("user-agent")
     referrer = request.headers.get("referer")
 

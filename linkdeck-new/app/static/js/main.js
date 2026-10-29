@@ -111,11 +111,11 @@
     u.onclick = function() {
       if (voted) return;
       voted = true;
-      sendVote(x.id, true).then(function(d) {
-        if (d) { x.upvotes = d.upvotes; x.downvotes = d.downvotes; }
+      sendVote(x.id, true).then(function(res) {
+        if (res) { x.upvotes = res.upvotes; x.downvotes = res.downvotes; }
         else { x.upvotes = (x.upvotes || 0) + 1; }
         u.textContent = '👍 Worked ' + x.upvotes;
-        d2.textContent = '👎 Didn\'t work ' + x.downvotes;
+        d.textContent = '👎 Didn\'t work ' + x.downvotes;
       });
       u.textContent = '👍 Worked ' + ((x.upvotes || 0) + 1);
     };
@@ -126,11 +126,10 @@
         if (res) { x.upvotes = res.upvotes; x.downvotes = res.downvotes; }
         else { x.downvotes = (x.downvotes || 0) + 1; }
         u.textContent = '👍 Worked ' + x.upvotes;
-        d2.textContent = '👎 Didn\'t work ' + x.downvotes;
+        d.textContent = '👎 Didn\'t work ' + x.downvotes;
       });
       toast('Thanks. Low-rated codes show up less.');
     };
-    var d2 = d;
     v.appendChild(u);
     v.appendChild(d);
     v.appendChild(el('span', 'age', ago(x.at || now)));
@@ -270,6 +269,25 @@
   }
 
   function siteUrl() { return location.href.split('#')[0]; }
+
+  function voterKey() {
+    var k = 'ld_voter';
+    try {
+      var existing = localStorage.getItem(k);
+      if (existing) return existing;
+      var rnd = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(k, rnd);
+      return rnd;
+    } catch (e) { return 'anon'; }
+  }
+
+  function sendVote(id, isUp) {
+    var url = '/api/vote/' + id + '?is_up=' + (isUp ? 'true' : 'false') +
+      '&voter_key=' + encodeURIComponent(voterKey());
+    return fetch(url, { method: 'POST' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; });
+  }
 
   // Init
   function init() {

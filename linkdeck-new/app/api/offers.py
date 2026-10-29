@@ -14,8 +14,10 @@ import random
 from datetime import datetime, timedelta
 
 from app.db import get_session
+from app.deps import get_current_user
 from app import models, security
 from app.config import settings
+from app.security import limiter
 
 router = APIRouter(tags=["offers"])
 
@@ -90,50 +92,49 @@ async def list_offers(
 
 
 @router.post("/offers", response_model=dict, status_code=201)
+@limiter.limit("20/minute")
 async def submit_offer(
+    request: Request,
     submission: OfferSubmission = Body(...),
-    user_id: Optional[int] = None,
-    session_id: Optional[str] = None,
+    user: Optional[models.User] = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
     """Submit a new offer. If authenticated, attaches to user; otherwise anonymous."""
-    brand = submission.brand
-    link = submission.link
-    headline = submission.headline
-    category = submission.category
+    brand = submission.brand.strip()
+    link = submission.link.strip()
+    headline = submission.headline.strip()
+    category = submission.category.strip()
     plan = submission.plan
 
     if not brand or not link or not headline:
         raise HTTPException(status_code=400, detail="Brand, link, and headline are required")
+    if not link.lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Link must start with http:// or https://")
 
-    domain = link.rstrip("/").split("/")[-1] or ""
-    # Better domain extraction
     from urllib.parse import urlparse
     parsed = urlparse(link)
-    domain = parsed.hostname or ""
-    domain = domain.replace("www.", "") if domain else ""
+    domain = (parsed.hostname or "").replace("www.", "")
 
     offer = models.Offer(
-        brand=brand,
-        domain=domain,
-        headline=headline,
+        brand=brand[:80],
+        domain=domain[:63],
+        headline=headline[:140],
         promo=headline[:70],
-        category=category,
+        category=category if category in models.CATS else "Apps",
         plan=plan,
-        url=link,
-        owner_id=user_id,
-        anonymous_session=session_id,
+        url=link[:500],
+        owner_id=user.id if user else None,
+        anonymous_session=None if user else security.sha256(security.client_ip(request))[:64],
         status=models.OfferStatus.PENDING.value,
     )
     db.add(offer)
     await db.flush()
 
-    # If authenticated, create a PromoCode for tracking
-    if user_id:
+    if user is not None:
         code = __import__("secrets").token_urlsafe(8)
         db.add(models.PromoCode(
             offer_id=offer.id,
-            user_id=user_id,
+            user_id=user.id,
             code=code,
             kind="promo",
         ))
